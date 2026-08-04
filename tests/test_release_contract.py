@@ -1,0 +1,822 @@
+from __future__ import annotations
+
+import ast
+import builtins
+import hashlib
+import json
+import subprocess
+import sys
+import tomllib
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+import yaml
+
+ROOT = Path(__file__).resolve().parent.parent
+PAIRED_A100 = ROOT / "reports" / "paired_a100"
+GPU_NOTEBOOKS = (
+    "notebooks/paired_experiment_a100.ipynb",
+    "notebooks/deployment_parity_probe_a100.ipynb",
+    "notebooks/deployment_benchmark_l4.ipynb",
+)
+ENVIRONMENT_CONTROLS = (
+    "os.environ['YOLO_AUTOINSTALL'] = 'false'",
+    "os.environ['ULTRALYTICS_SKIP_REQUIREMENTS_CHECKS'] = '1'",
+)
+FORBIDDEN_FIRST_CELL_ACTIONS = (
+    "from google.colab import drive",
+    "drive.mount(",
+    "subprocess.",
+    "git clone",
+    "git checkout",
+    "pip install",
+    "uv sync",
+)
+
+
+def _read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _notebook(path: str) -> dict:
+    return json.loads((ROOT / path).read_text(encoding="utf-8"))
+
+
+def _code(notebook: dict) -> str:
+    return "\n".join(
+        "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"
+    )
+
+
+def _first_code(notebook: dict) -> str:
+    return "".join(
+        next(cell for cell in notebook["cells"] if cell["cell_type"] == "code")["source"]
+    )
+
+
+def _code_cell_containing(notebook: dict, text: str) -> str:
+    return "".join(
+        next(
+            cell
+            for cell in notebook["cells"]
+            if cell["cell_type"] == "code" and text in "".join(cell["source"])
+        )["source"]
+    )
+
+
+def _assert_in_order(source: str, *tokens: str) -> None:
+    offset = -1
+    for token in tokens:
+        next_offset = source.index(token, offset + 1)
+        assert offset < next_offset, token
+        offset = next_offset
+
+
+def _assert_controls_precede_external_actions(source: str) -> None:
+    for action in FORBIDDEN_FIRST_CELL_ACTIONS:
+        action_offset = source.find(action)
+        if action_offset >= 0:
+            for control in ENVIRONMENT_CONTROLS:
+                assert source.index(control) < action_offset, action
+
+
+def test_promoted_a100_package_receipt_is_portable_and_complete() -> None:
+    receipt = _read_json(PAIRED_A100 / "result_package_receipt.json")
+
+    assert receipt == {
+        "schema_version": "1.0",
+        "package": {
+            "name": "paired-results-a100-9e3a1ed5827a.zip",
+            "bytes": 75767467,
+            "sha256": "c6158e5017bbec02c089ad42f55f83b20a46fb8ebd3bd1c35115d2940bb74c92",
+            "sidecar": "paired-results-a100-9e3a1ed5827a.zip.sha256",
+        },
+        "source_git_sha": "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
+        "package_manifest": {
+            "path": "package_manifest.json",
+            "sha256": "2387496eb57a8126515f13cde72a83fab799e4a5b9e7a8d93ee1a680d6a7132d",
+            "verified_entries": 52,
+            "failed_entries": 0,
+        },
+        "verification": {
+            "sidecar_match": True,
+            "internal_manifest_passed": True,
+        },
+    }
+
+
+def test_promoted_a100_input_and_finalization_chain_is_hash_bound() -> None:
+    input_lock = _read_json(PAIRED_A100 / "input_lock.json")
+    protocol = yaml.safe_load(
+        (ROOT / "configs" / "paired_protocol.yaml").read_text(encoding="utf-8")
+    )
+    gate = _read_json(PAIRED_A100 / "gate_report.json")
+    selection = _read_json(PAIRED_A100 / "deployment_selection.json")
+    metrics = _read_json(PAIRED_A100 / "final_metrics.json")
+    finalization = _read_json(PAIRED_A100 / "finalization_record.json")
+
+    assert input_lock["git_sha"] == "9e3a1ed5827ac3759cbb15632f041e3e5c183b51"
+    assert input_lock["dataset_sha256"] == protocol["frozen_hashes"]["dataset_sha256"]
+    assert input_lock["manifest_sha256"] == protocol["frozen_hashes"]["manifest_sha256"]
+    assert gate["passed"] is True
+    assert all(gate["checks"].values())
+    assert gate["input_lock"] == input_lock
+    assert selection["arm"] == "grouped"
+    assert selection["seed"] == 42
+    assert selection["selected_before_final_test"] is True
+    assert metrics["status"] == "complete"
+    assert metrics["deployment_selection"] == selection
+    assert metrics["git_sha"] == input_lock["git_sha"]
+    assert finalization["status"] == "complete"
+    assert finalization["results"] == "final_metrics.json"
+    assert finalization["results_bytes"] == (PAIRED_A100 / "final_metrics.json").stat().st_size
+    assert finalization["results_sha256"] == _sha256(PAIRED_A100 / "final_metrics.json")
+
+
+def test_public_deployment_gate_is_path_free_and_bound_to_raw_manifest_entry() -> None:
+    public_path = PAIRED_A100 / "deployment_gate.public.json"
+    public_text = public_path.read_text(encoding="utf-8")
+    gate = json.loads(public_text)
+    manifest = _read_json(PAIRED_A100 / "package_manifest.json")
+    raw = next(
+        item for item in manifest["files"] if item["path"] == "deployment/deployment_gate.json"
+    )
+
+    assert gate["_provenance"] == {
+        "source_entry": "deployment/deployment_gate.json",
+        "source_bytes": 18615,
+        "source_sha256": "466bf152a30e7efe1768542a71647e8982d18df253b2b170aaa2a13d087c1803",
+        "removed_fields": ["command"],
+    }
+    assert gate["_provenance"]["source_bytes"] == raw["bytes"]
+    assert gate["_provenance"]["source_sha256"] == raw["sha256"]
+    assert "command" not in gate
+    assert not any(token in public_text for token in ("/content/", "/root/", "MyDrive", "C:\\"))
+
+
+def test_gpu_notebooks_disable_ultralytics_install_before_external_actions() -> None:
+    for relative in GPU_NOTEBOOKS:
+        _assert_controls_precede_external_actions(_first_code(_notebook(relative)))
+
+
+def test_first_cell_action_guard_rejects_every_forbidden_predecessor() -> None:
+    controls = "\n".join(ENVIRONMENT_CONTROLS)
+    for action in FORBIDDEN_FIRST_CELL_ACTIONS:
+        with pytest.raises(AssertionError):
+            _assert_controls_precede_external_actions(f"{action}\n{controls}")
+
+
+def test_full_gpu_notebooks_gate_runtime_before_and_after_onnx_stages() -> None:
+    a100 = _code_cell_containing(
+        _notebook("notebooks/paired_experiment_a100.ipynb"), "deployment_result = run_logged("
+    )
+    _assert_in_order(
+        a100,
+        "DEPLOYMENT_RUNTIME_BEFORE = runtime_contract_state(",
+        "deployment_result = run_logged(",
+        "DEPLOYMENT_RUNTIME_AFTER = runtime_contract_state(",
+        "if DEPLOYMENT_RUNTIME_AFTER != DEPLOYMENT_RUNTIME_BEFORE:",
+        "if deployment_result.returncode:",
+    )
+
+    l4 = _code_cell_containing(
+        _notebook("notebooks/deployment_benchmark_l4.ipynb"), "benchmark_command = ["
+    )
+    _assert_in_order(
+        l4,
+        "VERIFY_BENCHMARK_SCRIPT = r'''",
+        "benchmark_verification = run_project_json(",
+        "if benchmark_verification == {'complete': True}:",
+        "benchmark_log = (",
+    )
+    runtime_branch = l4[l4.index("BENCHMARK_RUNTIME_BEFORE = runtime_contract_state(") :]
+    _assert_in_order(
+        runtime_branch,
+        "BENCHMARK_RUNTIME_BEFORE = runtime_contract_state(",
+        "run_streaming_command(\n        benchmark_command,",
+        "BENCHMARK_RUNTIME_AFTER = runtime_contract_state(",
+        "if BENCHMARK_RUNTIME_AFTER != BENCHMARK_RUNTIME_BEFORE:",
+        "benchmark_verification = run_project_json(",
+    )
+
+
+def test_l4_notebook_separates_runner_and_parent_and_never_trains() -> None:
+    notebook = _notebook("notebooks/deployment_benchmark_l4.ipynb")
+    code = _code(notebook)
+    first = _first_code(notebook)
+
+    assignments = (
+        'SOURCE_BUNDLE_SHA256 = "PASTE_FINAL_BUNDLE_SHA256"',
+        'RUNNER_GIT_SHA = "PASTE_FINAL_GIT_SHA"',
+        'PARENT_EXPERIMENT_GIT_SHA = "PASTE_PARENT_EXPERIMENT_GIT_SHA"',
+        'PARENT_DEPLOYMENT_GATE_SHA256 = "PASTE_PARENT_DEPLOYMENT_GATE_SHA256"',
+        'PARENT_CHECKPOINT_SHA256 = "PASTE_PARENT_CHECKPOINT_SHA256"',
+        'PARENT_ONNX_SHA256 = "PASTE_PARENT_ONNX_SHA256"',
+        'L4_HANDOFF_DIRECTORY = "PASTE_L4_HANDOFF_DIRECTORY"',
+    )
+    for assignment in assignments:
+        assert first.count(assignment) == 1
+    assert code.count("PASTE_") == 7
+    assert (
+        'PARENT_WORKSPACE = (\n    Path("/content/drive/MyDrive/pcb-defect-paired/workspaces")\n'
+        "    / PARENT_EXPERIMENT_GIT_SHA[:12]\n)"
+    ) in first
+    assert "PARENT_WORKSPACE = DRIVE_ROOT / 'workspaces' / RUNNER_GIT_SHA[:12]" not in code
+    assert "train-all" not in code
+    assert "pcb_defect.experiment" not in code
+    assert "input_lock" not in code
+    assert "gate_report" not in code
+    assert "os.environ['YOLO_AUTOINSTALL'] = 'false'" in first
+    for cell in notebook["cells"]:
+        assert not cell.get("outputs")
+        if cell["cell_type"] == "code":
+            assert cell["execution_count"] is None
+            ast.parse("".join(cell["source"]))
+
+
+def test_l4_notebook_verifies_before_locked_install_benchmark_package_and_success() -> None:
+    code = _code(_notebook("notebooks/deployment_benchmark_l4.ipynb"))
+
+    _assert_in_order(
+        code,
+        "drive.mount('/content/drive')",
+        "if sha256_file(SOURCE_BUNDLE) != SOURCE_BUNDLE_SHA256:",
+        "subprocess.run(['git', 'clone', str(SOURCE_BUNDLE), str(REPO)]",
+        "subprocess.run(['git', 'checkout', '--detach', RUNNER_GIT_SHA]",
+        "observed_runner = subprocess.run(['git', 'rev-parse', 'HEAD']",
+        "status = subprocess.run(['git', 'status', '--porcelain']",
+        "sys.path.insert(0, str(REPO / 'src'))",
+        "parent = L4ParentIdentity.parse(",
+        "verify_l4_parent_inputs(PARENT_WORKSPACE, parent)",
+        "'pip', 'install', '--quiet', 'uv==0.11.18'",
+        "subprocess.run([UV, 'sync', '--locked', '--no-editable'",
+        "def run_project_json(",
+        "VERIFY_INPUTS_SCRIPT = r'''",
+        "verified = verify_l4_inputs(Path(sys.argv[1]), Path(sys.argv[2]), identity)",
+        "input_verification = run_project_json(",
+        "LOCKED_RUNTIME_STATE = runtime_contract_state(",
+        "benchmark_report_path = (",
+        "VERIFY_BENCHMARK_SCRIPT = r'''",
+        "benchmark_verification = run_project_json(",
+        "if benchmark_verification == {'complete': True}:",
+        "benchmark_log = (",
+        "BENCHMARK_RUNTIME_BEFORE = runtime_contract_state(",
+        "benchmark_command = [",
+        "run_streaming_command(\n        benchmark_command,",
+        "BENCHMARK_RUNTIME_AFTER = runtime_contract_state(",
+        "benchmark_verification = run_project_json(",
+        "package_command = [",
+        "run_streaming_command(\n    package_command,",
+        "VERIFY_PACKAGE_SCRIPT = r'''",
+        "package_verification = run_project_json(",
+        "print('L4 HANDOFF COMPLETE', package, package_sha256)",
+    )
+    assert (
+        "benchmark_log = (\n        PARENT_WORKSPACE / 'l4_logs' / RUNNER_GIT_SHA[:12] "
+        "/ 'benchmark_command.log'\n    )"
+    ) in code
+    assert "def run_streaming_command(" in code
+    assert "from pcb_defect.notebook_runtime import run_streaming_command" not in code
+    assert "benchmark_log.write_text" not in code
+    assert ".unlink(" not in code
+    assert "shutil.rmtree(" not in code
+
+
+def test_l4_notebook_never_calls_project_code_in_the_host_kernel_after_sync() -> None:
+    notebook = _notebook("notebooks/deployment_benchmark_l4.ipynb")
+    after_sync: list[ast.AST] = []
+    sync_seen = False
+    for cell in notebook["cells"]:
+        if cell["cell_type"] != "code":
+            continue
+        source = "".join(cell["source"])
+        for statement in ast.parse(source).body:
+            segment = ast.get_source_segment(source, statement) or ""
+            if sync_seen:
+                after_sync.extend(ast.walk(statement))
+            if "[UV, 'sync', '--locked', '--no-editable'" in segment:
+                sync_seen = True
+
+    assert sync_seen
+    project_imports = [
+        node
+        for node in after_sync
+        if isinstance(node, ast.ImportFrom)
+        and node.module is not None
+        and node.module.startswith("pcb_defect")
+    ]
+    forbidden_calls = []
+    for node in after_sync:
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Name) and node.func.id in {
+            "verify_l4_inputs",
+            "benchmark_is_complete",
+            "l4_package_name",
+            "verify_verifiable_zip",
+        }:
+            forbidden_calls.append(node.func.id)
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "parse"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "L4RunIdentity"
+        ):
+            forbidden_calls.append("L4RunIdentity.parse")
+
+    assert project_imports == []
+    assert forbidden_calls == []
+
+
+def test_l4_notebook_project_json_bridge_ignores_incompatible_host_dependency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    notebook = _notebook("notebooks/deployment_benchmark_l4.ipynb")
+    helper_source = _code_cell_containing(notebook, "def run_project_json(")
+    helper = next(
+        node
+        for node in ast.parse(helper_source).body
+        if isinstance(node, ast.FunctionDef) and node.name == "run_project_json"
+    )
+    calls: list[tuple[list[str], Path]] = []
+
+    def fake_run(command: list[str], *, cwd: Path, **_kwargs: object) -> SimpleNamespace:
+        calls.append((command, cwd))
+        return SimpleNamespace(
+            returncode=0,
+            stdout='host-version="incompatible"\n{"verified": true}\n',
+            stderr="",
+        )
+
+    real_import = builtins.__import__
+
+    def incompatible_host_import(name: str, *args: object, **kwargs: object) -> object:
+        if name.startswith("pcb_defect"):
+            raise AssertionError("host pcb_defect must not be imported after sync")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", incompatible_host_import)
+    namespace = {
+        "Path": Path,
+        "json": json,
+        "subprocess": SimpleNamespace(run=fake_run),
+        "sys": sys,
+        "VENV_PYTHON": Path("/locked/.venv/bin/python"),
+        "REPO": Path("/runner"),
+    }
+    module = ast.fix_missing_locations(ast.Module(body=[helper], type_ignores=[]))
+    exec(compile(module, "notebook-project-json-bridge", "exec"), namespace)
+
+    observed = namespace["run_project_json"]("mismatch probe", "print('{}')", "arg")
+
+    assert observed == {"verified": True}
+    assert calls == [
+        (
+            [str(Path("/locked/.venv/bin/python")), "-c", "print('{}')", "arg"],
+            Path("/runner"),
+        )
+    ]
+
+
+def test_l4_notebook_full_retry_preserves_packaged_benchmark_log(tmp_path: Path) -> None:
+    cell = _code_cell_containing(
+        _notebook("notebooks/deployment_benchmark_l4.ipynb"), "benchmark_command = ["
+    )
+    repo = tmp_path / "runner"
+    repo.mkdir()
+    workspace = tmp_path / "parent"
+    package_root = tmp_path / "packages"
+    report = workspace / "benchmark_l4" / ("a" * 12) / "benchmark_l4.json"
+    benchmark_log = workspace / "l4_logs" / ("a" * 12) / "benchmark_command.log"
+    package = package_root / "result.zip"
+    benchmark_attempts = 0
+    package_attempts = 0
+    packaged_log: bytes | None = None
+
+    def run_project_json(label: str, _script: str, *_arguments: object) -> dict[str, object]:
+        if label == "L4 benchmark verification":
+            return {"complete": report.is_file()}
+        if label == "L4 package verification":
+            return {
+                "package": str(package),
+                "sha256": hashlib.sha256(package.read_bytes()).hexdigest(),
+            }
+        raise AssertionError(f"unexpected bridge label: {label}")
+
+    def run_streaming_command(
+        _command: list[str], *, cwd: Path, log_path: Path, label: str
+    ) -> None:
+        nonlocal benchmark_attempts, package_attempts, packaged_log
+        assert cwd == repo
+        if label == "L4 benchmark":
+            benchmark_attempts += 1
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            with log_path.open("ab") as handle:
+                handle.write(f"benchmark-attempt-{benchmark_attempts}\n".encode())
+            report.parent.mkdir(parents=True, exist_ok=True)
+            report.write_text("{}\n", encoding="utf-8", newline="\n")
+            return
+        if label == "L4 package":
+            package_attempts += 1
+            package_root.mkdir(parents=True, exist_ok=True)
+            if package.exists():
+                assert benchmark_log.read_bytes() == packaged_log
+            else:
+                packaged_log = benchmark_log.read_bytes()
+                package.write_bytes(b"immutable-package")
+            return
+        raise AssertionError(f"unexpected command label: {label}")
+
+    namespace = {
+        "Path": Path,
+        "json": json,
+        "hashlib": hashlib,
+        "VENV_PYTHON": tmp_path / ".venv" / "bin" / "python",
+        "REPO": repo,
+        "PARENT_WORKSPACE": workspace,
+        "DRIVE_ROOT": tmp_path,
+        "RUNNER_GIT_SHA": "a" * 40,
+        "PARENT_EXPERIMENT_GIT_SHA": "b" * 40,
+        "PARENT_DEPLOYMENT_GATE_SHA256": "c" * 64,
+        "PARENT_CHECKPOINT_SHA256": "d" * 64,
+        "PARENT_ONNX_SHA256": "e" * 64,
+        "LOCKED_RUNTIME_STATE": {"runtime": "locked"},
+        "runtime_contract_state": lambda _label: {"runtime": "locked"},
+        "run_project_json": run_project_json,
+        "run_streaming_command": run_streaming_command,
+    }
+
+    exec(compile(cell, "l4-notebook-orchestration", "exec"), namespace)
+    first_log = benchmark_log.read_bytes()
+    first_package = package.read_bytes()
+    exec(compile(cell, "l4-notebook-orchestration", "exec"), namespace)
+
+    assert benchmark_attempts == 1
+    assert package_attempts == 2
+    assert benchmark_log.read_bytes() == first_log
+    assert package.read_bytes() == first_package
+
+
+def test_l4_notebook_benchmark_command_is_bound_only_to_immutable_values() -> None:
+    cell = _code_cell_containing(
+        _notebook("notebooks/deployment_benchmark_l4.ipynb"), "benchmark_command = ["
+    )
+    tree = ast.parse(cell)
+    assignments = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "benchmark_command"
+            for target in node.targets
+        )
+    ]
+    assert len(assignments) == 1
+    assignment = assignments[0]
+    assert isinstance(assignment.value, ast.List)
+    assert [ast.unparse(item) for item in assignment.value.elts] == [
+        "str(VENV_PYTHON)",
+        "'-m'",
+        "'pcb_defect.benchmark'",
+        "'--repo'",
+        "str(REPO)",
+        "'--workspace'",
+        "str(PARENT_WORKSPACE)",
+        "'--expected-runner-git-sha'",
+        "RUNNER_GIT_SHA",
+        "'--expected-experiment-git-sha'",
+        "PARENT_EXPERIMENT_GIT_SHA",
+        "'--expected-deployment-gate-sha256'",
+        "PARENT_DEPLOYMENT_GATE_SHA256",
+        "'--expected-checkpoint-sha256'",
+        "PARENT_CHECKPOINT_SHA256",
+        "'--expected-onnx-sha256'",
+        "PARENT_ONNX_SHA256",
+        "'--warmup'",
+        "'30'",
+        "'--cycles'",
+        "'4'",
+    ]
+
+
+def test_claim_evidence_paths_exist_and_only_supported_claims_are_verified() -> None:
+    registry = yaml.safe_load((ROOT / "reports" / "claims.yaml").read_text(encoding="utf-8"))
+    claims = registry["claims"]
+
+    assert registry["schema_version"] == "1.0"
+    assert {name for name, claim in claims.items() if claim["status"] == "verified"} == {
+        "base_initialization",
+        "paired_leakage_effect",
+        "paired_protocol",
+    }
+    assert {name for name, claim in claims.items() if claim["status"] == "verified_candidate"} == {
+        "onnx_deployment"
+    }
+    assert claims["tensorrt_performance"]["status"] == "pending_l4"
+    assert claims["hosted_demo"]["status"] == "blocked"
+    for claim in claims.values():
+        for relative in claim["evidence"]:
+            assert (ROOT / relative).is_file(), relative
+        if claim["status"] in {"pending_colab", "pending_l4", "blocked", "verified_candidate"}:
+            assert claim["limitations"]
+
+
+def test_promoted_claims_point_only_to_current_a100_evidence() -> None:
+    claims = yaml.safe_load((ROOT / "reports" / "claims.yaml").read_text(encoding="utf-8"))[
+        "claims"
+    ]
+    paired = claims["paired_leakage_effect"]
+    onnx = claims["onnx_deployment"]
+
+    assert paired["status"] == "verified"
+    assert set(paired["evidence"]) >= {
+        "reports/paired_a100/input_lock.json",
+        "reports/paired_a100/deployment_selection.json",
+        "reports/paired_a100/final_metrics.json",
+        "reports/paired_a100/finalization_record.json",
+        "reports/paired_a100/result_package_receipt.json",
+    }
+    assert onnx["status"] == "verified_candidate"
+    assert set(onnx["evidence"]) == {
+        "reports/paired_a100/input_lock.json",
+        "reports/paired_a100/deployment_gate.public.json",
+        "reports/paired_a100/result_package_receipt.json",
+    }
+    assert "reports/export_fidelity.json" not in onnx["evidence"]
+    assert "reports/onnx_parity.json" not in onnx["evidence"]
+
+
+def test_failed_legacy_export_gates_cannot_back_a_deployment_claim() -> None:
+    fidelity = json.loads((ROOT / "reports" / "export_fidelity.json").read_text(encoding="utf-8"))
+    parity = json.loads((ROOT / "reports" / "onnx_parity.json").read_text(encoding="utf-8"))
+    contract = json.loads((ROOT / "app" / "model_contract.json").read_text(encoding="utf-8"))
+
+    assert fidelity["fidelity_ok"] is False
+    assert parity["all_passed"] is False
+    assert contract["status"] == "blocked"
+    assert contract["onnx_sha256"] is None
+    assert contract["hf_repo_id"] is None
+    assert contract["hf_revision"] is None
+
+
+def test_readme_protocol_and_legacy_numbers_match_machine_artifacts() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    protocol_config = yaml.safe_load(
+        (ROOT / "configs" / "paired_protocol.yaml").read_text(encoding="utf-8")
+    )
+    manifest_path = ROOT / "reports" / "protocol" / "paired_split_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    legacy = json.loads((ROOT / "reports" / "test_metrics.json").read_text(encoding="utf-8"))
+
+    assert manifest["manifest_sha256"] == protocol_config["frozen_hashes"]["manifest_sha256"]
+    assert manifest["dataset"]["sha256"] == protocol_config["frozen_hashes"]["dataset_sha256"]
+    assert protocol_config["frozen_hashes"]["manifest_sha256"] in readme
+    assert protocol_config["frozen_hashes"]["dataset_sha256"] in readme
+    assert manifest["counts"]["final_test"]["images"] == 30
+    assert manifest["counts"]["grouped_train"]["images"] == 513
+    assert manifest["counts"]["leaky_train"]["images"] == 513
+    assert f"{legacy['grouped']['map50']:.4f}" in readme
+    assert f"{legacy['random']['map50']:.4f}" in readme
+    observed_gap_pp = (legacy["random"]["map50"] - legacy["grouped"]["map50"]) * 100
+    assert f"{observed_gap_pp:.1f}-point" in readme
+    file_digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    sidecar = (manifest_path.parent / "paired_split_manifest.sha256").read_text(encoding="ascii")
+    assert sidecar == f"{file_digest}  paired_split_manifest.json\n"
+
+
+def test_portfolio_documents_match_promoted_a100_metrics() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    model_card = (ROOT / "docs" / "model-card.md").read_text(encoding="utf-8")
+    metrics = _read_json(PAIRED_A100 / "final_metrics.json")
+    grouped = metrics["aggregate"]["by_arm"]["grouped"]["map50"]
+    leaky = metrics["aggregate"]["by_arm"]["leaky_control"]["map50"]
+    difference_pp = (leaky["mean"] - grouped["mean"]) * 100
+
+    for document in (readme, model_card):
+        assert f"{grouped['mean']:.4f}" in document
+        assert f"{grouped['std']:.4f}" in document
+        assert f"{leaky['mean']:.4f}" in document
+        assert f"{leaky['std']:.4f}" in document
+        assert f"{difference_pp:.1f}" in document
+        assert "5,544,453 bytes" not in document
+    assert "60/60" in readme
+    assert "0.0" in readme
+    assert "1.0" in readme
+
+
+def test_release_checklist_marks_only_returned_a100_evidence_complete() -> None:
+    checklist = (ROOT / "docs" / "release-checklist.md").read_text(encoding="utf-8")
+
+    for text in (
+        "A100 clean-runtime, data/hash, tiny-train, resume, and speed gates pass.",
+        "Six runs complete with matching run records and checkpoint hashes.",
+        "Deployment checkpoint is selected from grouped validation before final-test access.",
+        "One-shot common final evaluation completes and reports three-seed mean/std "
+        "and paired image",
+        "Calibration-only ONNX fidelity and standalone parity gates pass.",
+        "Final result ZIP and sidecar SHA-256 are returned from Drive.",
+    ):
+        assert f"- [x] {text}" in checklist
+    assert "- [ ] L4 PyTorch/ORT CUDA/TensorRT FP16" in checklist
+    assert "- [ ] Upstream dataset redistribution/training/weight-release rights" in checklist
+    assert "- [ ] Official GitHub and Hugging Face namespaces" in checklist
+
+
+def test_candidate_tree_contains_no_dataset_or_model_binaries() -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True
+    ).stdout.splitlines()
+    pixel_files = {
+        path
+        for path in tracked
+        if Path(path).suffix.lower() in {".jpg", ".jpeg", ".gif"}
+        and not path.startswith("tests/fixtures/")
+    }
+    model_or_package_files = {
+        path
+        for path in tracked
+        if Path(path).suffix.lower() in {".pt", ".onnx", ".engine", ".plan", ".trt", ".zip"}
+    }
+
+    assert pixel_files == set()
+    assert model_or_package_files == set()
+
+
+def test_current_tracked_text_has_no_personal_account_or_local_path() -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True
+    ).stdout.splitlines()
+    excluded = {"tests/test_evidence.py", "tests/test_release_contract.py"}
+    forbidden = ("steven0226", "tun0000", "C:/Users/", "C:\\Users\\")
+    findings = []
+    for relative in tracked:
+        if relative in excluded:
+            continue
+        path = ROOT / relative
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for token in forbidden:
+            if token in text:
+                findings.append((relative, token))
+
+    assert findings == []
+
+
+def test_notebooks_are_thin_unexecuted_and_require_immutable_handoff_values() -> None:
+    for relative in (
+        "notebooks/paired_experiment_a100.ipynb",
+        "notebooks/deployment_benchmark_l4.ipynb",
+        "notebooks/deployment_parity_probe_a100.ipynb",
+    ):
+        notebook = json.loads((ROOT / relative).read_text(encoding="utf-8"))
+        code = "\n".join(
+            "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"
+        )
+        assert all(not cell.get("outputs") for cell in notebook["cells"])
+        for cell in notebook["cells"]:
+            if cell["cell_type"] == "code":
+                assert cell["execution_count"] is None
+                compile("".join(cell["source"]), f"{relative}:{cell}", "exec")
+        assert "PASTE_FINAL_BUNDLE_SHA256" in code
+        assert "PASTE_FINAL_GIT_SHA" in code
+        assert "uv==0.11.18" in code
+        assert "--locked" in code
+        assert "--no-editable" in code
+        assert "--reinstall-package', 'pcb-defect'" in code
+        assert "VENV_PYTHON" in code
+        assert "MPLBACKEND'] = 'Agg'" in code
+        assert "capture_output=True" in code
+        assert "[UV, 'run'" not in code
+
+    a100 = json.loads(
+        (ROOT / "notebooks" / "paired_experiment_a100.ipynb").read_text(encoding="utf-8")
+    )
+    a100_code = "\n".join(
+        "".join(cell["source"]) for cell in a100["cells"] if cell["cell_type"] == "code"
+    )
+    assert "IMPORT PROBE FAILED" in a100_code
+    assert "capture_output=True" in a100_code
+    assert "GPU GATE COMMAND FAILED" in a100_code
+    assert "gate_report.json" in a100_code
+    assert "os.environ['MPLBACKEND'] = 'Agg'" in a100_code
+    assert "deployment_gate.json" in a100_code
+    assert "model_contract.candidate.json" in a100_code
+    assert "DEPLOYMENT EVIDENCE" in a100_code
+    assert "run_logged" in a100_code
+
+    probe = json.loads(
+        (ROOT / "notebooks" / "deployment_parity_probe_a100.ipynb").read_text(encoding="utf-8")
+    )
+    probe_code = "\n".join(
+        "".join(cell["source"]) for cell in probe["cells"] if cell["cell_type"] == "code"
+    )
+    assert "PASTE_PARENT_EXPERIMENT_GIT_SHA" in probe_code
+    assert "PASTE_PARENT_DEPLOYMENT_GATE_SHA256" in probe_code
+    assert "PASTE_PARENT_ONNX_SHA256" in probe_code
+    assert "probe_command.log" in probe_code
+    assert "PARITY PROBE PASS" in probe_code
+    assert "train-all" not in probe_code
+    assert "experiment train" not in probe_code
+
+
+def test_a100_train_all_streams_combined_output_to_an_append_only_drive_log() -> None:
+    """The long six-run stage must be live, durable, and safe to resume."""
+    notebook = json.loads(
+        (ROOT / "notebooks" / "paired_experiment_a100.ipynb").read_text(encoding="utf-8")
+    )
+    code = "\n".join(
+        "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"
+    )
+
+    assert "from pcb_defect.notebook_runtime import run_streaming_command" in code
+    assert "train_all_command.log" in code
+    assert "run_streaming_command(" in code
+    direct_train_all = (
+        "subprocess.run([str(VENV_PYTHON), '-m', 'pcb_defect.experiment', 'train-all'"
+    )
+    assert direct_train_all not in code
+
+
+def test_probe_notebook_requires_exclusive_log_and_complete_report_before_pass() -> None:
+    """The handoff probe may print PASS only after validating its actual report schema."""
+    notebook = json.loads(
+        (ROOT / "notebooks" / "deployment_parity_probe_a100.ipynb").read_text(encoding="utf-8")
+    )
+    code = "\n".join(
+        "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"
+    )
+    pass_offset = code.index("print('PARITY PROBE PASS'")
+    completion_gate = code[:pass_offset]
+
+    assert "PROBE_REPORT = PROBE_DIRECTORY / 'parity_probe.json'" in code
+    runtime_import = (
+        "from pcb_defect.notebook_runtime import run_captured_command, verify_probe_result"
+    )
+    assert runtime_import in code
+    assert "run_captured_command(" in completion_gate
+    assert "verify_probe_result(" in completion_gate
+    assert completion_gate.index("verify_probe_result(") < pass_offset
+
+
+def test_release_python_and_ci_install_contract_are_consistent() -> None:
+    assert (ROOT / ".python-version").read_text(encoding="utf-8").strip() == "3.11"
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "uv sync --locked --no-editable" in workflow
+
+
+def test_linux_onnxruntime_contract_targets_colab_cuda_12() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    evaluation_dependencies = project["dependency-groups"]["eval"]
+
+    assert "onnxruntime==1.26.0; sys_platform == 'win32'" in evaluation_dependencies
+    assert "onnxruntime-gpu==1.26.0; sys_platform == 'linux'" in evaluation_dependencies
+
+
+def test_gpu_notebook_runtime_contract_helpers_are_strictly_bound() -> None:
+    for relative in GPU_NOTEBOOKS:
+        helper = _code_cell_containing(_notebook(relative), "def runtime_contract_state(")
+        tree = ast.parse(helper)
+        function = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "runtime_contract_state"
+        )
+        command = next(
+            node
+            for node in function.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == "command" for target in node.targets
+            )
+        )
+        assert isinstance(command.value, ast.List)
+        assert [ast.unparse(item) for item in command.value.elts] == [
+            "str(VENV_PYTHON)",
+            "'-m'",
+            "'pcb_defect.runtime_contract'",
+            "'--require-cuda-provider'",
+        ]
+        _assert_in_order(
+            helper,
+            "if not VENV_PYTHON.is_file():",
+            "raise RuntimeError(f'Locked environment Python is missing: {VENV_PYTHON}')",
+            "def runtime_contract_state(label: str) -> dict[str, object]:",
+            "command = [",
+            "result = subprocess.run(command, cwd=REPO, text=True, capture_output=True)",
+            "if result.returncode:",
+            "raise RuntimeError(f'{label} FAILED')",
+            "lines = [line for line in result.stdout.splitlines() if line.strip()]",
+            "if not lines:",
+            "raise RuntimeError(f'{label} returned no runtime state')",
+            "return json.loads(lines[-1])",
+            "except json.JSONDecodeError as exc:",
+            "raise RuntimeError(f'{label} returned invalid runtime JSON') from exc",
+            "LOCKED_RUNTIME_STATE = runtime_contract_state(",
+        )

@@ -1,0 +1,10 @@
+imgsz: 640
+batch: 1
+dynamic: false
+simplify: true
+calibration_images: 60
+fidelity_absolute_delta: 0.02
+parity_confidence: 0.25
+parity_match_iou: 0.5
+parity_min_iou: 0.90
+parity_max_confidence_delta: 0.15

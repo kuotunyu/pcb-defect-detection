@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/pcb-defect/run-record.schema.json",
+  "title": "PCB paired experiment run record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "arm",
+    "seed",
+    "status",
+    "timestamps",
+    "provenance",
+    "protocol",
+    "training",
+    "artifacts",
+    "metrics",
+    "failure"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "arm": {"enum": ["grouped", "leaky_control"]},
+    "seed": {"type": "integer"},
+    "status": {"enum": ["planned", "running", "complete", "failed"]},
+    "timestamps": {
+      "type": "object",
+      "required": ["created_at_utc", "updated_at_utc"],
+      "properties": {
+        "created_at_utc": {"type": "string"},
+        "updated_at_utc": {"type": "string"}
+      }
+    },
+    "provenance": {"type": "object"},
+    "protocol": {
+      "type": "object",
+      "required": ["version", "manifest", "manifest_sha256", "dataset_sha256"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "manifest": {"$ref": "#/$defs/artifact_ref"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "dataset_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "training": {
+      "type": "object",
+      "required": ["config", "resolved", "base_model"],
+      "properties": {
+        "config": {"$ref": "#/$defs/artifact_ref"},
+        "resolved": {"type": "object"},
+        "base_model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "revision", "filename", "sha256", "bytes", "contract"],
+          "properties": {
+            "source": {"type": "string", "pattern": "^https://"},
+            "revision": {"type": "string", "minLength": 1},
+            "filename": {"type": "string", "minLength": 1},
+            "sha256": {"$ref": "#/$defs/sha256"},
+            "bytes": {"type": "integer", "minimum": 1},
+            "contract": {"$ref": "#/$defs/artifact_ref"}
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/artifact_ref"}
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/artifact_ref"}
+    },
+    "failure": {"type": ["object", "null"]}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "bytes": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

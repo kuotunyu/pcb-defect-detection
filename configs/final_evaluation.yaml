@@ -1,0 +1,7 @@
+imgsz: 640
+ap_confidence: 0.001
+validation_iou: 0.7
+operating_confidence: 0.25
+match_iou: 0.5
+bootstrap_resamples: 10000
+bootstrap_seed: 20260803

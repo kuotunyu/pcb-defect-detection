@@ -1,0 +1,711 @@
+{
+    "artifacts":  {
+                      "onnx":  "best.onnx",
+                      "onnx_sha256":  "b62590a14e2e88a414eb06389058d13d69ff1ea3998232996877088951fe3bb8",
+                      "source_checkpoint":  "runs/grouped/seed42/weights/best.pt",
+                      "source_checkpoint_sha256":  "44646b130b8b42282b752f77659cabfc1c484dc3aaa9a2dc8f710da8468f511a"
+                  },
+    "completed_at_utc":  "2026-08-04T06:12:51.510238Z",
+    "config_sha256":  "1c279957f119a2bf88964c97c76b9d38c3f2bbf3814883383b7764e05c33264e",
+    "dataset_sha256":  "8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4",
+    "deployment_selection":  {
+                                 "arm":  "grouped",
+                                 "criterion":  "highest grouped validation map50_95; lower seed tie-break",
+                                 "seed":  42,
+                                 "selected_before_final_test":  true,
+                                 "validation_by_seed":  {
+                                                            "42":  0.12385345383632197,
+                                                            "43":  0.11338914856060243,
+                                                            "44":  0.11542323985666224
+                                                        }
+                             },
+    "environment":  {
+                        "packages":  {
+                                         "numpy":  "2.4.6",
+                                         "onnxruntime":  "not-installed",
+                                         "onnxruntime-gpu":  "1.26.0",
+                                         "pillow":  "12.3.0",
+                                         "pyyaml":  "6.0.3",
+                                         "tensorrt":  "not-installed",
+                                         "torch":  "2.12.1+cu126",
+                                         "torchvision":  "0.27.1+cu126",
+                                         "ultralytics":  "8.4.89"
+                                     },
+                        "platform":  "Linux-6.6.122+-x86_64-with-glibc2.35",
+                        "python":  "3.11.15"
+                    },
+    "fidelity":  {
+                     "delta_map50":  -0.018590364845378238,
+                     "delta_map50_95":  -0.012809288682730458,
+                     "onnx":  {
+                                  "map50":  0.28458487561411155,
+                                  "map50_95":  0.1084447068676515
+                              },
+                     "pt":  {
+                                "map50":  0.3031752404594898,
+                                "map50_95":  0.12125399555038195
+                            },
+                     "split":  "calibration",
+                     "threshold":  0.02
+                 },
+    "git_sha":  "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
+    "manifest_sha256":  "5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5",
+    "parity":  {
+                   "allowed_max_conf_delta":  0.15,
+                   "candidate_backend":  "standalone-onnxruntime",
+                   "max_conf_delta":  0.0,
+                   "min_iou":  1.0,
+                   "n_failed":  0,
+                   "n_images":  60,
+                   "onnx_sha256":  "b62590a14e2e88a414eb06389058d13d69ff1ea3998232996877088951fe3bb8",
+                   "per_image":  {
+                                     "01_missing_hole_02":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  2,
+                                                                "n_onnx":  2,
+                                                                "n_reference":  2,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_03":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  4,
+                                                                "n_onnx":  4,
+                                                                "n_reference":  4,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_04":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  2,
+                                                                "n_onnx":  2,
+                                                                "n_reference":  2,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_05":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  3,
+                                                                "n_onnx":  3,
+                                                                "n_reference":  3,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_07":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  2,
+                                                                "n_onnx":  2,
+                                                                "n_reference":  2,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_09":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  3,
+                                                                "n_onnx":  3,
+                                                                "n_reference":  3,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_10":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  3,
+                                                                "n_onnx":  3,
+                                                                "n_reference":  3,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_16":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  3,
+                                                                "n_onnx":  3,
+                                                                "n_reference":  3,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_18":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  2,
+                                                                "n_onnx":  2,
+                                                                "n_reference":  2,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_missing_hole_20":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  2,
+                                                                "n_onnx":  2,
+                                                                "n_reference":  2,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_mouse_bite_02":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  1,
+                                                              "n_onnx":  1,
+                                                              "n_reference":  1,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_03":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  0,
+                                                              "n_onnx":  0,
+                                                              "n_reference":  0,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_05":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  1,
+                                                              "n_onnx":  1,
+                                                              "n_reference":  1,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_10":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  1,
+                                                              "n_onnx":  1,
+                                                              "n_reference":  1,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_11":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  1,
+                                                              "n_onnx":  1,
+                                                              "n_reference":  1,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_12":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  0,
+                                                              "n_onnx":  0,
+                                                              "n_reference":  0,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_16":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  0,
+                                                              "n_onnx":  0,
+                                                              "n_reference":  0,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_18":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  0,
+                                                              "n_onnx":  0,
+                                                              "n_reference":  0,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_19":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  0,
+                                                              "n_onnx":  0,
+                                                              "n_reference":  0,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_mouse_bite_20":  {
+                                                              "max_conf_delta":  0.0,
+                                                              "min_iou":  1.0,
+                                                              "n_matched":  0,
+                                                              "n_onnx":  0,
+                                                              "n_reference":  0,
+                                                              "n_unmatched_onnx":  0,
+                                                              "n_unmatched_reference":  0,
+                                                              "passed":  true
+                                                          },
+                                     "01_open_circuit_01":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  2,
+                                                                "n_onnx":  2,
+                                                                "n_reference":  2,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_02":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  0,
+                                                                "n_onnx":  0,
+                                                                "n_reference":  0,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_04":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  1,
+                                                                "n_onnx":  1,
+                                                                "n_reference":  1,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_05":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  2,
+                                                                "n_onnx":  2,
+                                                                "n_reference":  2,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_08":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  1,
+                                                                "n_onnx":  1,
+                                                                "n_reference":  1,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_09":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  0,
+                                                                "n_onnx":  0,
+                                                                "n_reference":  0,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_10":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  0,
+                                                                "n_onnx":  0,
+                                                                "n_reference":  0,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_11":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  2,
+                                                                "n_onnx":  2,
+                                                                "n_reference":  2,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_16":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  1,
+                                                                "n_onnx":  1,
+                                                                "n_reference":  1,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_open_circuit_19":  {
+                                                                "max_conf_delta":  0.0,
+                                                                "min_iou":  1.0,
+                                                                "n_matched":  0,
+                                                                "n_onnx":  0,
+                                                                "n_reference":  0,
+                                                                "n_unmatched_onnx":  0,
+                                                                "n_unmatched_reference":  0,
+                                                                "passed":  true
+                                                            },
+                                     "01_short_01":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  1,
+                                                         "n_onnx":  1,
+                                                         "n_reference":  1,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_06":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  1,
+                                                         "n_onnx":  1,
+                                                         "n_reference":  1,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_09":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  3,
+                                                         "n_onnx":  3,
+                                                         "n_reference":  3,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_11":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  1,
+                                                         "n_onnx":  1,
+                                                         "n_reference":  1,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_12":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  2,
+                                                         "n_onnx":  2,
+                                                         "n_reference":  2,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_14":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  1,
+                                                         "n_onnx":  1,
+                                                         "n_reference":  1,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_15":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  1,
+                                                         "n_onnx":  1,
+                                                         "n_reference":  1,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_18":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  1,
+                                                         "n_onnx":  1,
+                                                         "n_reference":  1,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_19":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  2,
+                                                         "n_onnx":  2,
+                                                         "n_reference":  2,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_short_20":  {
+                                                         "max_conf_delta":  0.0,
+                                                         "min_iou":  1.0,
+                                                         "n_matched":  1,
+                                                         "n_onnx":  1,
+                                                         "n_reference":  1,
+                                                         "n_unmatched_onnx":  0,
+                                                         "n_unmatched_reference":  0,
+                                                         "passed":  true
+                                                     },
+                                     "01_spur_01":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  1,
+                                                        "n_onnx":  1,
+                                                        "n_reference":  1,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_06":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  0,
+                                                        "n_onnx":  0,
+                                                        "n_reference":  0,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_07":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  0,
+                                                        "n_onnx":  0,
+                                                        "n_reference":  0,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_08":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  0,
+                                                        "n_onnx":  0,
+                                                        "n_reference":  0,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_09":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  0,
+                                                        "n_onnx":  0,
+                                                        "n_reference":  0,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_10":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  1,
+                                                        "n_onnx":  1,
+                                                        "n_reference":  1,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_13":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  0,
+                                                        "n_onnx":  0,
+                                                        "n_reference":  0,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_17":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  0,
+                                                        "n_onnx":  0,
+                                                        "n_reference":  0,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_19":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  0,
+                                                        "n_onnx":  0,
+                                                        "n_reference":  0,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spur_20":  {
+                                                        "max_conf_delta":  0.0,
+                                                        "min_iou":  1.0,
+                                                        "n_matched":  0,
+                                                        "n_onnx":  0,
+                                                        "n_reference":  0,
+                                                        "n_unmatched_onnx":  0,
+                                                        "n_unmatched_reference":  0,
+                                                        "passed":  true
+                                                    },
+                                     "01_spurious_copper_03":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  3,
+                                                                   "n_onnx":  3,
+                                                                   "n_reference":  3,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_04":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  0,
+                                                                   "n_onnx":  0,
+                                                                   "n_reference":  0,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_08":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  0,
+                                                                   "n_onnx":  0,
+                                                                   "n_reference":  0,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_09":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  2,
+                                                                   "n_onnx":  2,
+                                                                   "n_reference":  2,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_11":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  0,
+                                                                   "n_onnx":  0,
+                                                                   "n_reference":  0,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_13":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  0,
+                                                                   "n_onnx":  0,
+                                                                   "n_reference":  0,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_14":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  0,
+                                                                   "n_onnx":  0,
+                                                                   "n_reference":  0,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_17":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  0,
+                                                                   "n_onnx":  0,
+                                                                   "n_reference":  0,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_19":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  1,
+                                                                   "n_onnx":  1,
+                                                                   "n_reference":  1,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               },
+                                     "01_spurious_copper_20":  {
+                                                                   "max_conf_delta":  0.0,
+                                                                   "min_iou":  1.0,
+                                                                   "n_matched":  1,
+                                                                   "n_onnx":  1,
+                                                                   "n_reference":  1,
+                                                                   "n_unmatched_onnx":  0,
+                                                                   "n_unmatched_reference":  0,
+                                                                   "passed":  true
+                                                               }
+                                 },
+                   "reference_backend":  "ultralytics-onnx",
+                   "required_images":  60,
+                   "required_min_iou":  0.9,
+                   "split":  "calibration"
+               },
+    "passed":  true,
+    "runtime_contract":  {
+                             "after":  {
+                                           "available_providers":  [
+                                                                       "TensorrtExecutionProvider",
+                                                                       "CUDAExecutionProvider",
+                                                                       "CPUExecutionProvider"
+                                                                   ],
+                                           "cuda_required":  false,
+                                           "distribution_versions":  {
+                                                                         "onnxruntime":  null,
+                                                                         "onnxruntime-gpu":  "1.26.0"
+                                                                     },
+                                           "expected_distribution":  "onnxruntime-gpu",
+                                           "module_version":  "1.26.0",
+                                           "platform":  "linux"
+                                       },
+                             "before":  {
+                                            "available_providers":  [
+                                                                        "TensorrtExecutionProvider",
+                                                                        "CUDAExecutionProvider",
+                                                                        "CPUExecutionProvider"
+                                                                    ],
+                                            "cuda_required":  false,
+                                            "distribution_versions":  {
+                                                                          "onnxruntime":  null,
+                                                                          "onnxruntime-gpu":  "1.26.0"
+                                                                      },
+                                            "expected_distribution":  "onnxruntime-gpu",
+                                            "module_version":  "1.26.0",
+                                            "platform":  "linux"
+                                        }
+                         },
+    "schema_version":  "1.0",
+    "started_at_utc":  "2026-08-04T06:12:12.065424Z",
+    "_provenance":  {
+                        "source_entry":  "deployment/deployment_gate.json",
+                        "source_bytes":  18615,
+                        "source_sha256":  "466bf152a30e7efe1768542a71647e8982d18df253b2b170aaa2a13d087c1803",
+                        "removed_fields":  [
+                                               "command"
+                                           ]
+                    }
+}

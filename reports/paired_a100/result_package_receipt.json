@@ -1,0 +1,20 @@
+{
+    "schema_version":  "1.0",
+    "package":  {
+                    "name":  "paired-results-a100-9e3a1ed5827a.zip",
+                    "bytes":  75767467,
+                    "sha256":  "c6158e5017bbec02c089ad42f55f83b20a46fb8ebd3bd1c35115d2940bb74c92",
+                    "sidecar":  "paired-results-a100-9e3a1ed5827a.zip.sha256"
+                },
+    "source_git_sha":  "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
+    "package_manifest":  {
+                             "path":  "package_manifest.json",
+                             "sha256":  "2387496eb57a8126515f13cde72a83fab799e4a5b9e7a8d93ee1a680d6a7132d",
+                             "verified_entries":  52,
+                             "failed_entries":  0
+                         },
+    "verification":  {
+                         "sidecar_match":  true,
+                         "internal_manifest_passed":  true
+                     }
+}

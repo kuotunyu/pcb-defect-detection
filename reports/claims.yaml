@@ -1,0 +1,86 @@
+schema_version: "1.0"
+claims:
+  paired_protocol:
+    status: verified
+    statement: >-
+      The paired protocol uses a common 30-image final test, shared validation/calibration,
+      and exactly class-balanced 513-image training arms that differ only by frozen
+      same-board sibling exposure.
+    evidence:
+      - configs/paired_protocol.yaml
+      - reports/protocol/paired_split_manifest.json
+      - reports/protocol/paired_split_manifest.sha256
+      - reports/protocol/dataset_fingerprint.sha256
+    limitations:
+      - Structural protocol evidence only; no new model result is implied.
+
+  base_initialization:
+    status: verified
+    statement: >-
+      All paired runs initialize from the same YOLO26n v8.4.0 checkpoint, pinned before training
+      by immutable source URL, release revision, byte count, and SHA-256.
+    evidence:
+      - configs/base_model.yaml
+      - src/pcb_defect/experiment.py
+      - tests/test_experiment.py
+    limitations:
+      - The third-party base checkpoint is downloaded at runtime and is not redistributed here.
+
+  legacy_split_sensitivity:
+    status: legacy_observed
+    statement: >-
+      The prototype observed a 12.1 percentage-point mAP50 difference between grouped and
+      image-random splits.
+    evidence:
+      - reports/test_metrics.json
+      - reports/leakage_comparison.md
+    limitations:
+      - The two runs used different test images and test sizes.
+      - This is not a paired causal leakage estimate.
+
+  paired_leakage_effect:
+    status: verified
+    statement: >-
+      Under the frozen paired protocol, same-board sibling exposure increased three-seed
+      final-test mAP50 from 0.6330 to 0.8456, a 21.3 percentage-point difference.
+    evidence:
+      - reports/protocol/paired_split_manifest.json
+      - reports/paired_a100/input_lock.json
+      - reports/paired_a100/deployment_selection.json
+      - reports/paired_a100/final_metrics.json
+      - reports/paired_a100/finalization_record.json
+      - reports/paired_a100/result_package_receipt.json
+    limitations:
+      - The common final test has 30 images from one board; image-bootstrap intervals do not estimate between-board variance.
+      - This is a controlled same-board exposure result for this frozen dataset and training recipe, not a universal YOLO performance claim.
+
+  onnx_deployment:
+    status: verified_candidate
+    statement: >-
+      The validation-selected grouped seed-42 checkpoint passed the hash-pinned calibration
+      fidelity gate and standalone ONNX Runtime parity gate as an unreleased deployment candidate.
+    evidence:
+      - reports/paired_a100/input_lock.json
+      - reports/paired_a100/deployment_gate.public.json
+      - reports/paired_a100/result_package_receipt.json
+    limitations:
+      - Technical gate passage does not establish redistribution rights for the checkpoint or ONNX file.
+      - No public model revision or hosted endpoint is claimed.
+
+  tensorrt_performance:
+    status: pending_l4
+    statement: A new L4 benchmark will determine whether TensorRT FP16 improves latency while preserving fidelity.
+    evidence:
+      - reports/benchmark_gpu.json
+      - reports/benchmark.md
+    limitations:
+      - Legacy report lacks the new source/checkpoint/export/manifest provenance chain.
+      - A new L4 run is required; TensorRT engines are not portable artifacts.
+
+  hosted_demo:
+    status: blocked
+    statement: A public, official-account demo serves a gate-passed model.
+    evidence:
+      - app/model_contract.json
+    limitations:
+      - No official account or gate-passed artifact is configured.

@@ -1,0 +1,30 @@
+{
+  "checks": {
+    "dataset_manifest": true,
+    "gpu": true,
+    "locked_environment": true,
+    "resume": true,
+    "speed_probe": true,
+    "tiny_train": true
+  },
+  "completed_at_utc": "2026-08-04T05:07:32.639240Z",
+  "input_lock": {
+    "base_model_contract_sha256": "6e30b56b7f994723917beb1c76918b2294a620ad81a50b9313eb251323174c8d",
+    "base_model_sha256": "9b09cc8bf347f0fc8a5f7657480587f25db09b34bf33b0652110fb03a8ad4fef",
+    "config_sha256": "6ba44a0024884c11de37a29b294543c9736cb30b6e96b4a6d27dcb93ebcf185b",
+    "dataset_sha256": "8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4",
+    "git_sha": "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
+    "manifest_sha256": "5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5"
+  },
+  "passed": true,
+  "resume_checkpoint": {
+    "checkpoint_epoch": 0,
+    "optimizer_state_present": true
+  },
+  "schema_version": "1.0",
+  "speed_probe": {
+    "note": "Gate-only 5% data, imgsz=320, batch=2; not a production benchmark.",
+    "two_tiny_epochs_seconds": 40.337
+  },
+  "started_at_utc": "2026-08-04T05:06:52.213559Z"
+}

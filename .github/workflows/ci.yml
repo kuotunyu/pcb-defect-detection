@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.18"
+          python-version: "3.11"
+      # base + dev group only - the [train] extra (torch) is never installed in CI
+      # A wheel-style install also avoids locale-sensitive editable .pth files on Windows clones.
+      - run: uv sync --locked --no-editable
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run python -m pytest -v
+      - run: uv build

@@ -1,0 +1,33 @@
+protocol_version: paired-board-sensitivity-v1
+
+dataset:
+  source: akhatova/pcb-defects
+  source_revision: content-addressed-below
+  expected_images: 693
+  expected_boards: 10
+  expected_classes: 6
+  license_status: unverified-upstream-dataset-license
+
+# Board 04 is excluded from final-test candidacy because it was already used by
+# the legacy grouped evaluation. Board 01 retains its legacy validation role.
+# Seeded ordering of the remaining previously-train boards selects board 08;
+# its 10 images/class support a predeclared 5 final + 5 exposure partition.
+selection:
+  legacy_test_board_excluded: "04"
+  final_candidate_boards: ["05", "06", "07", "08", "09", "10", "11", "12"]
+  selection_method: python-random-seed-42-shuffle-first-structurally-valid
+
+protocol:
+  final_board: "08"
+  validation_board: "01"
+  final_per_class: 5
+  exposure_per_class: 5
+  validation_per_class: 10
+  calibration_per_class: 10
+  protocol_seed: 42
+  expected_boards: 10
+  training_seeds: [42, 43, 44]
+
+frozen_hashes:
+  dataset_sha256: 8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4
+  manifest_sha256: 5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5

@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "status": "blocked",
+  "reason": "Paired training and the hash-pinned ONNX fidelity/parity gate are pending.",
+  "filename": "best.onnx",
+  "onnx_sha256": null,
+  "source_checkpoint_sha256": null,
+  "deployment_gate_sha256": null,
+  "hf_repo_id": null,
+  "hf_revision": null
+}

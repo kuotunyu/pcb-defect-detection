@@ -1,0 +1,30 @@
+# environments
+.venv/
+__pycache__/
+*.pyc
+.env
+build/
+dist/
+*.egg-info/
+
+# data & heavy artifacts (regenerated via scripts / brought back from Colab)
+# note: reports/ and assets/ are intentionally NOT ignored - metrics and figures are committed
+data/
+runs/
+exports/
+weights/
+*.pt
+*.onnx
+*.engine
+*.cache
+
+# notebooks / tooling noise
+.ipynb_checkpoints/
+wandb/
+.pytest_cache/
+.ruff_cache/
+.worktrees/
+
+# personal notes - not part of the public repo
+interview_prep.md
+reports/release_audit.local.json

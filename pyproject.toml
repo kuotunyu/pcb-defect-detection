@@ -1,0 +1,81 @@
+[project]
+name = "pcb-defect"
+version = "0.1.0"
+description = "PCB bare-board defect detection with Ultralytics YOLO26 (HRIPCB) - AOI portfolio project"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-or-later"
+dependencies = [
+    "kagglehub>=0.3",
+    "pillow>=10",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+train = [
+    "ultralytics==8.4.89",
+    "torch>=2.4",
+    "torchvision",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.8",
+    "matplotlib>=3.8",
+    "numpy>=1.26",
+]
+eval = [
+    "onnx>=1.16",
+    # ORT 1.27 PyPI GPU wheels target CUDA 13. Colab A100/L4 currently uses
+    # CUDA 12.6, so keep CPU/GPU evaluation on the CUDA-12-compatible 1.26 line.
+    "onnxruntime==1.26.0; sys_platform == 'win32'",
+    "onnxruntime-gpu==1.26.0; sys_platform == 'linux'",
+    "onnxslim>=0.1",
+    # opencv: NOT added explicitly here - ultralytics ([train] extra) already pulls in
+    # opencv-python transitively, and adding opencv-python-headless alongside it would
+    # conflict (both packages own the same cv2 import namespace). e2e_onnx.py's cv2
+    # import is only ever exercised together with [train] in this repo (evaluate.py,
+    # verify_onnx_parity.py); the demo group (Phase 2.6, no ultralytics/torch) is where
+    # opencv-python-headless belongs standalone.
+]
+sahi = [
+    "sahi>=0.12.1",  # ultralytics>=8.0.0 is its only version constraint; 8.4.89 satisfies it
+]
+hf = [
+    "huggingface-hub>=0.24",
+    "python-dotenv>=1.0",
+]
+
+[tool.uv]
+# cu126 index has no macOS wheels; lock only for the platforms we actually use.
+environments = ["sys_platform == 'win32'", "sys_platform == 'linux'"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu126" }]
+torchvision = [{ index = "pytorch-cu126" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pcb_defect"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "scripts"]
+# Colab notebooks legitimately break "imports at top of file": installs must
+# run (and packages import-check) before the import that needs them.
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
