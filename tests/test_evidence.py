@@ -92,14 +92,14 @@ def test_artifact_ref_hashes_bytes_and_uses_relative_path(tmp_path: Path) -> Non
     root = tmp_path / "run"
     artifact = root / "metrics" / "validation.json"
     artifact.parent.mkdir(parents=True)
-    artifact.write_text('{"map50": 0.5}\n', encoding="utf-8")
+    artifact.write_text('{"map50": 0.5}\n', encoding="utf-8", newline="\n")
 
     ref = artifact_ref(artifact, relative_to=root)
 
     assert ref == {
         "path": "metrics/validation.json",
-        "sha256": "c6a814a5a0193496cac27af2704daafaaa717c44fff9e5286b0d1778d4660ca8",
-        "bytes": 16,
+        "sha256": "1a9868a09d4de694ffd6616feff14f1ec6778a14d758a2452bc3edd893d42569",
+        "bytes": 15,
     }
 
 
