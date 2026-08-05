@@ -22,6 +22,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
+    parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--expected-runner-git-sha", required=True)
     parser.add_argument("--expected-experiment-git-sha", required=True)
@@ -37,7 +38,11 @@ def main(argv: list[str] | None = None) -> int:
         onnx_sha256=args.expected_onnx_sha256,
     )
     package = create_or_verify_l4_package(
-        args.repo.resolve(), args.workspace.resolve(), args.output_root.resolve(), identity
+        args.repo.resolve(),
+        args.workspace.resolve(),
+        args.dataset.resolve(),
+        args.output_root.resolve(),
+        identity,
     )
     print(f"L4 RESULT PACKAGE: {package}")
     return 0
@@ -51,17 +56,22 @@ def l4_package_name(identity: L4RunIdentity) -> str:
     )
 
 
-def collect_l4_files(repo: Path, workspace: Path, identity: L4RunIdentity) -> list[Path]:
+def collect_l4_files(
+    repo: Path, workspace: Path, dataset_root: Path, identity: L4RunIdentity
+) -> list[Path]:
     """Return exactly the non-pixel private inputs required to audit an L4 result."""
     repo = repo.resolve()
     workspace = workspace.resolve()
-    verified = verify_l4_inputs(repo, workspace, identity)
+    dataset_root = dataset_root.resolve()
+    verified = verify_l4_inputs(repo, workspace, dataset_root, identity)
     report_path = workspace / "benchmark_l4" / identity.runner_git_sha[:12] / "benchmark_l4.json"
     try:
         report = json.loads(report_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise PackageError("L4 benchmark report is missing or malformed") from exc
-    if not isinstance(report, dict) or not benchmark_is_complete(repo, workspace, identity, report):
+    if not isinstance(report, dict) or not benchmark_is_complete(
+        repo, workspace, dataset_root, identity, report
+    ):
         raise PackageError("L4 benchmark is incomplete or hash-mismatched")
     files = _l4_package_paths(workspace, identity, verified)
     for relative in files:
@@ -80,6 +90,7 @@ def collect_l4_files(repo: Path, workspace: Path, identity: L4RunIdentity) -> li
 def _l4_package_paths(workspace: Path, identity: L4RunIdentity, verified: object) -> list[Path]:
     parent = verified.parent
     try:
+        manifest = parent.manifest_path.relative_to(workspace)
         onnx = parent.onnx_path.relative_to(workspace)
         checkpoint = parent.checkpoint_path.relative_to(workspace)
     except (AttributeError, ValueError) as exc:
@@ -87,7 +98,7 @@ def _l4_package_paths(workspace: Path, identity: L4RunIdentity, verified: object
     report = Path("benchmark_l4") / identity.runner_git_sha[:12] / "benchmark_l4.json"
     return [
         Path("inputs/input_lock.json"),
-        Path("inputs/paired_split_manifest.json"),
+        manifest,
         Path("deployment/calibration.yaml"),
         Path("deployment/deployment_gate.json"),
         Path("deployment/model_contract.candidate.json"),
@@ -100,7 +111,11 @@ def _l4_package_paths(workspace: Path, identity: L4RunIdentity, verified: object
 
 
 def create_or_verify_l4_package(
-    repo: Path, workspace: Path, output_root: Path, identity: L4RunIdentity
+    repo: Path,
+    workspace: Path,
+    dataset_root: Path,
+    output_root: Path,
+    identity: L4RunIdentity,
 ) -> Path:
     """Reuse only a completely verified pair; otherwise create the identity-derived pair."""
     package = output_root.resolve() / l4_package_name(identity)
@@ -108,13 +123,15 @@ def create_or_verify_l4_package(
     if package.exists() or sidecar.exists():
         if package.exists() != sidecar.exists():
             verify_verifiable_zip(package)
-        files = collect_l4_files(repo.resolve(), workspace.resolve(), identity)
+        files = collect_l4_files(
+            repo.resolve(), workspace.resolve(), dataset_root.resolve(), identity
+        )
         manifest = verify_verifiable_zip(package)
         expected, _ = _package_manifest(workspace.resolve(), files)
         if _manifest_inventory(manifest) != expected:
             raise PackageError("existing L4 package inventory does not match current workspace")
         return package
-    files = collect_l4_files(repo.resolve(), workspace.resolve(), identity)
+    files = collect_l4_files(repo.resolve(), workspace.resolve(), dataset_root.resolve(), identity)
     create_verifiable_zip(workspace.resolve(), files, package)
     manifest = verify_verifiable_zip(package)
     expected, _ = _package_manifest(workspace.resolve(), files)

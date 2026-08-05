@@ -73,6 +73,7 @@ class VerifiedL4ParentInputs:
     experiment_git_sha: str
     gate_path: Path
     gate: dict[str, Any]
+    manifest_path: Path
     checkpoint_path: Path
     onnx_path: Path
     calibration_yaml: Path
@@ -110,12 +111,14 @@ def _read_json_object(path: Path, label: str) -> dict[str, Any]:
     return value
 
 
-def _contained_path(workspace: Path, candidate: Path, label: str) -> Path:
+def _contained_path(
+    root: Path, candidate: Path, label: str, container_label: str = "parent workspace"
+) -> Path:
     resolved = candidate.resolve()
     try:
-        resolved.relative_to(workspace)
+        resolved.relative_to(root)
     except ValueError as error:
-        raise L4ContractError(f"{label} path escapes parent workspace") from error
+        raise L4ContractError(f"{label} path escapes {container_label}") from error
     if not resolved.is_file():
         raise ValueError(f"{label} is not a file")
     return resolved
@@ -159,7 +162,7 @@ def _read_simple_calibration_yaml(path: Path) -> dict[str, Any]:
     return values
 
 
-def _read_canonical_calibration_list(workspace: Path, path: Path) -> tuple[Path, ...]:
+def _read_canonical_calibration_list(dataset_images: Path, path: Path) -> tuple[Path, ...]:
     raw = path.read_bytes()
     try:
         text = raw.decode("utf-8")
@@ -170,17 +173,55 @@ def _read_canonical_calibration_list(workspace: Path, path: Path) -> tuple[Path,
     lines = text[:-1].split("\n")
     if not lines or any(not line or not Path(line).is_absolute() for line in lines):
         raise L4ContractError("calibration list bytes mismatch")
-    paths = tuple(_contained_path(workspace, Path(line), "calibration image") for line in lines)
+    paths = tuple(
+        _contained_path(dataset_images, Path(line), "calibration image", "dataset root images")
+        for line in lines
+    )
     expected = "".join(f"{image}\n" for image in paths).encode("utf-8")
     if raw != expected:
         raise L4ContractError("calibration list bytes mismatch")
     return paths
 
 
-def _verify_l4_parent_inputs(workspace: Path, parent: L4ParentIdentity) -> VerifiedL4ParentInputs:
+def _manifest_paths(workspace: Path) -> tuple[Path, ...]:
+    return tuple(
+        workspace / "runs" / arm / f"seed{seed}" / "inputs" / "paired_split_manifest.json"
+        for arm in ("grouped", "leaky_control")
+        for seed in (42, 43, 44)
+    )
+
+
+def _read_replicated_manifest(workspace: Path) -> tuple[Path, dict[str, Any]]:
+    manifest_paths = _manifest_paths(workspace)
+    raw_manifests = tuple(path.read_bytes() for path in manifest_paths)
+    if any(raw != raw_manifests[0] for raw in raw_manifests[1:]):
+        raise L4ContractError("protocol-manifest copies differ")
+    manifest = json.loads(raw_manifests[0].decode("utf-8"))
+    if not isinstance(manifest, dict):
+        raise ValueError("protocol manifest must be a JSON object")
+    return manifest_paths[0], manifest
+
+
+def _verify_l4_parent_inputs(
+    workspace: Path, dataset_root: Path, parent: L4ParentIdentity
+) -> VerifiedL4ParentInputs:
     workspace = workspace.resolve()
     if workspace.name != parent.experiment_git_sha[:12]:
         raise L4ContractError("parent workspace is not derived from the parent experiment SHA")
+    try:
+        dataset_root = dataset_root.resolve(strict=True)
+    except OSError as error:
+        raise L4ContractError("dataset root must be an existing directory") from error
+    roots_overlap = dataset_root.is_relative_to(workspace) or workspace.is_relative_to(dataset_root)
+    if not dataset_root.is_dir() or roots_overlap:
+        raise L4ContractError("dataset root must be an existing external directory")
+    dataset_images = (dataset_root / "images").resolve(strict=True)
+    try:
+        dataset_images.relative_to(dataset_root)
+    except ValueError as error:
+        raise L4ContractError("dataset root images path escapes dataset root") from error
+    if not dataset_images.is_dir():
+        raise L4ContractError("dataset root images must be an existing directory")
     gate_path = _contained_path(
         workspace, workspace / "deployment" / "deployment_gate.json", "gate"
     )
@@ -189,8 +230,7 @@ def _verify_l4_parent_inputs(workspace: Path, parent: L4ParentIdentity) -> Verif
     gate = _read_json_object(gate_path, "deployment gate")
     if gate.get("passed") is not True or gate.get("git_sha") != parent.experiment_git_sha:
         raise L4ContractError("deployment gate did not pass for the expected parent experiment")
-    manifest_path = workspace / "inputs" / "paired_split_manifest.json"
-    manifest = _read_json_object(manifest_path, "protocol manifest")
+    manifest_path, manifest = _read_replicated_manifest(workspace)
     manifest_payload = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
     if _sha256_json(manifest_payload) != manifest.get("manifest_sha256"):
         raise L4ContractError("protocol-manifest SHA-256 mismatch")
@@ -220,11 +260,13 @@ def _verify_l4_parent_inputs(workspace: Path, parent: L4ParentIdentity) -> Verif
     )
     if any(calibration_config[split] != str(expected_list) for split in ("train", "val", "test")):
         raise L4ContractError("calibration list path mismatch")
-    calibration_images = _read_canonical_calibration_list(workspace, expected_list)
+    calibration_images = _read_canonical_calibration_list(dataset_images, expected_list)
     observed_stems = [path.stem for path in calibration_images]
     expected_stems = manifest["partitions"]["calibration"]
-    if observed_stems != expected_stems or set(observed_stems) & set(
-        manifest["partitions"]["final_test"]
+    if (
+        len(observed_stems) != len(set(observed_stems))
+        or observed_stems != expected_stems
+        or set(observed_stems) & set(manifest["partitions"]["final_test"])
     ):
         raise L4ContractError("calibration partition mismatch")
     sample_by_stem = {row["stem"]: row for row in manifest["dataset"]["samples"]}
@@ -232,21 +274,24 @@ def _verify_l4_parent_inputs(workspace: Path, parent: L4ParentIdentity) -> Verif
         if _sha256_file(path) != sample_by_stem[path.stem]["image_sha256"]:
             raise L4ContractError("calibration image SHA-256 mismatch")
     return VerifiedL4ParentInputs(
-        parent.experiment_git_sha,
-        gate_path,
-        gate,
-        checkpoint_path,
-        onnx_path,
-        calibration_yaml,
-        calibration_images,
+        experiment_git_sha=parent.experiment_git_sha,
+        gate_path=gate_path,
+        gate=gate,
+        manifest_path=manifest_path,
+        checkpoint_path=checkpoint_path,
+        onnx_path=onnx_path,
+        calibration_yaml=calibration_yaml,
+        calibration_images=calibration_images,
     )
 
 
-def verify_l4_parent_inputs(workspace: Path, parent: L4ParentIdentity) -> VerifiedL4ParentInputs:
+def verify_l4_parent_inputs(
+    workspace: Path, dataset_root: Path, parent: L4ParentIdentity
+) -> VerifiedL4ParentInputs:
     """Fail closed unless all parent evidence agrees with the supplied identity."""
 
     try:
-        return _verify_l4_parent_inputs(workspace, parent)
+        return _verify_l4_parent_inputs(workspace, dataset_root, parent)
     except L4ContractError:
         raise
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
@@ -263,12 +308,14 @@ def _git(repo: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def verify_l4_inputs(repo: Path, workspace: Path, identity: L4RunIdentity) -> VerifiedL4Inputs:
+def verify_l4_inputs(
+    repo: Path, workspace: Path, dataset_root: Path, identity: L4RunIdentity
+) -> VerifiedL4Inputs:
     """Verify a clean runner checkout and all immutable parent evidence."""
 
     repo = repo.resolve()
     observed_runner = _git(repo, "rev-parse", "HEAD")
     if observed_runner != identity.runner_git_sha or _git(repo, "status", "--porcelain"):
         raise L4ContractError("runner repository identity or cleanliness mismatch")
-    parent = verify_l4_parent_inputs(workspace, identity.parent)
+    parent = verify_l4_parent_inputs(workspace, dataset_root, identity.parent)
     return VerifiedL4Inputs(observed_runner, parent)

@@ -252,12 +252,14 @@ def test_l4_notebook_verifies_before_locked_install_benchmark_package_and_succes
         "status = subprocess.run(['git', 'status', '--porcelain']",
         "sys.path.insert(0, str(REPO / 'src'))",
         "parent = L4ParentIdentity.parse(",
-        "verify_l4_parent_inputs(PARENT_WORKSPACE, parent)",
+        "verify_l4_parent_inputs(PARENT_WORKSPACE, PARENT_DATASET, parent)",
         "'pip', 'install', '--quiet', 'uv==0.11.18'",
         "subprocess.run([UV, 'sync', '--locked', '--no-editable'",
         "def run_project_json(",
         "VERIFY_INPUTS_SCRIPT = r'''",
-        "verified = verify_l4_inputs(Path(sys.argv[1]), Path(sys.argv[2]), identity)",
+        "verified = verify_l4_inputs(\n"
+        "    Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), identity\n"
+        ")",
         "input_verification = run_project_json(",
         "LOCKED_RUNTIME_STATE = runtime_contract_state(",
         "benchmark_report_path = (",
@@ -390,6 +392,7 @@ def test_l4_notebook_full_retry_preserves_packaged_benchmark_log(tmp_path: Path)
     repo = tmp_path / "runner"
     repo.mkdir()
     workspace = tmp_path / "parent"
+    dataset_root = tmp_path / "dataset" / "pcb"
     package_root = tmp_path / "packages"
     report = workspace / "benchmark_l4" / ("a" * 12) / "benchmark_l4.json"
     benchmark_log = workspace / "l4_logs" / ("a" * 12) / "benchmark_command.log"
@@ -439,6 +442,7 @@ def test_l4_notebook_full_retry_preserves_packaged_benchmark_log(tmp_path: Path)
         "VENV_PYTHON": tmp_path / ".venv" / "bin" / "python",
         "REPO": repo,
         "PARENT_WORKSPACE": workspace,
+        "PARENT_DATASET": dataset_root,
         "DRIVE_ROOT": tmp_path,
         "RUNNER_GIT_SHA": "a" * 40,
         "PARENT_EXPERIMENT_GIT_SHA": "b" * 40,
@@ -487,6 +491,8 @@ def test_l4_notebook_benchmark_command_is_bound_only_to_immutable_values() -> No
         "str(REPO)",
         "'--workspace'",
         "str(PARENT_WORKSPACE)",
+        "'--dataset'",
+        "str(PARENT_DATASET)",
         "'--expected-runner-git-sha'",
         "RUNNER_GIT_SHA",
         "'--expected-experiment-git-sha'",

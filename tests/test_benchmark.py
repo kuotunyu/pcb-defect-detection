@@ -100,16 +100,17 @@ def _fake_l4_benchmark(
     monkeypatch: pytest.MonkeyPatch,
     *,
     available_providers: list[str] | None = None,
-) -> tuple[Path, Path, L4RunIdentity, dict[str, object]]:
+) -> tuple[Path, Path, Path, L4RunIdentity, dict[str, object]]:
     import pcb_defect.benchmark as benchmark_module
 
     repo = tmp_path / "repo"
     workspace = tmp_path / ("b" * 12)
+    dataset_root = tmp_path / "dataset" / "pcb"
     repo.mkdir()
     workspace.mkdir()
     checkpoint = workspace / "best.pt"
     onnx = workspace / "deployment" / "best.onnx"
-    calibration = workspace / "runtime_data" / "grouped" / "calibration.jpg"
+    calibration = dataset_root / "images" / "calibration.jpg"
     onnx.parent.mkdir(parents=True)
     calibration.parent.mkdir(parents=True)
     checkpoint.write_bytes(b"checkpoint")
@@ -141,6 +142,7 @@ def _fake_l4_benchmark(
             identity.parent.experiment_git_sha,
             workspace / "deployment" / "deployment_gate.json",
             gate,
+            workspace / "runs" / "grouped" / "seed42" / "inputs" / "paired_split_manifest.json",
             checkpoint,
             onnx,
             workspace / "deployment" / "calibration.yaml",
@@ -148,7 +150,11 @@ def _fake_l4_benchmark(
         ),
     )
 
-    def verify(_: Path, __: Path, ___: L4RunIdentity) -> VerifiedL4Inputs:
+    def verify(
+        _: Path, __: Path, observed_dataset_root: Path, ___: L4RunIdentity
+    ) -> VerifiedL4Inputs:
+        if observed_dataset_root != dataset_root.resolve():
+            raise L4ContractError("dataset root mismatch")
         if calibration.read_bytes() != b"calibration":
             raise L4ContractError("calibration image SHA-256 mismatch")
         return verified
@@ -200,7 +206,7 @@ def _fake_l4_benchmark(
         return engine
 
     monkeypatch.setattr(benchmark_module, "_export_engine", export_engine)
-    return repo, workspace, identity, fake_runtime
+    return repo, workspace, dataset_root, identity, fake_runtime
 
 
 def test_export_engine_uses_runner_owned_scratch_and_preserves_parent_directory(
@@ -253,24 +259,24 @@ def test_export_engine_never_overwrites_existing_final_engine(
 def test_benchmark_rejects_partial_output_without_mutation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    repo, workspace, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
     output = workspace / "benchmark_l4" / identity.runner_git_sha[:12]
     output.mkdir(parents=True)
     marker = output / "owner.marker"
     marker.write_bytes(b"other-invocation")
 
     with pytest.raises(BenchmarkError, match="partial benchmark directory exists"):
-        benchmark(repo, workspace, identity, warmup=30, cycles=4)
+        benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
 
     assert _directory_inventory(output) == {"owner.marker": b"other-invocation"}
 
 
 def _configure_preflight_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
-) -> tuple[Path, Path, L4RunIdentity]:
+) -> tuple[Path, Path, Path, L4RunIdentity]:
     import pcb_defect.benchmark as benchmark_module
 
-    repo, workspace, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
     if failure == "gpu":
         monkeypatch.setattr(
             benchmark_module,
@@ -321,21 +327,27 @@ def _configure_preflight_failure(
         )
     else:
         raise AssertionError(f"unknown failure fixture: {failure}")
-    return repo, workspace, identity
+    return repo, workspace, dataset_root, identity
 
 
 def _completed_fake_benchmark(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> tuple[Path, Path, L4RunIdentity, dict[str, Any]]:
+) -> tuple[Path, Path, Path, L4RunIdentity, dict[str, Any]]:
     from pcb_defect.benchmark import benchmark
 
-    repo, workspace, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
-    report_path = benchmark(repo, workspace, identity, warmup=30, cycles=4)
-    return repo, workspace, identity, json.loads(report_path.read_text(encoding="utf-8"))
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
+    report_path = benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
+    return (
+        repo,
+        workspace,
+        dataset_root,
+        identity,
+        json.loads(report_path.read_text(encoding="utf-8")),
+    )
 
 
 def _mutate_completed_benchmark(
-    repo: Path, workspace: Path, report: dict[str, Any], mutation: str
+    repo: Path, workspace: Path, dataset_root: Path, report: dict[str, Any], mutation: str
 ) -> None:
     if mutation == "runner_sha":
         report["runner_git_sha"] = "f" * 40
@@ -346,7 +358,7 @@ def _mutate_completed_benchmark(
     elif mutation == "runtime_state":
         (workspace / "runtime_state_changed").write_text("yes", encoding="utf-8")
     elif mutation == "calibration_bytes":
-        (workspace / "runtime_data" / "grouped" / "calibration.jpg").write_bytes(b"changed")
+        (dataset_root / "images" / "calibration.jpg").write_bytes(b"changed")
     elif mutation == "protocol":
         report["protocol"]["warmup"] = 10
     elif mutation == "wrong_raw_count":
@@ -418,9 +430,11 @@ def test_time_backend_warms_then_measures_four_complete_cycles() -> None:
 def test_benchmark_report_records_runner_and_parent_provenance(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    repo, workspace, identity, fake_runtime = _fake_l4_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, fake_runtime = _fake_l4_benchmark(
+        tmp_path, monkeypatch
+    )
 
-    report_path = benchmark(repo, workspace, identity, warmup=30, cycles=4)
+    report_path = benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
     report = json.loads(report_path.read_text(encoding="utf-8"))
 
     assert report["runner_git_sha"] == identity.runner_git_sha
@@ -436,11 +450,18 @@ def test_cli_requires_all_immutable_expectations(monkeypatch: pytest.MonkeyPatch
     captured: dict[str, object] = {}
 
     def fake_benchmark(
-        repo: Path, workspace: Path, identity: L4RunIdentity, *, warmup: int, cycles: int
+        repo: Path,
+        workspace: Path,
+        dataset_root: Path,
+        identity: L4RunIdentity,
+        *,
+        warmup: int,
+        cycles: int,
     ) -> Path:
         captured.update(
             repo=repo,
             workspace=workspace,
+            dataset_root=dataset_root,
             identity=identity,
             warmup=warmup,
             cycles=cycles,
@@ -455,6 +476,8 @@ def test_cli_requires_all_immutable_expectations(monkeypatch: pytest.MonkeyPatch
                 "repo",
                 "--workspace",
                 "workspace",
+                "--dataset",
+                "dataset",
                 "--expected-runner-git-sha",
                 "a" * 40,
                 "--expected-experiment-git-sha",
@@ -476,8 +499,33 @@ def test_cli_requires_all_immutable_expectations(monkeypatch: pytest.MonkeyPatch
         checkpoint_sha256="d" * 64,
         onnx_sha256="e" * 64,
     )
+    assert captured["dataset_root"] == Path("dataset").resolve()
     assert captured["warmup"] == 30
     assert captured["cycles"] == 4
+
+
+def test_cli_rejects_missing_dataset_argument() -> None:
+    with pytest.raises(SystemExit) as error:
+        main(
+            [
+                "--repo",
+                "repo",
+                "--workspace",
+                "workspace",
+                "--expected-runner-git-sha",
+                "a" * 40,
+                "--expected-experiment-git-sha",
+                "b" * 40,
+                "--expected-deployment-gate-sha256",
+                "c" * 64,
+                "--expected-checkpoint-sha256",
+                "d" * 64,
+                "--expected-onnx-sha256",
+                "e" * 64,
+            ]
+        )
+
+    assert error.value.code == 2
 
 
 @pytest.mark.parametrize(
@@ -493,10 +541,12 @@ def test_cli_requires_all_immutable_expectations(monkeypatch: pytest.MonkeyPatch
 def test_benchmark_preflight_fails_before_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str, message: str
 ) -> None:
-    repo, workspace, identity = _configure_preflight_failure(tmp_path, monkeypatch, failure)
+    repo, workspace, dataset_root, identity = _configure_preflight_failure(
+        tmp_path, monkeypatch, failure
+    )
 
     with pytest.raises((BenchmarkError, L4ContractError), match=message):
-        benchmark(repo, workspace, identity, warmup=30, cycles=4)
+        benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
 
     assert not (workspace / "benchmark_l4" / identity.runner_git_sha[:12]).exists()
 
@@ -507,7 +557,7 @@ def test_benchmark_rejects_similar_but_non_l4_device_before_output(
 ) -> None:
     import pcb_defect.benchmark as benchmark_module
 
-    repo, workspace, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
     monkeypatch.setattr(
         benchmark_module,
         "_load_gpu_runtime",
@@ -520,7 +570,7 @@ def test_benchmark_rejects_similar_but_non_l4_device_before_output(
     )
 
     with pytest.raises(BenchmarkError, match="benchmark requires a Colab L4"):
-        benchmark(repo, workspace, identity, warmup=30, cycles=4)
+        benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
 
     assert not (workspace / "benchmark_l4" / identity.runner_git_sha[:12]).exists()
 
@@ -528,10 +578,10 @@ def test_benchmark_rejects_similar_but_non_l4_device_before_output(
 def test_benchmark_rejects_noncanonical_protocol_before_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    repo, workspace, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
 
     with pytest.raises(BenchmarkError, match="warmup=30 and cycles=4"):
-        benchmark(repo, workspace, identity, warmup=10, cycles=2)
+        benchmark(repo, workspace, dataset_root, identity, warmup=10, cycles=2)
 
     assert not (workspace / "benchmark_l4" / identity.runner_git_sha[:12]).exists()
 
@@ -543,10 +593,22 @@ def test_benchmark_rejects_noncanonical_protocol_before_output(
 def test_completed_benchmark_rejects_changed_binding(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
 ) -> None:
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
-    _mutate_completed_benchmark(repo, workspace, report, mutation)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
+    _mutate_completed_benchmark(repo, workspace, dataset_root, report, mutation)
 
-    assert benchmark_is_complete(repo, workspace, identity, report) is False
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, report) is False
+
+
+def test_completed_benchmark_rejects_different_dataset_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo, workspace, _, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
+    different_dataset_root = tmp_path / "different-dataset" / "pcb"
+    different_dataset_root.mkdir(parents=True)
+
+    assert benchmark_is_complete(repo, workspace, different_dataset_root, identity, report) is False
 
 
 @pytest.mark.parametrize(
@@ -576,10 +638,12 @@ def test_completed_benchmark_rejects_changed_binding(
 def test_completed_benchmark_rejects_missing_required_field(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, required_field: str
 ) -> None:
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
     report.pop(required_field)
 
-    assert benchmark_is_complete(repo, workspace, identity, report) is False
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, report) is False
 
 
 @pytest.mark.parametrize(
@@ -600,10 +664,12 @@ def test_completed_benchmark_rejects_missing_required_field(
 def test_completed_benchmark_rejects_forged_required_evidence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
 ) -> None:
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
-    _mutate_completed_benchmark(repo, workspace, report, mutation)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
+    _mutate_completed_benchmark(repo, workspace, dataset_root, report, mutation)
 
-    assert benchmark_is_complete(repo, workspace, identity, report) is False
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, report) is False
 
 
 @pytest.mark.parametrize(
@@ -613,10 +679,12 @@ def test_completed_benchmark_rejects_forged_required_evidence(
 def test_completed_benchmark_rejects_boolean_timing_summary(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, summary_field: str
 ) -> None:
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
     report["timings"]["pytorch_fp32"][summary_field] = True
 
-    assert benchmark_is_complete(repo, workspace, identity, report) is False
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, report) is False
 
 
 @pytest.mark.parametrize(
@@ -626,7 +694,9 @@ def test_completed_benchmark_rejects_boolean_timing_summary(
 def test_completed_benchmark_rejects_nested_schema_or_type_forgery(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
 ) -> None:
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
     if mutation == "batch_boolean":
         report["protocol"]["batch"] = True
     elif mutation == "engine_zero":
@@ -638,17 +708,19 @@ def test_completed_benchmark_rejects_nested_schema_or_type_forgery(
     else:
         raise AssertionError(f"unknown nested mutation: {mutation}")
 
-    assert benchmark_is_complete(repo, workspace, identity, report) is False
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, report) is False
 
 
 @pytest.mark.parametrize("command", [[], [True], [""], "not-a-list"])
 def test_completed_benchmark_rejects_invalid_informational_command(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, command: object
 ) -> None:
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
     report["command"] = command
 
-    assert benchmark_is_complete(repo, workspace, identity, report) is False
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, report) is False
 
 
 def test_completed_benchmark_reuses_valid_evidence_from_different_process_argv(
@@ -656,16 +728,18 @@ def test_completed_benchmark_reuses_valid_evidence_from_different_process_argv(
 ) -> None:
     import pcb_defect.benchmark as benchmark_module
 
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
     monkeypatch.setattr(benchmark_module.sys, "argv", ["l4-package"])
 
-    assert benchmark_is_complete(repo, workspace, identity, report) is True
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, report) is True
 
 
 def test_completed_benchmark_allows_active_provider_subset_of_available_providers(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    repo, workspace, identity, _ = _fake_l4_benchmark(
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(
         tmp_path,
         monkeypatch,
         available_providers=[
@@ -674,42 +748,46 @@ def test_completed_benchmark_allows_active_provider_subset_of_available_provider
             "CPUExecutionProvider",
         ],
     )
-    report_path = benchmark(repo, workspace, identity, warmup=30, cycles=4)
+    report_path = benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
     report = json.loads(report_path.read_text(encoding="utf-8"))
 
-    assert benchmark_is_complete(repo, workspace, identity, report) is True
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, report) is True
 
 
 @pytest.mark.parametrize("root", [{}, [], "scalar", None])
 def test_benchmark_completion_rejects_noncomplete_json_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, root: object
 ) -> None:
-    repo, workspace, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
 
-    assert benchmark_is_complete(repo, workspace, identity, root) is False
+    assert benchmark_is_complete(repo, workspace, dataset_root, identity, root) is False
 
 
 @pytest.mark.parametrize("serialized", ["[]", '"scalar"', "null"])
 def test_existing_nonobject_report_raises_controlled_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, serialized: str
 ) -> None:
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
     report_path = workspace / "benchmark_l4" / identity.runner_git_sha[:12] / "benchmark_l4.json"
     report_path.write_text(serialized, encoding="utf-8")
 
     with pytest.raises(BenchmarkError, match="invalid existing benchmark report"):
-        benchmark(repo, workspace, identity, warmup=30, cycles=4)
+        benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
 
 
 def test_existing_unreadable_report_raises_controlled_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    repo, workspace, identity, report = _completed_fake_benchmark(tmp_path, monkeypatch)
+    repo, workspace, dataset_root, identity, report = _completed_fake_benchmark(
+        tmp_path, monkeypatch
+    )
     report_path = workspace / "benchmark_l4" / identity.runner_git_sha[:12] / "benchmark_l4.json"
     report_path.write_bytes(b"\xff")
 
     with pytest.raises(BenchmarkError, match="invalid existing benchmark report"):
-        benchmark(repo, workspace, identity, warmup=30, cycles=4)
+        benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
 
 
 def test_benchmark_inputs_come_from_calibration_val_list(tmp_path: Path) -> None:

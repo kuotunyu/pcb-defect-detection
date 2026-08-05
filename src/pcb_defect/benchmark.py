@@ -146,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
+    parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--expected-runner-git-sha", required=True)
     parser.add_argument("--expected-experiment-git-sha", required=True)
     parser.add_argument("--expected-deployment-gate-sha256", required=True)
@@ -164,6 +165,7 @@ def main(argv: list[str] | None = None) -> int:
     benchmark(
         args.repo.resolve(),
         args.workspace.resolve(),
+        args.dataset.resolve(),
         identity,
         warmup=args.warmup,
         cycles=args.cycles,
@@ -172,11 +174,17 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def benchmark(
-    repo: Path, workspace: Path, identity: L4RunIdentity, *, warmup: int, cycles: int
+    repo: Path,
+    workspace: Path,
+    dataset_root: Path,
+    identity: L4RunIdentity,
+    *,
+    warmup: int,
+    cycles: int,
 ) -> Path:
     """Benchmark verified parent artifacts only after every L4 runtime gate passes."""
 
-    verified = verify_l4_inputs(repo, workspace, identity)
+    verified = verify_l4_inputs(repo, workspace, dataset_root, identity)
     try:
         gpu = _load_gpu_runtime()
     except ImportError as exc:
@@ -202,7 +210,7 @@ def benchmark(
             raise BenchmarkError(f"invalid existing benchmark report: {report_path}") from exc
         if not isinstance(report, dict):
             raise BenchmarkError(f"invalid existing benchmark report: {report_path}")
-        if benchmark_is_complete(repo, workspace, identity, report):
+        if benchmark_is_complete(repo, workspace, dataset_root, identity, report):
             print(f"SKIP completed L4 benchmark: {report_path}")
             return report_path
         raise BenchmarkError(f"existing benchmark evidence is incomplete: {report_path}")
@@ -314,13 +322,17 @@ def benchmark(
 
 
 def benchmark_is_complete(
-    repo: Path, workspace: Path, identity: L4RunIdentity, report: Any
+    repo: Path,
+    workspace: Path,
+    dataset_root: Path,
+    identity: L4RunIdentity,
+    report: Any,
 ) -> bool:
     """Verify every persisted dependency before accepting a completed benchmark."""
     if not isinstance(report, dict):
         return False
     try:
-        verified = verify_l4_inputs(repo, workspace, identity)
+        verified = verify_l4_inputs(repo, workspace, dataset_root, identity)
         gpu = _load_gpu_runtime()
         if not gpu.torch.cuda.is_available():
             return False

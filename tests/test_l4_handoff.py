@@ -149,6 +149,67 @@ def _synthetic_ast_node(class_name: str, name: object) -> ast.AST:
     return node
 
 
+def _rendered_code_trees(tmp_path: Path) -> list[ast.Module]:
+    output = create_l4_handoff(
+        _complete_source_repo(tmp_path), tmp_path / "dist", _parent_identity()
+    )
+    notebook = json.loads((output / "deployment_benchmark_l4.ipynb").read_text(encoding="utf-8"))
+    return [
+        ast.parse("".join(cell["source"]))
+        for cell in notebook["cells"]
+        if cell["cell_type"] == "code"
+    ]
+
+
+def _assigned_value(trees: list[ast.Module], name: str) -> ast.expr | None:
+    for tree in trees:
+        for statement in ast.walk(tree):
+            if (
+                isinstance(statement, ast.Assign)
+                and len(statement.targets) == 1
+                and isinstance(statement.targets[0], ast.Name)
+                and statement.targets[0].id == name
+            ):
+                return statement.value
+    return None
+
+
+def _named_calls(tree: ast.AST, name: str) -> list[ast.Call]:
+    return [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == name
+    ]
+
+
+def _labelled_call(trees: list[ast.Module], name: str, label: str) -> ast.Call:
+    matches = [
+        call
+        for tree in trees
+        for call in _named_calls(tree, name)
+        if call.args and isinstance(call.args[0], ast.Constant) and call.args[0].value == label
+    ]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def _script_tree(trees: list[ast.Module], assignment: str) -> ast.Module:
+    value = _assigned_value(trees, assignment)
+    assert isinstance(value, ast.Constant) and isinstance(value.value, str)
+    return ast.parse(value.value)
+
+
+def _command_has_dataset_argument(value: ast.expr | None) -> bool:
+    if not isinstance(value, ast.List):
+        return False
+    return any(
+        isinstance(item, ast.Constant)
+        and item.value == "--dataset"
+        and ast.unparse(value.elts[index + 1]) == "str(PARENT_DATASET)"
+        for index, item in enumerate(value.elts[:-1])
+    )
+
+
 def test_l4_handoff_contains_only_l4_stage_files(tmp_path: Path) -> None:
     repo = _complete_source_repo(tmp_path)
 
@@ -217,6 +278,97 @@ def test_l4_handoff_renders_unexecuted_compilable_notebook(tmp_path: Path) -> No
         if cell["cell_type"] == "code":
             assert cell["execution_count"] is None
             ast.parse("".join(cell["source"]))
+
+
+def test_l4_handoff_notebook_propagates_parent_dataset_through_verifiers(
+    tmp_path: Path,
+) -> None:
+    trees = _rendered_code_trees(tmp_path)
+    dataset_assignment = _assigned_value(trees, "PARENT_DATASET")
+    expected_dataset_assignment = (
+        ast.parse("PARENT_DATASET = DRIVE_ROOT / 'dataset' / 'pcb'").body[0].value
+    )
+    assert dataset_assignment is not None
+    assert ast.dump(dataset_assignment, include_attributes=False) == ast.dump(
+        expected_dataset_assignment, include_attributes=False
+    )
+
+    initial_verification = [
+        call for tree in trees for call in _named_calls(tree, "verify_l4_parent_inputs")
+    ]
+    assert len(initial_verification) == 1
+    assert [ast.unparse(arg) for arg in initial_verification[0].args] == [
+        "PARENT_WORKSPACE",
+        "PARENT_DATASET",
+        "parent",
+    ]
+
+    input_script = _script_tree(trees, "VERIFY_INPUTS_SCRIPT")
+    input_calls = _named_calls(input_script, "verify_l4_inputs")
+    assert len(input_calls) == 1
+    assert [ast.unparse(arg) for arg in input_calls[0].args] == [
+        "Path(sys.argv[1])",
+        "Path(sys.argv[2])",
+        "Path(sys.argv[3])",
+        "identity",
+    ]
+    input_runner = _labelled_call(trees, "run_project_json", "L4 input verification")
+    assert [ast.unparse(arg) for arg in input_runner.args[2:5]] == [
+        "REPO",
+        "PARENT_WORKSPACE",
+        "PARENT_DATASET",
+    ]
+
+    benchmark_script = _script_tree(trees, "VERIFY_BENCHMARK_SCRIPT")
+    benchmark_calls = _named_calls(benchmark_script, "benchmark_is_complete")
+    assert len(benchmark_calls) == 1
+    assert [ast.unparse(arg) for arg in benchmark_calls[0].args] == [
+        "Path(sys.argv[1])",
+        "Path(sys.argv[2])",
+        "Path(sys.argv[3])",
+        "identity",
+        "report",
+    ]
+    benchmark_runners = [
+        call
+        for tree in trees
+        for call in _named_calls(tree, "run_project_json")
+        if call.args
+        and isinstance(call.args[0], ast.Constant)
+        and call.args[0].value == "L4 benchmark verification"
+    ]
+    assert len(benchmark_runners) == 2
+    assert all(
+        [ast.unparse(arg) for arg in call.args[2:5]]
+        == ["REPO", "PARENT_WORKSPACE", "PARENT_DATASET"]
+        for call in benchmark_runners
+    )
+
+
+def test_l4_handoff_notebook_propagates_parent_dataset_through_commands_and_package_check(
+    tmp_path: Path,
+) -> None:
+    trees = _rendered_code_trees(tmp_path)
+    assert _command_has_dataset_argument(_assigned_value(trees, "benchmark_command"))
+    assert _command_has_dataset_argument(_assigned_value(trees, "package_command"))
+
+    package_script = _script_tree(trees, "VERIFY_PACKAGE_SCRIPT")
+    package_calls = _named_calls(package_script, "create_or_verify_l4_package")
+    assert len(package_calls) == 1
+    assert [ast.unparse(arg) for arg in package_calls[0].args] == [
+        "Path(sys.argv[1])",
+        "Path(sys.argv[2])",
+        "Path(sys.argv[3])",
+        "Path(sys.argv[4])",
+        "identity",
+    ]
+    package_runner = _labelled_call(trees, "run_project_json", "L4 package verification")
+    assert [ast.unparse(arg) for arg in package_runner.args[2:6]] == [
+        "REPO",
+        "PARENT_WORKSPACE",
+        "PARENT_DATASET",
+        "PACKAGE_ROOT",
+    ]
 
 
 def test_l4_handoff_renders_each_identity_into_its_declared_role(tmp_path: Path) -> None:
