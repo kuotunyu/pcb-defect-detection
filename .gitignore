@@ -26,5 +26,13 @@ wandb/
 .worktrees/
 
 # personal notes - not part of the public repo
+.claude/
+.agents/
+CLAUDE.md
+PLAN.md
+PROGRESS.md
+interview*.md
+INTERVIEW_PREP.md
+*.private.md
 interview_prep.md
 reports/release_audit.local.json
