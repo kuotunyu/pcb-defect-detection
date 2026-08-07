@@ -60,6 +60,19 @@ mAP50-95, within the absolute `0.02` fidelity threshold. Standalone ONNX Runtime
 This verifies a technical candidate only. Source:
 [`deployment_gate.public.json`](../reports/paired_a100/deployment_gate.public.json).
 
+## Private L4 deployment benchmark
+
+The hash-bound private L4 package measured 60 calibration images with batch size 1, 30 warmup
+iterations, and four cycles. NVIDIA L4 timings were: PyTorch FP32 p50/p95
+`60.562907999951676`/`62.54312460007441` ms, ONNX Runtime CUDA FP32
+`20.05252949993519`/`20.71104239996657` ms, and TensorRT FP16
+`50.88519949993042`/`52.37864604996503` ms. TensorRT FP16 achieved
+`19.65207977619047` FPS from p50 and passed the calibration mAP50-95 fidelity gate with a
+`-0.014108167577079167` delta against the source checkpoint, within the absolute `0.02`
+threshold. These timing and fidelity observations are private, calibration-only evidence on the
+recorded L4 stack; they are not a final-test, production-SLA, or factory-line claim. See
+[`benchmark_l4.json`](../reports/benchmark_l4.json).
+
 ## Intended use
 
 Research and portfolio review of board-aware split design, controlled leakage measurement,
@@ -71,7 +84,8 @@ defect classes.
 - The final test contains 30 images from a single PCB template board; it does not establish
   between-board, factory-line, or production generalization.
 - Image-bootstrap intervals do not estimate board-level uncertainty.
-- No L4 latency, ONNX Runtime CUDA, or TensorRT FP16 benchmark is complete.
+- The private L4 benchmark does not establish latency on other hardware, drivers, TensorRT builds,
+  batch sizes, datasets, or a hosted environment; the TensorRT engine is non-portable and untracked.
 - No production AOI acceptance, escape-rate SLA, calibration-drift, or safety claim is made.
 - No public checkpoint, ONNX export, official Hub revision, hosted demo, or official namespace is
   claimed.

@@ -523,12 +523,18 @@ def test_claim_evidence_paths_exist_and_only_supported_claims_are_verified() -> 
     assert {name for name, claim in claims.items() if claim["status"] == "verified_candidate"} == {
         "onnx_deployment"
     }
-    assert claims["tensorrt_performance"]["status"] == "pending_l4"
+    assert claims["tensorrt_performance"]["status"] == "verified_private"
     assert claims["hosted_demo"]["status"] == "blocked"
     for claim in claims.values():
         for relative in claim["evidence"]:
             assert (ROOT / relative).is_file(), relative
-        if claim["status"] in {"pending_colab", "pending_l4", "blocked", "verified_candidate"}:
+        if claim["status"] in {
+            "pending_colab",
+            "pending_l4",
+            "blocked",
+            "verified_candidate",
+            "verified_private",
+        }:
             assert claim["limitations"]
 
 
@@ -555,6 +561,59 @@ def test_promoted_claims_point_only_to_current_a100_evidence() -> None:
     }
     assert "reports/export_fidelity.json" not in onnx["evidence"]
     assert "reports/onnx_parity.json" not in onnx["evidence"]
+
+
+def test_private_l4_evidence_is_metadata_only_and_hash_bound() -> None:
+    claims = yaml.safe_load((ROOT / "reports" / "claims.yaml").read_text(encoding="utf-8"))[
+        "claims"
+    ]
+    l4 = _read_json(ROOT / "reports" / "benchmark_l4.json")
+    summary = (ROOT / "reports" / "benchmark_l4.md").read_text(encoding="utf-8")
+
+    assert claims["tensorrt_performance"]["status"] == "verified_private"
+    assert claims["tensorrt_performance"]["evidence"] == ["reports/benchmark_l4.json"]
+    assert l4["evidence_visibility"] == "private_unreleased"
+    assert l4["package"] == {
+        "filename": "paired-results-l4-9e3a1ed5827a-runner-4d533bcdbf31.zip",
+        "sha256": "d988fc6dad3f97d29a52a92cf8024f4919377e9d99011be837bd42a297f85d30",
+    }
+    assert l4["provenance"] == {
+        "checkpoint_sha256": "44646b130b8b42282b752f77659cabfc1c484dc3aaa9a2dc8f710da8468f511a",
+        "deployment_gate_sha256": (
+            "466bf152a30e7efe1768542a71647e8982d18df253b2b170aaa2a13d087c1803"
+        ),
+        "experiment_git_sha": "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
+        "onnx_sha256": "b62590a14e2e88a414eb06389058d13d69ff1ea3998232996877088951fe3bb8",
+        "runner_git_sha": "4d533bcdbf3152e71ec2e617dd5d2073ad7666e3",
+    }
+    assert l4["protocol"]["split"] == "calibration"
+    assert l4["protocol"]["images"] == 60
+    assert l4["fidelity"]["passed"] is True
+    assert l4["timings"]["onnxruntime_cuda_fp32"]["p50_ms"] == 20.05252949993519
+    assert l4["timings"]["pytorch_fp32"]["p95_ms"] == 62.54312460007441
+    assert l4["timings"]["tensorrt_fp16"]["fps_from_p50"] == 19.65207977619047
+    for boundary in (
+        "private/unreleased",
+        "calibration split only",
+        "not portable",
+        "No public model",
+        "no hosted demo",
+        "not-installed",
+        "tensorrt-cu12",
+    ):
+        assert boundary in summary
+
+
+def test_a100_report_defers_private_l4_evidence_to_its_metadata_summary() -> None:
+    a100_report = (ROOT / "reports" / "paired_a100" / "README.md").read_text(encoding="utf-8")
+
+    assert (
+        "No L4 PyTorch/ONNX Runtime CUDA/TensorRT FP16 benchmark has been completed."
+        not in a100_report
+    )
+    assert "A100 report itself does not include an L4 benchmark" in a100_report
+    assert "[`benchmark_l4.md`](../benchmark_l4.md)" in a100_report
+    assert "[`benchmark_l4.json`](../benchmark_l4.json)" in a100_report
 
 
 def test_failed_legacy_export_gates_cannot_back_a_deployment_claim() -> None:
@@ -615,7 +674,22 @@ def test_portfolio_documents_match_promoted_a100_metrics() -> None:
     assert "1.0" in readme
 
 
-def test_release_checklist_marks_only_returned_a100_evidence_complete() -> None:
+def test_portfolio_documents_bound_private_l4_metrics_to_calibration() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    model_card = (ROOT / "docs" / "model-card.md").read_text(encoding="utf-8")
+    l4 = _read_json(ROOT / "reports" / "benchmark_l4.json")
+
+    for document in (readme, model_card):
+        assert "private" in document
+        assert "calibration" in document
+        assert "production" in document
+        assert "public model" in document or "public checkpoint" in document
+    assert str(l4["timings"]["tensorrt_fp16"]["p50_ms"]) in readme
+    assert str(l4["timings"]["tensorrt_fp16"]["p95_ms"]) in model_card
+    assert str(l4["fidelity"]["tensorrt_minus_source"]) in model_card
+
+
+def test_release_checklist_marks_returned_a100_and_private_l4_evidence_complete() -> None:
     checklist = (ROOT / "docs" / "release-checklist.md").read_text(encoding="utf-8")
 
     for text in (
@@ -628,9 +702,15 @@ def test_release_checklist_marks_only_returned_a100_evidence_complete() -> None:
         "Final result ZIP and sidecar SHA-256 are returned from Drive.",
     ):
         assert f"- [x] {text}" in checklist
-    assert "- [ ] L4 PyTorch/ORT CUDA/TensorRT FP16" in checklist
+    assert "- [x] L4 PyTorch/ORT CUDA/TensorRT FP16" in checklist
+    assert "reports/benchmark_l4.json" in checklist
     assert "- [ ] Upstream dataset redistribution/training/weight-release rights" in checklist
-    assert "- [ ] Official GitHub and Hugging Face namespaces" in checklist
+    assert (
+        "- [x] Official GitHub namespace is independently verified as "
+        "`kuotunyu/pcb-defect-detection`." in checklist
+    )
+    assert "- [ ] The official push/review is completed" in checklist
+    assert "Hugging Face namespace is selected" in checklist
 
 
 def test_candidate_tree_contains_no_dataset_or_model_binaries() -> None:
@@ -783,6 +863,24 @@ def test_linux_onnxruntime_contract_targets_colab_cuda_12() -> None:
 
     assert "onnxruntime==1.26.0; sys_platform == 'win32'" in evaluation_dependencies
     assert "onnxruntime-gpu==1.26.0; sys_platform == 'linux'" in evaluation_dependencies
+
+
+def test_l4_notebook_installs_and_probes_locked_tensorrt_runtime() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    assert project["dependency-groups"]["l4"] == [
+        "tensorrt-cu12==10.13.3.9; sys_platform == 'linux'"
+    ]
+
+    code = _code(_notebook("notebooks/deployment_benchmark_l4.ipynb"))
+    sync = (
+        "[UV, 'sync', '--locked', '--no-editable', '--extra', 'train', '--group', 'eval', "
+        "'--group', 'l4'"
+    )
+    probe = "LOCKED_TENSORRT_STATE = run_project_json('LOCKED TENSORRT CONTRACT'"
+    _assert_in_order(code, sync, probe, "LOCKED_RUNTIME_STATE = runtime_contract_state(")
+    assert "import tensorrt as trt" in code
+    assert "trt.__version__ == '10.13.3.9'" in code
+    assert "bool(trt.Builder(trt.Logger()))" in code
 
 
 def test_gpu_notebook_runtime_contract_helpers_are_strictly_bound() -> None:

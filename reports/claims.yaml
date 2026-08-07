@@ -68,14 +68,17 @@ claims:
       - No public model revision or hosted endpoint is claimed.
 
   tensorrt_performance:
-    status: pending_l4
-    statement: A new L4 benchmark will determine whether TensorRT FP16 improves latency while preserving fidelity.
+    status: verified_private
+    statement: >-
+      A hash-bound private L4 benchmark measured PyTorch FP32, ONNX Runtime CUDA FP32, and
+      TensorRT FP16 on the 60-image calibration split; TensorRT FP16 passed the calibration
+      mAP50-95 fidelity threshold.
     evidence:
-      - reports/benchmark_gpu.json
-      - reports/benchmark.md
+      - reports/benchmark_l4.json
     limitations:
-      - Legacy report lacks the new source/checkpoint/export/manifest provenance chain.
-      - A new L4 run is required; TensorRT engines are not portable artifacts.
+      - The returned package is private/unreleased; no checkpoint, ONNX export, engine, or raw package is tracked.
+      - Timings are calibration-only on the recorded NVIDIA L4 stack and are not a final-test, hosted-demo, or production-SLA claim.
+      - TensorRT engines are not portable artifacts, and distribution/licensing approval remains unresolved.
 
   hosted_demo:
     status: blocked

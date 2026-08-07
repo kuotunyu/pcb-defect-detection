@@ -7,10 +7,10 @@
 An industrial computer-vision experiment that measures how same-board sibling exposure changes
 PCB defect detection under a frozen, paired evaluation protocol.
 
-> **Status: paired A100 and ONNX candidate evidence complete; release hardening continues.** Six
-> paired runs, the one-shot final evaluation, and the hash-pinned ONNX deployment gate have passed.
-> L4/TensorRT benchmarking, distribution-rights approval, official model publication, and the live
-> demo remain pending.
+> **Status: paired A100, ONNX candidate, and private L4 evidence complete; release hardening
+> continues.** Six paired runs, the one-shot final evaluation, the hash-pinned ONNX deployment
+> gate, and the calibration-only L4 timing/fidelity benchmark have passed. Distribution-rights
+> approval, official model publication, and the live demo remain pending.
 
 ## The 30-second evidence
 
@@ -31,6 +31,11 @@ PCB defect detection under a frozen, paired evaluation protocol.
    access. Its calibration-only ONNX gate passed 60/60 standalone parity images with minimum IoU
    `1.0`, maximum confidence delta `0.0`, and mAP50/mAP50-95 fidelity deltas of `-0.0186` and
    `-0.0128`, both within the absolute `0.02` gate.
+5. **Private L4 timing and fidelity evidence.** On 60 calibration images, TensorRT FP16 recorded
+   p50/p95 `50.88519949993042`/`52.37864604996503` ms and `19.65207977619047` FPS from p50;
+   its mAP50-95 delta from the source checkpoint was `-0.014108167577079167`, within the absolute
+   `0.02` gate. This is private, calibration-only evidence: no engine, public model, or hosted
+   endpoint is released. See [`reports/benchmark_l4.md`](reports/benchmark_l4.md).
 
 The canonical assignments are in
 [`reports/protocol/paired_split_manifest.json`](reports/protocol/paired_split_manifest.json), and
@@ -134,6 +139,9 @@ TensorRT engines are device-specific run artifacts and must never be committed.
 L4 latency measurements use the predeclared calibration set, never the one-shot final test, and a
 completed benchmark is resumable only while its source checkpoint, ONNX, engine, calibration
 inputs, deployment gate, CUDA provider, and recorded hashes still match.
+The private L4 result package is hash-bound and summarized in
+[`reports/benchmark_l4.json`](reports/benchmark_l4.json); its timing numbers are limited to the
+recorded NVIDIA L4, software stack, and calibration protocol, not an application SLA.
 
 ## License and release boundary
 
@@ -143,9 +151,10 @@ Kaggle distribution has no verified dataset license in this project, so raw and 
 dataset assets are excluded from the candidate tree. See
 [`docs/license-boundary.md`](docs/license-boundary.md) and [`docs/data-card.md`](docs/data-card.md).
 
-The existing Git history still contains legacy dataset images and personal/test-account identity.
-Do not migrate that history to an official public account. Official publication requires a clean,
-reviewed source snapshot after the license and identity gates are resolved.
+This release candidate is based on the official public `main` and adds one reviewed promotion
+commit. Its reachable history contains only the `kuotunyu` author/committer identity and excludes
+legacy dataset pixels. The unrelated prototype history remains separate and must not be merged
+into the official repository.
 
 ## Scope and limitations
 

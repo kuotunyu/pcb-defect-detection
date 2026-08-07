@@ -660,7 +660,13 @@ def _environment() -> dict[str, Any]:
         try:
             packages[name] = importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
-            packages[name] = "not-installed"
+            if name == "tensorrt":
+                try:
+                    packages[name] = importlib.metadata.version("tensorrt-cu12")
+                except importlib.metadata.PackageNotFoundError:
+                    packages[name] = "not-installed"
+            else:
+                packages[name] = "not-installed"
     return {
         "python": platform.python_version(),
         "platform": platform.platform(),

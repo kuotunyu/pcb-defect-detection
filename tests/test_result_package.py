@@ -136,6 +136,25 @@ def test_create_verifiable_zip_ignores_stale_legacy_temporary_files(tmp_path: Pa
     assert verify_verifiable_zip(package)["files"][0]["path"] == "report.json"
 
 
+def test_create_verifiable_zip_publishes_when_hard_links_are_unavailable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "report.json").write_text("{}\n", encoding="utf-8")
+    package = tmp_path / "result.zip"
+
+    monkeypatch.setattr(
+        result_package.os,
+        "link",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(PermissionError("hard links unavailable")),
+    )
+
+    create_verifiable_zip(root, [Path("report.json")], package)
+
+    assert verify_verifiable_zip(package)["files"][0]["path"] == "report.json"
+
+
 def test_create_verifiable_zip_never_overwrites_a_late_destination(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -143,18 +162,123 @@ def test_create_verifiable_zip_never_overwrites_a_late_destination(
     root.mkdir()
     (root / "report.json").write_text("{}\n", encoding="utf-8")
     package = tmp_path / "result.zip"
-    real_link = os.link
+    real_open = Path.open
 
-    def late_publish(source: str, destination: str, *args: object, **kwargs: object) -> None:
-        if Path(destination) == package:
+    def late_publish(path: Path, mode: str = "r", *args: object, **kwargs: object):
+        if path == package and mode == "xb":
             package.write_bytes(b"late writer bytes")
-        real_link(source, destination, *args, **kwargs)
+        return real_open(path, mode, *args, **kwargs)
 
-    monkeypatch.setattr(result_package.os, "link", late_publish)
+    monkeypatch.setattr(Path, "open", late_publish)
     with pytest.raises(PackageError, match="refusing to overwrite"):
         create_verifiable_zip(root, [Path("report.json")], package)
 
     assert package.read_bytes() == b"late writer bytes"
+
+
+class _FailingWriter:
+    def __init__(self, handle) -> None:
+        self._handle = handle
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self._handle.close()
+
+    def write(self, _data: bytes) -> int:
+        raise OSError("simulated destination write failure")
+
+
+def test_create_verifiable_zip_preserves_partial_destination_after_copy_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "report.json").write_text("{}\n", encoding="utf-8")
+    package = tmp_path / "result.zip"
+    real_open = Path.open
+
+    def fail_package_write(path: Path, mode: str = "r", *args: object, **kwargs: object):
+        handle = real_open(path, mode, *args, **kwargs)
+        if path == package and mode == "xb":
+            return _FailingWriter(handle)
+        return handle
+
+    monkeypatch.setattr(Path, "open", fail_package_write)
+    with pytest.raises(
+        PackageError,
+        match="publication failed; inspect and remove incomplete output paths before retrying",
+    ) as failure:
+        create_verifiable_zip(root, [Path("report.json")], package)
+
+    assert isinstance(failure.value.__cause__, OSError)
+    assert package.read_bytes() == b""
+    assert not package.with_suffix(".zip.sha256").exists()
+    assert not list(package.parent.glob(".result.zip.*.tmp"))
+    assert not list(package.parent.glob(".result.zip.sha256.*.tmp"))
+
+
+def test_create_verifiable_zip_preserves_package_when_sidecar_copy_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "report.json").write_text("{}\n", encoding="utf-8")
+    package = tmp_path / "result.zip"
+    sidecar = package.with_suffix(".zip.sha256")
+    real_open = Path.open
+
+    def fail_sidecar_write(path: Path, mode: str = "r", *args: object, **kwargs: object):
+        handle = real_open(path, mode, *args, **kwargs)
+        if path == sidecar and mode == "xb":
+            return _FailingWriter(handle)
+        return handle
+
+    monkeypatch.setattr(Path, "open", fail_sidecar_write)
+    with pytest.raises(
+        PackageError,
+        match="publication failed; inspect and remove incomplete output paths before retrying",
+    ) as failure:
+        create_verifiable_zip(root, [Path("report.json")], package)
+
+    assert isinstance(failure.value.__cause__, OSError)
+    assert package.is_file()
+    assert sidecar.read_bytes() == b""
+    assert not list(package.parent.glob(".result.zip.*.tmp"))
+    assert not list(package.parent.glob(".result.zip.sha256.*.tmp"))
+
+
+def test_create_verifiable_zip_preserves_replacement_after_sidecar_copy_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "report.json").write_text("{}\n", encoding="utf-8")
+    package = tmp_path / "result.zip"
+    sidecar = package.with_suffix(".zip.sha256")
+    real_open = Path.open
+
+    def replace_package_then_fail_sidecar(
+        path: Path, mode: str = "r", *args: object, **kwargs: object
+    ):
+        handle = real_open(path, mode, *args, **kwargs)
+        if path == sidecar and mode == "xb":
+            package.unlink()
+            package.write_bytes(b"replacement writer bytes")
+            return _FailingWriter(handle)
+        return handle
+
+    monkeypatch.setattr(Path, "open", replace_package_then_fail_sidecar)
+    with pytest.raises(
+        PackageError,
+        match="publication failed; inspect and remove incomplete output paths before retrying",
+    ) as failure:
+        create_verifiable_zip(root, [Path("report.json")], package)
+
+    assert isinstance(failure.value.__cause__, OSError)
+    assert package.read_bytes() == b"replacement writer bytes"
+    assert sidecar.read_bytes() == b""
 
 
 def test_verify_verifiable_zip_rejects_member_limit_before_zipfile_load(

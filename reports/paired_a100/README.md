@@ -68,7 +68,8 @@ On the 60-image calibration split, PyTorch-to-ONNX fidelity deltas were `-0.0186
 
 ## Non-claims
 
-- No L4 PyTorch/ONNX Runtime CUDA/TensorRT FP16 benchmark has been completed.
+- This A100 report itself does not include an L4 benchmark. The private L4 metadata summary is in
+  [`benchmark_l4.md`](../benchmark_l4.md) and [`benchmark_l4.json`](../benchmark_l4.json).
 - No checkpoint, ONNX file, TensorRT engine, or returned package binary is distributed here.
 - Technical gate passage does not establish rights to release the dataset, selected checkpoint,
   or ONNX candidate.

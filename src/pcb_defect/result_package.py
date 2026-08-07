@@ -72,6 +72,11 @@ def create_verifiable_zip(
         raise PackageError(
             f"refusing to overwrite an existing result package: {destination}"
         ) from exc
+    except OSError as exc:
+        raise PackageError(
+            "result package publication failed; inspect and remove incomplete output paths "
+            f"before retrying: {destination}, {sidecar}"
+        ) from exc
     finally:
         _remove_own_staging(temporary)
         _remove_own_staging(sidecar_temporary)
@@ -404,7 +409,9 @@ def _unique_staging_path(destination: Path) -> Path:
 
 
 def _publish_no_replace(source: Path, destination: Path) -> None:
-    os.link(source, destination)
+    with source.open("rb") as staged, destination.open("xb") as published:
+        while chunk := staged.read(_IO_CHUNK_BYTES):
+            published.write(chunk)
 
 
 def _remove_own_staging(path: Path) -> None:

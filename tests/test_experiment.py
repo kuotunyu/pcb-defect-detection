@@ -10,6 +10,7 @@ from pcb_defect.evidence import artifact_ref
 from pcb_defect.experiment import (
     ExperimentError,
     InputLock,
+    _environment,
     _load_base_model_contract,
     _verify_base_model,
     freeze_or_verify_input_lock,
@@ -38,6 +39,21 @@ def test_planned_runs_finish_grouped_before_leaky_control() -> None:
         ("leaky_control", 43),
         ("leaky_control", 44),
     ]
+
+
+def test_environment_records_tensorrt_cu12_when_generic_distribution_is_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pcb_defect import experiment
+
+    def version(name: str) -> str:
+        if name == "tensorrt-cu12":
+            return "10.13.3.9"
+        raise experiment.importlib.metadata.PackageNotFoundError(name)
+
+    monkeypatch.setattr(experiment.importlib.metadata, "version", version)
+
+    assert _environment()["packages"]["tensorrt"] == "10.13.3.9"
 
 
 def test_input_lock_is_created_once_and_mismatch_fails_closed(tmp_path: Path) -> None:

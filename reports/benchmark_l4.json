@@ -1,0 +1,74 @@
+{
+  "artifacts": {
+    "engine_committed": false,
+    "engine_sha256": "a7e4559bd50d1fe9baf96142aed1a21de57a43ebf1c135aa268ab4b15ac0a515"
+  },
+  "evidence_visibility": "private_unreleased",
+  "fidelity": {
+    "absolute_delta_threshold": 0.02,
+    "onnx_map50_95": 0.1084447068676515,
+    "passed": true,
+    "source_map50_95": 0.12125399555038195,
+    "split": "calibration",
+    "tensorrt_fp16_map50_95": 0.10714582797330278,
+    "tensorrt_minus_source": -0.014108167577079167
+  },
+  "hardware": {
+    "cudnn": 91002,
+    "driver": "580.82.07",
+    "gpu": "NVIDIA L4",
+    "tensorrt_runtime": "10.13.3.9",
+    "torch_cuda": "12.6"
+  },
+  "package": {
+    "filename": "paired-results-l4-9e3a1ed5827a-runner-4d533bcdbf31.zip",
+    "sha256": "d988fc6dad3f97d29a52a92cf8024f4919377e9d99011be837bd42a297f85d30"
+  },
+  "protocol": {
+    "batch": 1,
+    "confidence": 0.25,
+    "cycles": 4,
+    "images": 60,
+    "scope": "predecoded PIL image; preprocess + inference + postprocess; CUDA synchronized",
+    "split": "calibration",
+    "warmup": 30
+  },
+  "provenance": {
+    "checkpoint_sha256": "44646b130b8b42282b752f77659cabfc1c484dc3aaa9a2dc8f710da8468f511a",
+    "deployment_gate_sha256": "466bf152a30e7efe1768542a71647e8982d18df253b2b170aaa2a13d087c1803",
+    "experiment_git_sha": "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
+    "onnx_sha256": "b62590a14e2e88a414eb06389058d13d69ff1ea3998232996877088951fe3bb8",
+    "runner_git_sha": "4d533bcdbf3152e71ec2e617dd5d2073ad7666e3"
+  },
+  "raw_package_environment": {
+    "onnxruntime_gpu": "1.26.0",
+    "python": "3.11.15",
+    "tensorrt_generic_distribution": "not-installed"
+  },
+  "runner_source_correction": {
+    "status": "corrected_after_run",
+    "tensorrt_distribution": "tensorrt-cu12==10.13.3.9"
+  },
+  "schema_version": "1.0",
+  "status": "complete",
+  "timings": {
+    "onnxruntime_cuda_fp32": {
+      "fps_from_p50": 49.869020265160664,
+      "n_runs": 240,
+      "p50_ms": 20.05252949993519,
+      "p95_ms": 20.71104239996657
+    },
+    "pytorch_fp32": {
+      "fps_from_p50": 16.51175666797238,
+      "n_runs": 240,
+      "p50_ms": 60.562907999951676,
+      "p95_ms": 62.54312460007441
+    },
+    "tensorrt_fp16": {
+      "fps_from_p50": 19.65207977619047,
+      "n_runs": 240,
+      "p50_ms": 50.88519949993042,
+      "p95_ms": 52.37864604996503
+    }
+  }
+}

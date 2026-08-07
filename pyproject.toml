@@ -39,6 +39,9 @@ eval = [
     # verify_onnx_parity.py); the demo group (Phase 2.6, no ultralytics/torch) is where
     # opencv-python-headless belongs standalone.
 ]
+l4 = [
+    "tensorrt-cu12==10.13.3.9; sys_platform == 'linux'",
+]
 sahi = [
     "sahi>=0.12.1",  # ultralytics>=8.0.0 is its only version constraint; 8.4.89 satisfies it
 ]

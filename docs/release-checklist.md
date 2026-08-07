@@ -27,8 +27,9 @@ not imply the Colab or account-migration items are complete.
 - [x] One-shot common final evaluation completes and reports three-seed mean/std and paired image
   bootstrap intervals.
 - [x] Calibration-only ONNX fidelity and standalone parity gates pass.
-- [ ] L4 PyTorch/ORT CUDA/TensorRT FP16 raw-timing benchmark uses calibration images only and
-  passes calibration fidelity.
+- [x] L4 PyTorch/ORT CUDA/TensorRT FP16 raw-timing benchmark uses calibration images only and
+  passes calibration fidelity; private package provenance and metrics are summarized in
+  [`reports/benchmark_l4.json`](../reports/benchmark_l4.json).
 - [x] Final result ZIP and sidecar SHA-256 are returned from Drive.
 
 ## License, identity, and official migration
@@ -36,12 +37,13 @@ not imply the Colab or account-migration items are complete.
 - [ ] Upstream dataset redistribution/training/weight-release rights are confirmed in writing.
 - [ ] Fine-tuned weight and export obligations are reviewed against both dataset and Ultralytics
   terms.
-- [ ] Official GitHub and Hugging Face namespaces are selected and independently verified.
-- [ ] Official publication uses a clean reviewed snapshot, not the legacy Git history.
+- [x] Official GitHub namespace is independently verified as `kuotunyu/pcb-defect-detection`.
+- [x] This candidate is based on official `main`; the unrelated prototype history is not merged.
+- [ ] The official push/review is completed and the Hugging Face namespace is selected.
 - [ ] Official model artifact and immutable Hub revision are written into the app contract only
   after the deployment gate passes.
 
-The legacy history is deliberately not rewritten in this branch. It contains prior personal/test
-identity, AI co-author trailers, and removed dataset images. The configured remote is a practice
-remote and is not an official publication target. These are release blockers, not reasons to alter
-or conceal the audit trail.
+The candidate's reachable history contains only the `kuotunyu` author/committer identity, has no
+co-author trailers, and excludes removed dataset pixels. The unrelated prototype history remains
+available for private audit but is not part of this clean promotion. The promotion stays local and
+unreleased until an explicit official push decision.
