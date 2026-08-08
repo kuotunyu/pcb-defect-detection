@@ -191,6 +191,27 @@ python -m pcb_defect.experiment train-all
 python -m pcb_defect.final_evaluation
 ```
 
+## Evidence anchors
+
+The portfolio claims below are bound to committed machine-readable artifacts rather than prose
+alone. The frozen protocol manifest SHA-256 is
+`5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5`, and the normalized dataset
+fingerprint is `8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4`.
+
+The paired A100 evaluation reports grouped mAP50 `0.6330 ± 0.1491` versus leaky-control mAP50
+`0.8456 ± 0.0375`, a `21.3-point` paired gap. The calibration-only ONNX parity gate passed
+`60/60` images with minimum IoU `1.0`, maximum confidence delta `0.0`, and fidelity deltas within
+the absolute `0.02` gate.
+
+For historical context only, the earlier non-paired observation was `0.8390` mAP50 on a grouped
+split versus `0.9603` on an image-random split, a `12.1-point` observed split sensitivity. Those
+runs used different test images and are not a causal leakage estimate; the current paired protocol
+supersedes that legacy comparison.
+
+The L4 TensorRT FP16 measurement is private, calibration-only evidence: p50 latency is
+`50.88519949993042` ms and the result is not a production SLA. No public model, public checkpoint,
+TensorRT engine, or hosted endpoint is released by this repository.
+
 ---
 
 ## 專案結構
