@@ -769,6 +769,7 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
         "claims"
     ]
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    app_readme = (ROOT / "app" / "README.md").read_text(encoding="utf-8")
     checklist = (ROOT / "docs" / "release-checklist.md").read_text(encoding="utf-8")
     limitations = (ROOT / "docs" / "limitations.md").read_text(encoding="utf-8")
     license_boundary = (ROOT / "docs" / "license-boundary.md").read_text(encoding="utf-8")
@@ -816,6 +817,16 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert contract["status"] == "blocked"
     assert "Deployment gate passed" in contract["reason"]
     assert "redistribution rights remain unresolved" in contract["reason"]
+    assert contract["reason"] in app_readme
+    app_metadata = yaml.safe_load(app_readme.split("---", 2)[1])
+    assert app_metadata["license"] == "agpl-3.0"
+    assert "blocked" in app_metadata["short_description"]
+    assert "public" in app_metadata["short_description"]
+    for stale in (
+        "blocked until the paired deployment gate passes",
+        "until the newly trained grouped checkpoint passes",
+    ):
+        assert stale not in app_readme
     for field in (
         "onnx_sha256",
         "source_checkpoint_sha256",

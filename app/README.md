@@ -12,16 +12,16 @@ tags:
   - object-detection
   - pcb
   - model-evaluation
-short_description: Hash-pinned ONNX demo; blocked until the paired deployment gate passes
+short_description: Hash-pinned ONNX demo; blocked pending a public model artifact
 pinned: false
 ---
 
 # Deployment status
 
-This Space source is intentionally blocked until the newly trained grouped checkpoint passes the
-calibration-set PyTorch/ONNX fidelity gate and the standalone ONNX Runtime parity gate.
+Deployment gate passed, but no release-approved public ONNX artifact or immutable Hugging Face revision is configured; redistribution rights remain unresolved.
 
-The app does not use a floating model revision. A release candidate must update
+This Space source remains intentionally blocked and does not use a floating model revision. A
+future public release must update
 `model_contract.json` with the exact ONNX SHA-256, source checkpoint SHA-256, deployment-gate
 SHA-256, official model repository, and immutable repository revision.
 
