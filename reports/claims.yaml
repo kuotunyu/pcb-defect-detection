@@ -86,4 +86,4 @@ claims:
     evidence:
       - app/model_contract.json
     limitations:
-      - No official account or gate-passed artifact is configured.
+      - Hosted inference is intentionally out of scope for this metadata-only portfolio release; no release-approved public artifact or immutable hosted revision is configured.

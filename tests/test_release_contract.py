@@ -753,13 +753,14 @@ def test_release_checklist_marks_returned_a100_and_private_l4_evidence_complete(
         assert f"- [x] {text}" in checklist
     assert "- [x] L4 PyTorch/ORT CUDA/TensorRT FP16" in checklist
     assert "reports/benchmark_l4.json" in checklist
-    assert "- [ ] Upstream dataset redistribution/training/weight-release rights" in checklist
+    assert "- [ ]" not in checklist
+    assert "metadata-only portfolio release" in checklist
     assert (
         "- [x] Official GitHub namespace is independently verified as "
         "`kuotunyu/pcb-defect-detection`." in checklist
     )
     assert "- [x] Official push/review is completed." in checklist
-    assert "- [ ] Hugging Face namespace is selected." in checklist
+    assert "Hugging Face publication and hosted inference are intentional non-goals" in checklist
 
 
 def test_public_metadata_matches_authoritative_release_state() -> None:
@@ -771,8 +772,13 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     app_readme = (ROOT / "app" / "README.md").read_text(encoding="utf-8")
     checklist = (ROOT / "docs" / "release-checklist.md").read_text(encoding="utf-8")
+    model_card = (ROOT / "docs" / "model-card.md").read_text(encoding="utf-8")
     limitations = (ROOT / "docs" / "limitations.md").read_text(encoding="utf-8")
     license_boundary = (ROOT / "docs" / "license-boundary.md").read_text(encoding="utf-8")
+    paired_readme = (ROOT / "reports" / "paired_a100" / "README.md").read_text(encoding="utf-8")
+    legacy_benchmark = (ROOT / "reports" / "benchmark.md").read_text(encoding="utf-8")
+    legacy_index = (ROOT / "reports" / "legacy-evidence.md").read_text(encoding="utf-8")
+    l4 = _read_json(ROOT / "reports" / "benchmark_l4.json")
     contract = _read_json(ROOT / "app" / "model_contract.json")
 
     python_floor = project["requires-python"].removeprefix(">=")
@@ -814,14 +820,40 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     for stale in ("Python-3.10%2B", "PyTorch-2.0%2B", "YOLOv8", "License-MIT"):
         assert stale not in readme
 
+    backend_rows = {
+        "pytorch_fp32": ("PyTorch", "FP32"),
+        "onnxruntime_cuda_fp32": ("ONNX Runtime CUDA", "FP32"),
+        "tensorrt_fp16": ("TensorRT", "FP16"),
+    }
+    for key, (backend_name, precision) in backend_rows.items():
+        timing = l4["timings"][key]
+        expected_row = (
+            f"| {backend_name} | {precision} | {timing['p50_ms']:.2f} | "
+            f"{timing['p95_ms']:.2f} | {timing['fps_from_p50']:.2f} |"
+        )
+        assert expected_row in readme
+    assert "**ONNX Runtime CUDA FP32 是本次最快後端**" in readme
+    assert "Opset 17" not in readme
+    assert "60 張測試影像" not in readme
+    for stale_command in (
+        "python -m pcb_defect.experiment preflight",
+        "python -m pcb_defect.experiment gates",
+        "python -m pcb_defect.experiment train-all",
+        "python -m pcb_defect.final_evaluation",
+    ):
+        assert stale_command not in readme
+    assert "--extra train --group eval" in readme
+    assert "python -m pcb_defect.experiment --help" in readme
+
     assert contract["status"] == "blocked"
     assert "Deployment gate passed" in contract["reason"]
-    assert "redistribution rights remain unresolved" in contract["reason"]
+    assert "metadata-only portfolio release" in contract["reason"]
     assert contract["reason"] in app_readme
     app_metadata = yaml.safe_load(app_readme.split("---", 2)[1])
     assert app_metadata["license"] == "agpl-3.0"
-    assert "blocked" in app_metadata["short_description"]
-    assert "public" in app_metadata["short_description"]
+    app_description = app_metadata["short_description"].lower()
+    assert "metadata-only" in app_description
+    assert "intentionally" in app_description
     for stale in (
         "blocked until the paired deployment gate passes",
         "until the newly trained grouped checkpoint passes",
@@ -838,8 +870,15 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
 
     assert "fidelity/parity gates are resolved" in license_boundary
     assert "- [x] Official push/review is completed." in checklist
-    assert "- [ ] Hugging Face namespace is selected." in checklist
+    assert "- [ ]" not in checklist
     assert "promotion is published on official `main`" in checklist
+    assert "metadata-only portfolio release" in model_card
+    assert "identity review" not in model_card
+    assert claims["hosted_demo"]["status"] == "blocked"
+    assert "out of scope" in claims["hosted_demo"]["limitations"][0]
+    assert "official GitHub or Hugging Face publication" not in paired_readme
+    assert "must be rerun on" not in legacy_benchmark
+    assert "not approved for official migration" not in legacy_index
     assert "Current official `main` has clean single-author reachable history" in limitations
     assert "future L4 benchmark" not in limitations
     assert "Git history contains legacy identity" not in limitations

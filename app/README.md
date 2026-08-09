@@ -12,18 +12,18 @@ tags:
   - object-detection
   - pcb
   - model-evaluation
-short_description: Hash-pinned ONNX demo; blocked pending a public model artifact
+short_description: Metadata-only portfolio; public model artifact intentionally omitted
 pinned: false
 ---
 
 # Deployment status
 
-Deployment gate passed, but no release-approved public ONNX artifact or immutable Hugging Face revision is configured; redistribution rights remain unresolved.
+Deployment gate passed; this metadata-only portfolio release intentionally provides no public ONNX artifact, hosted model revision, or inference endpoint.
 
-This Space source remains intentionally blocked and does not use a floating model revision. A
-future public release must update
-`model_contract.json` with the exact ONNX SHA-256, source checkpoint SHA-256, deployment-gate
-SHA-256, official model repository, and immutable repository revision.
+This optional Space scaffold remains fail-closed and does not use a floating model revision. It can
+serve a model only if a future, separately reviewed release supplies the exact ONNX SHA-256, source
+checkpoint SHA-256, deployment-gate SHA-256, official model repository, and immutable revision in
+`model_contract.json`.
 
 Dataset images and examples are not bundled because the upstream dataset license has not been
 verified by this project.

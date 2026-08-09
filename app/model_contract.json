@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "status": "blocked",
-  "reason": "Deployment gate passed, but no release-approved public ONNX artifact or immutable Hugging Face revision is configured; redistribution rights remain unresolved.",
+  "reason": "Deployment gate passed; this metadata-only portfolio release intentionally provides no public ONNX artifact, hosted model revision, or inference endpoint.",
   "filename": "best.onnx",
   "onnx_sha256": null,
   "source_checkpoint_sha256": null,

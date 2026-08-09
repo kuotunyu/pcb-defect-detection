@@ -1,7 +1,7 @@
 # Release checklist
 
-This checklist separates code readiness from scientific/release evidence. A checked CPU item does
-not imply the Colab or account-migration items are complete.
+This checklist records the completed metadata-only portfolio release. It separates code readiness
+from scientific evidence and does not imply that model binaries or a hosted endpoint are public.
 
 ## CPU and clean-clone gates
 
@@ -32,18 +32,21 @@ not imply the Colab or account-migration items are complete.
   [`reports/benchmark_l4.json`](../reports/benchmark_l4.json).
 - [x] Final result ZIP and sidecar SHA-256 are returned from Drive.
 
-## License, identity, and official migration
+## Identity and official publication
 
-- [ ] Upstream dataset redistribution/training/weight-release rights are confirmed in writing.
-- [ ] Fine-tuned weight and export obligations are reviewed against both dataset and Ultralytics
-  terms.
 - [x] Official GitHub namespace is independently verified as `kuotunyu/pcb-defect-detection`.
 - [x] This candidate is based on official `main`; the unrelated prototype history is not merged.
 - [x] Official push/review is completed.
-- [ ] Hugging Face namespace is selected.
-- [ ] Official model artifact and immutable Hub revision are written into the app contract only
-  after redistribution rights are resolved and publication is complete.
+- [x] The metadata-only portfolio release is published without dataset pixels, weights, exports,
+  engines, result packages, or secrets.
+
+## Intentional non-goals
+
+- Dataset, fine-tuned weights, ONNX exports, and TensorRT engines are not redistributed.
+- Hugging Face publication and hosted inference are intentional non-goals for this portfolio.
+- Factory-line generalization, production throughput, and AOI acceptance/SLA claims are out of
+  scope.
 
 The candidate's reachable history contains only the `kuotunyu` author/committer identity, has no
 co-author trailers, and excludes removed dataset pixels. The unrelated prototype history remains
-available for private audit but is not part of this clean promotion. The clean promotion is published on official `main`; model artifacts remain private and unreleased.
+available for private audit but is not part of this clean promotion. The clean promotion is published on official `main`; the release is intentionally metadata-only.

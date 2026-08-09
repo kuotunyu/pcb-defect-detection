@@ -7,7 +7,16 @@
 ![Tests](https://img.shields.io/badge/Tests-passing-success)
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-lightgrey.svg)](LICENSE)
 
-本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLO26n** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與邊緣端硬體加速推論管線：在 frozen paired protocol 下，針對單一 held-out Board 08 的 30 張 final-test images，觀察到 same-board sibling exposure 對應 `21.3` 個百分點的 mAP50 差距。此結果限於固定 dataset 與 training recipe，不估計 between-board 或 production generalization。專案並提供 ONNX Runtime 算子對齊校驗與 **NVIDIA L4 TensorRT FP16** (50.89 ms / 19.65 FPS) 部署證據。
+本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLO26n** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與多後端部署驗證管線：在 frozen paired protocol 下，針對單一 held-out Board 08 的 30 張 final-test images，觀察到 same-board sibling exposure 對應 `21.3` 個百分點的 mAP50 差距。此結果限於固定 dataset 與 training recipe，不估計 between-board 或 production generalization。專案另提供 ONNX fidelity/parity gate，以及 NVIDIA L4 上 PyTorch、ONNX Runtime CUDA 與 TensorRT 的 calibration-only 部署證據。
+
+## 30 秒證據索引
+
+| 招募者要核對的內容 | Committed evidence |
+|---|---|
+| Same-board exposure 的 paired effect（3 seeds、共同 final test） | [`reports/paired_a100/final_metrics.json`](reports/paired_a100/final_metrics.json) |
+| Frozen split、board policy 與 dataset fingerprint | [`reports/protocol/paired_split_manifest.json`](reports/protocol/paired_split_manifest.json) |
+| Hash-pinned ONNX fidelity 與 standalone parity gate | [`reports/paired_a100/deployment_gate.public.json`](reports/paired_a100/deployment_gate.public.json) |
+| NVIDIA L4 三後端 latency、fidelity 與 provenance | [`reports/benchmark_l4.json`](reports/benchmark_l4.json) · [`reports/benchmark_l4.md`](reports/benchmark_l4.md) |
 
 ---
 
@@ -19,8 +28,8 @@
    固定相同的 30 張最終測試影像（單一 Board 08），對比「嚴格分組組 (Grouped)」與「洩漏對照組 (Leaky Control)」，在 3 個獨立種子 (Seeds 42/43/44) 下觀察到 **21.3 個百分點**的 mAP50 差距。
 3. **ONNX 算子對齊與保真度門控 (Fidelity Gate)**：
    提供獨立 Parity 驗證機制，在 60 張校準影像上達成最小 IoU 1.0 與零信心度偏差，確保 PyTorch 轉 ONNX 之高保真度。
-4. **NVIDIA L4 TensorRT FP16 硬體加速**：
-   編譯專屬 TensorRT 推論引擎，在 60 張測試影像上達成 p50 延遲 **50.89 ms** (19.65 FPS)，且 mAP 漂移量控制在嚴格門檻內 (<0.02)。
+4. **NVIDIA L4 多後端部署評測**：
+   在 60 張 calibration images 上比較 PyTorch FP32、ONNX Runtime CUDA FP32 與 TensorRT FP16；本次 ONNX Runtime CUDA 是最快後端（p50 **20.05 ms** / **49.87 FPS**），TensorRT FP16 則通過額外的 fidelity gate（|ΔmAP50-95| < 0.02）。
 
 ---
 
@@ -33,7 +42,7 @@
 flowchart TD
     subgraph Stage1 ["階段一：資料分割與防洩漏策略 (Board Partition)"]
         direction LR
-        Raw[("HRIPCB 原生資料集<br/>(10 款 PCB 模板板號)")] --> Strat["板級嚴格切分策略<br/>(Board-level Stratified)"] --> Sets[("凍結分割清單<br/>Test: Board 08 · Val: Board 01<br/>Train: Boards 04-12")]
+        Raw[("HRIPCB 原生資料集<br/>(10 款 PCB 模板板號)")] --> Strat["板級嚴格切分策略<br/>(Board-level Stratified)"] --> Sets[("凍結分割清單<br/>Test: Board 08 · Val/Cal: Board 01<br/>Grouped train: 04/05/06/07/09/10/11/12")]
     end
 
     subgraph Stage2 ["階段二：成對對照訓練 (Paired A100 Training)"]
@@ -64,24 +73,26 @@ flowchart TD
     style Stage3 fill:#f4fbf7,stroke:#0ca678,stroke-width:2px,color:#0ca678,stroke-dasharray: 4 4
 ```
 
-### 2. 邊緣端部署與 L4 TensorRT 推論管線
+### 2. ONNX fidelity 與 L4 多後端部署管線
 
 ```mermaid
 %%{init: {'themeVariables': {'fontSize': '18px'}}}%%
 flowchart TD
     subgraph ExportStage ["階段一：模型匯出與保真度校驗 (Fidelity Gate)"]
         direction LR
-        PyTorch[("PyTorch 權重<br/>(Grouped Seed 42)")] --> ONNX["ONNX 算子導出<br/>(Opset 17)"] --> Parity["獨立 Parity 驗證<br/>(60/60 影像 IoU 1.0)"]
+        PyTorch[("PyTorch 權重<br/>(Grouped Seed 42)")] --> ONNX["ONNX export"] --> Parity["獨立 Parity 驗證<br/>(60/60 calibration images · IoU 1.0)"]
     end
 
     subgraph EngineStage ["階段二：TensorRT 引擎建置與最佳化"]
         direction LR
-        Parity --> TRT["TensorRT 引擎編譯<br/>(FP16 精度最佳化)"] --> Engine[("Engine 二進位檔案<br/>(NVIDIA L4 專用)")]
+        Parity --> TRT["TensorRT 引擎編譯<br/>(FP16)"] --> Engine[("Private engine<br/>(NVIDIA L4 stack-bound)")]
     end
 
     subgraph BenchStage ["階段三：L4 硬體延遲基準測試 (Benchmark)"]
         direction LR
-        Engine --> Latency["延遲量測 (p50: 50.89 ms)<br/>(p95: 52.38 ms · 19.65 FPS)"] --> Out(["符合邊緣部署規範<br/>(mAP 漂移量 < 0.02)"])
+        Parity --> ORT["ONNX Runtime CUDA FP32<br/>(p50: 20.05 ms · 49.87 FPS)"]
+        Engine --> TRTLatency["TensorRT FP16<br/>(p50: 50.89 ms · 19.65 FPS)"]
+        ORT & TRTLatency --> Out(["Calibration-only latency + fidelity evidence<br/>(not a production SLA)"])
     end
 
     ExportStage --> EngineStage --> BenchStage
@@ -92,7 +103,7 @@ flowchart TD
 
     class PyTorch,ONNX,Parity srcStyle
     class TRT,Engine procStyle
-    class Latency,Out evalStyle
+    class ORT,TRTLatency,Out evalStyle
 
     style ExportStage fill:#f8f9fa,stroke:#1971c2,stroke-width:2px,color:#1971c2,stroke-dasharray: 4 4
     style EngineStage fill:#fffcf0,stroke:#f59f00,stroke-width:2px,color:#f59f00,stroke-dasharray: 4 4
@@ -147,7 +158,7 @@ board-grouped 切分 mAP50 `0.8390`，image-random 切分 mAP50 `0.9603`，
 而且兩次實驗的測試影像與測試集大小不同。因此 `12.1-point` 僅是 observed split sensitivity，
 not a paired causal leakage estimate；本專案的正式結論一律以上方 A100 成對實驗為準。
 
-### 2. NVIDIA L4 邊緣推論延遲評測 (TensorRT FP16)
+### 2. NVIDIA L4 多後端推論延遲評測
 
 > **這是 private、calibration-only 的證據，不是 production 效能宣稱。**
 > 量測只在 60 張校準 (calibration) 影像上進行，跑在一次性的私有 L4 環境；
@@ -155,14 +166,15 @@ not a paired causal leakage estimate；本專案的正式結論一律以上方 A
 > 對應這組數字。它能證明的只有「匯出後精度沒有漂掉、延遲在可接受範圍」，
 > **不能**用來推論產線 (production) 上的實際吞吐或良率。
 
-在 60 張校準影像上實測：
+在 60 張校準影像、batch 1、30 次 warmup、4 cycles（每個後端 240 次記錄）下實測：
 
-| 評測維度 | 實測數值 | 部署門檻規範 | 狀態 |
-|---|---:|---:|:---:|
-| p50 延遲 (p50 Latency) | 50.89 ms | < 100 ms | 通過 |
-| p95 延遲 (p95 Latency) | 52.38 ms | < 120 ms | 通過 |
-| 推論吞吐量 (Throughput) | 19.65 FPS | > 15 FPS | 通過 |
-| mAP50-95 精度漂移 | -0.0141 | \|Δ\| < 0.02 | 通過 |
+| Backend | Precision | p50 (ms) | p95 (ms) | FPS from p50 |
+|---|---|---:|---:|---:|
+| PyTorch | FP32 | 60.56 | 62.54 | 16.51 |
+| ONNX Runtime CUDA | FP32 | 20.05 | 20.71 | 49.87 |
+| TensorRT | FP16 | 50.89 | 52.38 | 19.65 |
+
+**ONNX Runtime CUDA FP32 是本次最快後端**；TensorRT FP16 的價值是驗證另一條 runtime path 與 fidelity gate，而不是宣稱它在這次量測中勝過 ONNX Runtime CUDA。TensorRT FP16 相對 source checkpoint 的 mAP50-95 差值為 `-0.0141`，通過 `|Δ| < 0.02` 的 calibration gate。
 
 - **機器可核對原值**（取自 `reports/benchmark_l4.json`，上表為其四捨五入）：
   p50 `50.88519949993042` ms、p95 `52.37864604996503` ms、
@@ -211,17 +223,18 @@ uv run python -m pcb_defect.data_prep.paired \
   --runtime data/paired
 ```
 
-### 3. 本機實驗與推廣驗證
+### 3. GPU 實驗入口（先檢查 CLI，不會啟動訓練）
 
 ```bash
-# 執行環境前檢與斷點續跑門控
-python -m pcb_defect.experiment preflight
-python -m pcb_defect.experiment gates
-
-# 執行成對訓練與一鍵最終評測
-python -m pcb_defect.experiment train-all
-python -m pcb_defect.final_evaluation
+# 顯示所有必要參數；此命令不會下載 dataset、訓練或使用 GPU
+uv run --locked --no-editable --extra train --group eval \
+  python -m pcb_defect.experiment --help
 ```
+
+完整、可續跑且帶有 input/hash gates 的流程已封裝於
+[`notebooks/paired_experiment_a100.ipynb`](notebooks/paired_experiment_a100.ipynb) 與
+[`notebooks/deployment_benchmark_l4.ipynb`](notebooks/deployment_benchmark_l4.ipynb)。Notebook
+需要使用者明確提供 dataset 與 workspace 路徑；README 不提供會誤啟動訓練的裸命令。
 
 ---
 
@@ -235,7 +248,7 @@ python -m pcb_defect.final_evaluation
 | `src/pcb_defect/experiment.py` | A100 訓練執行、斷點續跑門控與自動重試管理 |
 | `src/pcb_defect/final_evaluation.py` | 單次一擊 (One-shot) 最終測試集評測 |
 | `reports/protocol/` | 凍結分割 Manifest 與配對哈希驗證紀錄 |
-| `reports/benchmark_l4.md` | Private NVIDIA L4 TensorRT FP16 metadata-only 延遲摘要 |
+| `reports/benchmark_l4.md` | Private NVIDIA L4 三後端 metadata-only 延遲摘要 |
 
 ---
 

@@ -73,6 +73,7 @@ On the 60-image calibration split, PyTorch-to-ONNX fidelity deltas were `-0.0186
 - No checkpoint, ONNX file, TensorRT engine, or returned package binary is distributed here.
 - Technical gate passage does not establish rights to release the dataset, selected checkpoint,
   or ONNX candidate.
-- No public model revision, official GitHub or Hugging Face publication, or hosted demo is claimed.
+- The metadata evidence is published on the official GitHub `main`; no public model revision,
+  Hugging Face model publication, or hosted demo is claimed.
 - The final test is one board, so these results do not establish factory-line or between-board
   generalization.

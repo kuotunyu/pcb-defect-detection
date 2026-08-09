@@ -2,7 +2,8 @@
 
 ## Status
 
-Unreleased, technically gate-passed candidate; distribution rights and official model publication remain pending.
+Technically gate-passed candidate documented in a metadata-only portfolio release; model binaries
+and hosted inference are intentionally excluded.
 
 ## Model and provenance
 
@@ -87,8 +88,8 @@ defect classes.
 - The private L4 benchmark does not establish latency on other hardware, drivers, TensorRT builds,
   batch sizes, datasets, or a hosted environment; the TensorRT engine is non-portable and untracked.
 - No production AOI acceptance, escape-rate SLA, calibration-drift, or safety claim is made.
-- No public checkpoint, ONNX export, official Hub revision, hosted demo, or official namespace is
-  claimed.
+- The official GitHub repository publishes source and metadata evidence only. No public checkpoint,
+  ONNX export, model-Hub revision, or hosted demo is claimed.
 
 The numerical limitations are recorded with the results in
 [`final_metrics.json`](../reports/paired_a100/final_metrics.json).
@@ -96,7 +97,7 @@ The numerical limitations are recorded with the results in
 ## Release boundary
 
 The repository distributes neither the selected checkpoint nor its ONNX export. Technical gate
-passage does not establish redistribution rights. Release remains blocked on upstream dataset and
-model obligations, identity review, and official publication approval. See
+passage does not establish redistribution rights. The metadata-only portfolio release is complete;
+public model artifacts and hosted inference remain intentionally out of scope. See
 [`result_package_receipt.json`](../reports/paired_a100/result_package_receipt.json) and
 [`docs/license-boundary.md`](license-boundary.md).

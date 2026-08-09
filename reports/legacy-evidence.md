@@ -11,6 +11,6 @@ new paired experiment and cannot satisfy current release claims.
 | `benchmark_cpu.json`, `benchmark_gpu.json`, `benchmark.md` | Legacy unverified | Missing new run/checkpoint/export/manifest chain |
 | `sahi_ablation.json`, `sahi_ablation.md` | Exploratory only | Used the legacy test board; no portfolio value to extend |
 
-The original scripts and notebooks that could respent the legacy test set, deploy to a personal
-account, or overwrite these reports were removed from the candidate tree. They remain recoverable
-from Git history, which itself is not approved for official migration.
+The original scripts and notebooks that could respend the legacy test set, deploy to a personal
+account, or overwrite these reports were removed from the official candidate tree. They remain
+recoverable from private legacy history outside official `main`.
