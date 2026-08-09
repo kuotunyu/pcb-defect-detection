@@ -32,10 +32,10 @@ The runner SHA is `4d533bcdbf3152e71ec2e617dd5d2073ad7666e3`; the parent experim
 SHA-256 values are retained in [`benchmark_l4.json`](benchmark_l4.json). The TensorRT engine is
 not portable across arbitrary GPU/software combinations and is intentionally not tracked.
 
-The raw package records its generic `tensorrt` environment field as `not-installed`. That is a
-historical recording limitation, not a rewrite of the raw evidence: Task 2 corrected the runner
-source to record the installed `tensorrt-cu12` distribution. TensorRT runtime `10.13.3.9` was
-present and used by this completed benchmark.
+The raw package records its generic `tensorrt` environment field as `not-installed` because the
+installed distribution is named `tensorrt-cu12`. This historical recording limitation is retained
+without rewriting the raw evidence; the current runner records `tensorrt-cu12` explicitly.
+TensorRT runtime `10.13.3.9` was present and used by this completed benchmark.
 
-No public model, public checkpoint, public ONNX export, no hosted demo, or deployment endpoint is
-claimed. Distribution and licensing approval remain separate release gates.
+No public model, no public checkpoint, no public ONNX export, no hosted demo, and no deployment
+endpoint is claimed. Distribution and licensing approval remain separate release gates.

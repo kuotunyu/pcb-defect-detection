@@ -5,6 +5,15 @@ description = "PCB bare-board defect detection with Ultralytics YOLO26 (HRIPCB) 
 readme = "README.md"
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
+authors = [{ name = "kuotunyu" }]
+keywords = [
+    "computer vision",
+    "industrial AI",
+    "machine learning",
+    "model evaluation",
+    "object detection",
+    "PCB defect detection",
+]
 dependencies = [
     "kagglehub>=0.3",
     "pillow>=10",
@@ -33,18 +42,16 @@ eval = [
     "onnxslim>=0.1",
     # opencv: NOT added explicitly here - ultralytics ([train] extra) already pulls in
     # opencv-python transitively, and adding opencv-python-headless alongside it would
-    # conflict (both packages own the same cv2 import namespace). e2e_onnx.py's cv2
-    # import is only ever exercised together with [train] in this repo (evaluate.py,
-    # verify_onnx_parity.py); the demo group (Phase 2.6, no ultralytics/torch) is where
-    # opencv-python-headless belongs standalone.
+    # conflict (both packages own the same cv2 import namespace). The cv2 evaluation path is
+    # exercised with [train], whose Ultralytics dependency provides opencv-python.
 ]
 l4 = [
     "tensorrt-cu12==10.13.3.9; sys_platform == 'linux'",
 ]
-hf = [
-    "huggingface-hub>=0.24",
-    "python-dotenv>=1.0",
-]
+
+[project.urls]
+Repository = "https://github.com/kuotunyu/pcb-defect-detection"
+Issues = "https://github.com/kuotunyu/pcb-defect-detection/issues"
 
 [tool.uv]
 # cu126 index has no macOS wheels; lock only for the platforms we actually use.

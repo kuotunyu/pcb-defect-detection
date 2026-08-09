@@ -524,7 +524,7 @@ def test_claim_evidence_paths_exist_and_only_supported_claims_are_verified() -> 
         "onnx_deployment"
     }
     assert claims["tensorrt_performance"]["status"] == "verified_private"
-    assert claims["hosted_demo"]["status"] == "blocked"
+    assert claims["hosted_demo"]["status"] == "out_of_scope"
     for claim in claims.values():
         for relative in claim["evidence"]:
             assert (ROOT / relative).is_file(), relative
@@ -851,7 +851,7 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "promotion is published on official `main`" in checklist
     assert "metadata-only portfolio release" in model_card
     assert "identity review" not in model_card
-    assert claims["hosted_demo"]["status"] == "blocked"
+    assert claims["hosted_demo"]["status"] == "out_of_scope"
     assert "out of scope" in claims["hosted_demo"]["limitations"][0]
     assert "legacy_split_sensitivity" not in claims
     for document in (readme, limitations, model_card, checklist, paired_readme):
@@ -860,6 +860,17 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "Current official `main` has clean single-author reachable history" in limitations
     assert "future L4 benchmark" not in limitations
     assert "Git history contains legacy identity" not in limitations
+
+
+def test_project_metadata_points_to_official_single_author_portfolio() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+
+    assert project["authors"] == [{"name": "kuotunyu"}]
+    assert project["urls"] == {
+        "Repository": "https://github.com/kuotunyu/pcb-defect-detection",
+        "Issues": "https://github.com/kuotunyu/pcb-defect-detection/issues",
+    }
+    assert {"computer vision", "object detection", "model evaluation"} <= set(project["keywords"])
 
 
 def test_candidate_tree_contains_no_dataset_or_model_binaries() -> None:

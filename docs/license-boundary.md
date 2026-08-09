@@ -9,7 +9,6 @@
 | Fine-tuned checkpoints | Distribution blocked until dataset and upstream model obligations are resolved |
 | ONNX export | Candidate fidelity/parity gates are resolved; distribution remains blocked until redistribution rights and an official immutable publication are resolved |
 | TensorRT engine | Ephemeral, hardware-specific artifact; never commit or publish as portable evidence |
-| Aggregate plots | Retained only when they do not reproduce source pixels; still labelled legacy when applicable |
 
 The six raw demo images, GIF, prediction grid, and SAHI pixel comparison are excluded from official
 `main` because the dataset license is unresolved. They remain only in the unrelated private

@@ -69,9 +69,9 @@ claims:
       - TensorRT engines are not portable artifacts, and distribution/licensing approval remains unresolved.
 
   hosted_demo:
-    status: blocked
-    statement: A public, official-account demo serves a gate-passed model.
+    status: out_of_scope
+    statement: Hosted inference is intentionally excluded from this metadata-only portfolio release.
     evidence:
       - app/model_contract.json
     limitations:
-      - Hosted inference is intentionally out of scope for this metadata-only portfolio release; no release-approved public artifact or immutable hosted revision is configured.
+      - Hosted inference is out of scope; no release-approved public artifact or immutable hosted revision is configured.
