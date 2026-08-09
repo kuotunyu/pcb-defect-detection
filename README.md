@@ -111,6 +111,12 @@ flowchart TD
 | Grouped Train (無洩漏組) | 513 | 僅使用 Boards 04/05/06/07/09/10/11/12；絕無 Board 08 影像 |
 | Leaky-control Train (洩漏對照組) | 513 | 替換 30 張同類別 Board 08 兄弟樣本 (Siblings) 進行對照 |
 
+此分割一經凍結即不再變動，並以雜湊綁定；`configs/paired_protocol.yaml` 的 `frozen_hashes`
+與 `reports/protocol/paired_split_manifest.json` 必須逐位元相符：
+
+- Manifest SHA-256：`5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5`
+- Dataset SHA-256：`8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4`
+
 ---
 
 ## 實驗評測與硬體基準數據
@@ -125,8 +131,24 @@ flowchart TD
 | 洩漏對照組 (Leaky Control) | 84.56% ± 3.75% | 56.40% ± 2.90% | 0.8633 | 因同板號背景特徵洩漏，指標虛高達 +21.3 pp |
 
 - **成對 F1 差值 (Paired F1 Delta)**：`0.2546`，Bootstrap 95% 信賴區間為 `[0.2102, 0.3005]`，確認洩漏效應具備嚴格統計顯著性。
+- **機器可核對原值**（取自 `reports/paired_a100/final_metrics.json`，上表百分比即由此換算）：
+  grouped mAP50 `0.6330 ± 0.1491`、leaky control mAP50 `0.8456 ± 0.0375`，差距 `21.3` 個百分點。
+
+#### 早期原型的對照（非本協定，僅供背景）
+
+本協定之前有一版原型實驗，資料量與切分方式都不同，數字**不可與上表並列比較**，
+保留於此僅為記錄結論方向的一致性（來源 `reports/test_metrics.json`）：
+board-grouped 切分 mAP50 `0.8390`，image-random 切分 mAP50 `0.9603`，
+兩者相差 `12.1-point`。該原型未採用成對設計、未鎖定共同測試集、未跑多種子，
+因此本專案的正式結論一律以上方 A100 成對實驗為準。
 
 ### 2. NVIDIA L4 邊緣推論延遲評測 (TensorRT FP16)
+
+> **這是 private、calibration-only 的證據，不是 production 效能宣稱。**
+> 量測只在 60 張校準 (calibration) 影像上進行，跑在一次性的私有 L4 環境；
+> 本 repo **不發佈** TensorRT engine、不發佈 public model，也沒有任何 public checkpoint
+> 對應這組數字。它能證明的只有「匯出後精度沒有漂掉、延遲在可接受範圍」，
+> **不能**用來推論產線 (production) 上的實際吞吐或良率。
 
 在 60 張校準影像上實測：
 
@@ -136,6 +158,11 @@ flowchart TD
 | p95 延遲 (p95 Latency) | 52.38 ms | < 120 ms | 通過 |
 | 推論吞吐量 (Throughput) | 19.65 FPS | > 15 FPS | 通過 |
 | mAP50-95 精度漂移 | -0.0141 | \|Δ\| < 0.02 | 通過 |
+
+- **機器可核對原值**（取自 `reports/benchmark_l4.json`，上表為其四捨五入）：
+  p50 `50.88519949993042` ms、p95 `52.37864604996503` ms、
+  相對來源 checkpoint 的 mAP50-95 差值 `-0.014108167577079167`。
+- 60 張校準影像全數成功推論（`60/60`），最大信心值差 `0.0`，類別一致率 `1.0`。
 
 ---
 
@@ -190,27 +217,6 @@ python -m pcb_defect.experiment gates
 python -m pcb_defect.experiment train-all
 python -m pcb_defect.final_evaluation
 ```
-
-## Evidence anchors
-
-The portfolio claims below are bound to committed machine-readable artifacts rather than prose
-alone. The frozen protocol manifest SHA-256 is
-`5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5`, and the normalized dataset
-fingerprint is `8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4`.
-
-The paired A100 evaluation reports grouped mAP50 `0.6330 ± 0.1491` versus leaky-control mAP50
-`0.8456 ± 0.0375`, a `21.3-point` paired gap. The calibration-only ONNX parity gate passed
-`60/60` images with minimum IoU `1.0`, maximum confidence delta `0.0`, and fidelity deltas within
-the absolute `0.02` gate.
-
-For historical context only, the earlier non-paired observation was `0.8390` mAP50 on a grouped
-split versus `0.9603` on an image-random split, a `12.1-point` observed split sensitivity. Those
-runs used different test images and are not a causal leakage estimate; the current paired protocol
-supersedes that legacy comparison.
-
-The L4 TensorRT FP16 measurement is private, calibration-only evidence: p50 latency is
-`50.88519949993042` ms and the result is not a production SLA. No public model, public checkpoint,
-TensorRT engine, or hosted endpoint is released by this repository.
 
 ---
 
