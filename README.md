@@ -7,7 +7,7 @@
 ![Tests](https://img.shields.io/badge/Tests-passing-success)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLOv8** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與邊緣端硬體加速推論管線：在成對 (Paired) 嚴格控制實驗下量化板級洩漏所導致之虛高偏差 (21.3 個百分點 mAP50 差距)，並提供 ONNX Runtime 算子對齊校驗與 **NVIDIA L4 TensorRT FP16** (50.89 ms / 19.65 FPS) 高效能邊緣部署支援。
+本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLOv8** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與邊緣端硬體加速推論管線：在 frozen paired protocol 下，針對單一 held-out Board 08 的 30 張 final-test images，觀察到 same-board sibling exposure 對應 `21.3` 個百分點的 mAP50 差距。此結果限於固定 dataset 與 training recipe，不估計 between-board 或 production generalization。專案並提供 ONNX Runtime 算子對齊校驗與 **NVIDIA L4 TensorRT FP16** (50.89 ms / 19.65 FPS) 部署證據。
 
 ---
 
@@ -16,7 +16,7 @@
 1. **嚴格板級防洩漏分割 (Board-level Stratified Partition)**：
    針對 HRIPCB 資料集按 PCB 實體模板板號 (Board ID) 進行嚴格物理隔離，杜絕同款板號跨入 Train/Test 所造成之特徵過度擬合與性能虛高。
 2. **成對對照實驗架構 (Paired Protocol & A100 Benchmarking)**：
-   固定相同之最終測試影像 (Board 08)，對比「嚴格分組組 (Grouped)」與「洩漏對照組 (Leaky Control)」，在 3 個獨立種子 (Seeds 42/43/44) 下證明高達 **21.3 個百分點**之統計顯著落差。
+   固定相同的 30 張最終測試影像（單一 Board 08），對比「嚴格分組組 (Grouped)」與「洩漏對照組 (Leaky Control)」，在 3 個獨立種子 (Seeds 42/43/44) 下觀察到 **21.3 個百分點**的 mAP50 差距。
 3. **ONNX 算子對齊與保真度門控 (Fidelity Gate)**：
    提供獨立 Parity 驗證機制，在 60 張校準影像上達成最小 IoU 1.0 與零信心度偏差，確保 PyTorch 轉 ONNX 之高保真度。
 4. **NVIDIA L4 TensorRT FP16 硬體加速**：
@@ -44,7 +44,7 @@ flowchart TD
 
     subgraph Stage3 ["階段三：評測與成對統計驗證 (Statistical Evaluation)"]
         direction LR
-        A100 --> Delta["成對差值評測<br/>mAP50 差距 -21.3 pp<br/>F1 Delta 0.2546"] --> Gate[("嚴格統計驗證<br/>Bootstrap 95% CI 通過<br/>證明板級洩漏顯著性")]
+        A100 --> Delta["成對差值評測<br/>Leaky - grouped: +21.3 pp<br/>F1 Delta 0.2546"] --> Gate[("Paired image-bootstrap 95% CI<br/>resampling unit: image<br/>不估計 between-board uncertainty")]
     end
 
     Stage1 --> Stage2 --> Stage3
@@ -123,16 +123,20 @@ flowchart TD
 
 ### 1. 成對板級洩漏實驗結果 (A100 GPU, 3 Seeds)
 
-在相同的最終測試集影像上，三種子平均評測結果呈現顯著之洩漏偏差：
+在相同的單一 Board 08（30 張 final-test images）上，三種子平均評測結果呈現以下受控差異：
 
-| 實驗組別 (Experiment Arm) | mAP50 (%) | mAP50-95 (%) | F1-Score | 洩漏效應分析 |
-|---|---:|---:|---:|---|
-| 嚴格分組組 (Grouped) | 63.30% ± 14.91% | 38.21% ± 9.80% | 0.6087 | 真實跨板泛化表現，反映實際產線部署效能 |
-| 洩漏對照組 (Leaky Control) | 84.56% ± 3.75% | 56.40% ± 2.90% | 0.8633 | 因同板號背景特徵洩漏，指標虛高達 +21.3 pp |
+| 實驗組別 (Experiment Arm) | mAP50 (%) | mAP50-95 (%) | 證據邊界 |
+|---|---:|---:|---|
+| 嚴格分組組 (Grouped) | 63.30% ± 14.91% | 28.82% ± 6.54% | 單一 held-out Board 08 結果；不代表跨板母體或產線泛化 |
+| 洩漏對照組 (Leaky Control) | 84.56% ± 3.75% | 40.08% ± 2.52% | same-board sibling exposure 對照組；在 frozen protocol 下高 +21.3 pp |
 
-- **成對 F1 差值 (Paired F1 Delta)**：`0.2546`，Bootstrap 95% 信賴區間為 `[0.2102, 0.3005]`，確認洩漏效應具備嚴格統計顯著性。
+- **成對 F1 差值 (Paired F1 Delta)**：`0.2546`，paired image-bootstrap 95% 信賴區間為 `[0.2102, 0.3005]`。Resampling unit 是 image，不是 board；此區間不估計 between-board uncertainty。
 - **機器可核對原值**（取自 `reports/paired_a100/final_metrics.json`，上表百分比即由此換算）：
   grouped mAP50 `0.6330 ± 0.1491`、leaky control mAP50 `0.8456 ± 0.0375`，差距 `21.3` 個百分點。
+
+> **What this proves**：在這個 frozen dataset 與 training recipe 下，same-board sibling exposure 與單一 Board 08 final test 上的受控表現差異相對應。
+>
+> **What this does not prove**：此結果不建立跨 board 母體、新產品、factory-line 或 production generalization。
 
 #### 早期原型的對照（非本協定，僅供背景）
 
@@ -140,7 +144,8 @@ flowchart TD
 保留於此僅為記錄結論方向的一致性（來源 `reports/test_metrics.json`）：
 board-grouped 切分 mAP50 `0.8390`，image-random 切分 mAP50 `0.9603`，
 兩者相差 `12.1-point`。該原型未採用成對設計、未鎖定共同測試集、未跑多種子，
-因此本專案的正式結論一律以上方 A100 成對實驗為準。
+而且兩次實驗的測試影像與測試集大小不同。因此 `12.1-point` 僅是 observed split sensitivity，
+not a paired causal leakage estimate；本專案的正式結論一律以上方 A100 成對實驗為準。
 
 ### 2. NVIDIA L4 邊緣推論延遲評測 (TensorRT FP16)
 

@@ -649,6 +649,8 @@ def test_readme_protocol_and_legacy_numbers_match_machine_artifacts() -> None:
     assert f"{legacy['random']['map50']:.4f}" in readme
     observed_gap_pp = (legacy["random"]["map50"] - legacy["grouped"]["map50"]) * 100
     assert f"{observed_gap_pp:.1f}-point" in readme
+    assert "observed split sensitivity" in readme
+    assert "not a paired causal leakage estimate" in readme
     file_digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
     sidecar = (manifest_path.parent / "paired_split_manifest.sha256").read_text(encoding="ascii")
     assert sidecar == f"{file_digest}  paired_split_manifest.json\n"
@@ -660,6 +662,8 @@ def test_portfolio_documents_match_promoted_a100_metrics() -> None:
     metrics = _read_json(PAIRED_A100 / "final_metrics.json")
     grouped = metrics["aggregate"]["by_arm"]["grouped"]["map50"]
     leaky = metrics["aggregate"]["by_arm"]["leaky_control"]["map50"]
+    grouped_map50_95 = metrics["aggregate"]["by_arm"]["grouped"]["map50_95"]
+    leaky_map50_95 = metrics["aggregate"]["by_arm"]["leaky_control"]["map50_95"]
     difference_pp = (leaky["mean"] - grouped["mean"]) * 100
 
     for document in (readme, model_card):
@@ -669,9 +673,54 @@ def test_portfolio_documents_match_promoted_a100_metrics() -> None:
         assert f"{leaky['std']:.4f}" in document
         assert f"{difference_pp:.1f}" in document
         assert "5,544,453 bytes" not in document
+    assert (
+        f"{grouped_map50_95['mean'] * 100:.2f}% ± {grouped_map50_95['std'] * 100:.2f}%"
+    ) in readme
+    assert (f"{leaky_map50_95['mean'] * 100:.2f}% ± {leaky_map50_95['std'] * 100:.2f}%") in readme
+    assert "0.6087" not in readme
+    assert "0.8633" not in readme
     assert "60/60" in readme
     assert "0.0" in readme
     assert "1.0" in readme
+
+
+def test_portfolio_documents_bound_paired_inference_to_single_board() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    paired_section = readme.split("### 1. 成對板級洩漏實驗結果", maxsplit=1)[1].split(
+        "### 2. NVIDIA L4", maxsplit=1
+    )[0]
+    model_card = (ROOT / "docs" / "model-card.md").read_text(encoding="utf-8")
+    limitations = (ROOT / "docs" / "limitations.md").read_text(encoding="utf-8")
+    paired_report = (ROOT / "reports" / "paired_a100" / "README.md").read_text(encoding="utf-8")
+    paired_claim = yaml.safe_load((ROOT / "reports" / "claims.yaml").read_text(encoding="utf-8"))[
+        "claims"
+    ]["paired_leakage_effect"]
+
+    for forbidden in (
+        "真實跨板泛化表現",
+        "反映實際產線部署效能",
+        "證明板級洩漏顯著性",
+        "確認洩漏效應具備嚴格統計顯著性",
+        "統計顯著",
+    ):
+        assert forbidden not in readme
+
+    for required in (
+        "30 張",
+        "Board 08",
+        "Resampling unit 是 image，不是 board",
+        "不估計 between-board uncertainty",
+        "production generalization",
+    ):
+        assert required in paired_section
+
+    assert "one board" in paired_claim["limitations"][0]
+    assert "between-board variance" in paired_claim["limitations"][0]
+    assert "not a universal" in paired_claim["limitations"][1]
+    assert "single PCB template board" in model_card
+    assert "Image-bootstrap intervals do not estimate board-level uncertainty" in model_card
+    assert "one board and 30 images" in limitations
+    assert "image, not board, is the resampling unit" in paired_report
 
 
 def test_portfolio_documents_bound_private_l4_metrics_to_calibration() -> None:
