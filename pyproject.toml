@@ -22,7 +22,6 @@ train = [
 dev = [
     "pytest>=8",
     "ruff>=0.8",
-    "matplotlib>=3.8",
     "numpy>=1.26",
 ]
 eval = [
@@ -41,9 +40,6 @@ eval = [
 ]
 l4 = [
     "tensorrt-cu12==10.13.3.9; sys_platform == 'linux'",
-]
-sahi = [
-    "sahi>=0.12.1",  # ultralytics>=8.0.0 is its only version constraint; 8.4.89 satisfies it
 ]
 hf = [
     "huggingface-hub>=0.24",
@@ -72,7 +68,7 @@ packages = ["src/pcb_defect"]
 
 [tool.ruff]
 line-length = 100
-src = ["src", "tests", "scripts"]
+src = ["src", "tests"]
 # Colab notebooks legitimately break "imports at top of file": installs must
 # run (and packages import-check) before the import that needs them.
 extend-exclude = ["notebooks"]

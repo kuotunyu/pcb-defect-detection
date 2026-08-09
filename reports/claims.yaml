@@ -26,18 +26,6 @@ claims:
     limitations:
       - The third-party base checkpoint is downloaded at runtime and is not redistributed here.
 
-  legacy_split_sensitivity:
-    status: legacy_observed
-    statement: >-
-      The prototype observed a 12.1 percentage-point mAP50 difference between grouped and
-      image-random splits.
-    evidence:
-      - reports/test_metrics.json
-      - reports/leakage_comparison.md
-    limitations:
-      - The two runs used different test images and test sizes.
-      - This is not a paired causal leakage estimate.
-
   paired_leakage_effect:
     status: verified
     statement: >-

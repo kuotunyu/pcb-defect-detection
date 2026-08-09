@@ -8,11 +8,13 @@ dist/
 *.egg-info/
 
 # data & heavy artifacts (regenerated via scripts / brought back from Colab)
-# note: reports/ and assets/ are intentionally NOT ignored - metrics and figures are committed
+# Curated JSON/Markdown evidence is committed; generated exploratory plots stay local.
 data/
 runs/
 exports/
 weights/
+assets/figures/
+reports/*.png
 *.pt
 *.onnx
 *.engine
@@ -30,9 +32,11 @@ wandb/
 .agents/
 CLAUDE.md
 PLAN.md
+plan.md
 PROGRESS.md
 interview*.md
 INTERVIEW_PREP.md
 *.private.md
 interview_prep.md
+docs/superpowers/
 reports/release_audit.local.json

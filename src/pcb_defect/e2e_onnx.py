@@ -4,12 +4,11 @@ The exported ONNX graph outputs a single (1, 300, 6) tensor per image -
 [x1, y1, x2, y2, confidence, class_id] rows in the *letterboxed* 640x640
 input-pixel space, with no NMS step (the one-to-one head makes it
 unnecessary): postprocessing is a confidence-threshold filter plus
-inverting the letterbox transform. This module is what scripts/
-verify_onnx_parity.py checks against ultralytics' own .pt inference, and
-what app/app.py's own copy is checked against (see plan.md SS 2.3/2.6).
+inverting the letterbox transform. This module is the shared reference used to
+check standalone ONNX inference and the app's preprocessing/postprocessing path.
 
-No torch/ultralytics import here on purpose - this is the code path the
-Hugging Face Space (CPU-only, no torch) actually runs.
+No torch/ultralytics import here on purpose: the optional app uses this
+CPU-only inference path when a release-approved model contract is supplied.
 """
 
 from __future__ import annotations
@@ -41,7 +40,7 @@ def letterbox(image: Image.Image, size: int = IMG_SIZE) -> tuple[np.ndarray, Let
     PIL's resize, even at "bilinear", is NOT numerically interchangeable with cv2's -
     verified empirically: on a ~4.5x downscale of a PCB image (dense fine detail:
     IC pins, thin traces), the two produced results that differed enough to make
-    the exported model drop 2 of 6 real detections at conf=0.25 (see plan.md SS 2.3).
+    the exported model drop 2 of 6 real detections at conf=0.25.
     """
     rgb = np.asarray(image.convert("RGB"))
     h, w = rgb.shape[:2]

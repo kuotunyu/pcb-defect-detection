@@ -149,15 +149,6 @@ flowchart TD
 >
 > **What this does not prove**：此結果不建立跨 board 母體、新產品、factory-line 或 production generalization。
 
-#### 早期原型的對照（非本協定，僅供背景）
-
-本協定之前有一版原型實驗，資料量與切分方式都不同，數字**不可與上表並列比較**，
-保留於此僅為記錄結論方向的一致性（來源 `reports/test_metrics.json`）：
-board-grouped 切分 mAP50 `0.8390`，image-random 切分 mAP50 `0.9603`，
-兩者相差 `12.1-point`。該原型未採用成對設計、未鎖定共同測試集、未跑多種子，
-而且兩次實驗的測試影像與測試集大小不同。因此 `12.1-point` 僅是 observed split sensitivity，
-not a paired causal leakage estimate；本專案的正式結論一律以上方 A100 成對實驗為準。
-
 ### 2. NVIDIA L4 多後端推論延遲評測
 
 > **這是 private、calibration-only 的證據，不是 production 效能宣稱。**

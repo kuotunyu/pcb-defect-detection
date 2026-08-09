@@ -616,28 +616,13 @@ def test_a100_report_defers_private_l4_evidence_to_its_metadata_summary() -> Non
     assert "[`benchmark_l4.json`](../benchmark_l4.json)" in a100_report
 
 
-def test_failed_legacy_export_gates_cannot_back_a_deployment_claim() -> None:
-    fidelity = json.loads((ROOT / "reports" / "export_fidelity.json").read_text(encoding="utf-8"))
-    parity = json.loads((ROOT / "reports" / "onnx_parity.json").read_text(encoding="utf-8"))
-    contract = json.loads((ROOT / "app" / "model_contract.json").read_text(encoding="utf-8"))
-
-    assert fidelity["fidelity_ok"] is False
-    assert parity["all_passed"] is False
-    assert contract["status"] == "blocked"
-    assert contract["onnx_sha256"] is None
-    assert contract["hf_repo_id"] is None
-    assert contract["hf_revision"] is None
-
-
-def test_readme_protocol_and_legacy_numbers_match_machine_artifacts() -> None:
+def test_readme_protocol_numbers_match_machine_artifacts() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     protocol_config = yaml.safe_load(
         (ROOT / "configs" / "paired_protocol.yaml").read_text(encoding="utf-8")
     )
     manifest_path = ROOT / "reports" / "protocol" / "paired_split_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    legacy = json.loads((ROOT / "reports" / "test_metrics.json").read_text(encoding="utf-8"))
-
     assert manifest["manifest_sha256"] == protocol_config["frozen_hashes"]["manifest_sha256"]
     assert manifest["dataset"]["sha256"] == protocol_config["frozen_hashes"]["dataset_sha256"]
     assert protocol_config["frozen_hashes"]["manifest_sha256"] in readme
@@ -645,12 +630,6 @@ def test_readme_protocol_and_legacy_numbers_match_machine_artifacts() -> None:
     assert manifest["counts"]["final_test"]["images"] == 30
     assert manifest["counts"]["grouped_train"]["images"] == 513
     assert manifest["counts"]["leaky_train"]["images"] == 513
-    assert f"{legacy['grouped']['map50']:.4f}" in readme
-    assert f"{legacy['random']['map50']:.4f}" in readme
-    observed_gap_pp = (legacy["random"]["map50"] - legacy["grouped"]["map50"]) * 100
-    assert f"{observed_gap_pp:.1f}-point" in readme
-    assert "observed split sensitivity" in readme
-    assert "not a paired causal leakage estimate" in readme
     file_digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
     sidecar = (manifest_path.parent / "paired_split_manifest.sha256").read_text(encoding="ascii")
     assert sidecar == f"{file_digest}  paired_split_manifest.json\n"
@@ -776,8 +755,6 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     limitations = (ROOT / "docs" / "limitations.md").read_text(encoding="utf-8")
     license_boundary = (ROOT / "docs" / "license-boundary.md").read_text(encoding="utf-8")
     paired_readme = (ROOT / "reports" / "paired_a100" / "README.md").read_text(encoding="utf-8")
-    legacy_benchmark = (ROOT / "reports" / "benchmark.md").read_text(encoding="utf-8")
-    legacy_index = (ROOT / "reports" / "legacy-evidence.md").read_text(encoding="utf-8")
     l4 = _read_json(ROOT / "reports" / "benchmark_l4.json")
     contract = _read_json(ROOT / "app" / "model_contract.json")
 
@@ -876,9 +853,10 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "identity review" not in model_card
     assert claims["hosted_demo"]["status"] == "blocked"
     assert "out of scope" in claims["hosted_demo"]["limitations"][0]
+    assert "legacy_split_sensitivity" not in claims
+    for document in (readme, limitations, model_card, checklist, paired_readme):
+        assert "12.1" not in document
     assert "official GitHub or Hugging Face publication" not in paired_readme
-    assert "must be rerun on" not in legacy_benchmark
-    assert "not approved for official migration" not in legacy_index
     assert "Current official `main` has clean single-author reachable history" in limitations
     assert "future L4 benchmark" not in limitations
     assert "Git history contains legacy identity" not in limitations
@@ -902,6 +880,49 @@ def test_candidate_tree_contains_no_dataset_or_model_binaries() -> None:
 
     assert pixel_files == set()
     assert model_or_package_files == set()
+
+
+def test_public_tree_excludes_internal_planning_artifacts() -> None:
+    tracked = set(
+        subprocess.run(
+            ["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True
+        ).stdout.splitlines()
+    )
+
+    assert "plan.md" not in tracked
+    assert not any(path.startswith("docs/superpowers/") for path in tracked)
+
+
+def test_public_tree_excludes_superseded_prototype_artifacts() -> None:
+    tracked = set(
+        subprocess.run(
+            ["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True
+        ).stdout.splitlines()
+    )
+
+    assert tracked.isdisjoint(
+        {
+            "assets/figures/grouped_BoxPR_curve.png",
+            "assets/figures/grouped_confusion_matrix_normalized.png",
+            "assets/figures/random_BoxPR_curve.png",
+            "assets/figures/random_confusion_matrix_normalized.png",
+            "reports/bbox_size_at_640.png",
+            "reports/bbox_size_relative.png",
+            "reports/benchmark.md",
+            "reports/benchmark_cpu.json",
+            "reports/benchmark_gpu.json",
+            "reports/class_balance.png",
+            "reports/export_fidelity.json",
+            "reports/leakage_comparison.md",
+            "reports/legacy-evidence.md",
+            "reports/onnx_parity.json",
+            "reports/sahi_ablation.json",
+            "reports/sahi_ablation.md",
+            "reports/stats.md",
+            "reports/test_metrics.json",
+            "src/pcb_defect/stats.py",
+        }
+    )
 
 
 def test_current_tracked_text_has_no_personal_account_or_local_path() -> None:
