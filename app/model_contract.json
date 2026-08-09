@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "status": "blocked",
-  "reason": "Paired training and the hash-pinned ONNX fidelity/parity gate are pending.",
+  "reason": "Deployment gate passed, but no release-approved public ONNX artifact or immutable Hugging Face revision is configured; redistribution rights remain unresolved.",
   "filename": "best.onnx",
   "onnx_sha256": null,
   "source_checkpoint_sha256": null,

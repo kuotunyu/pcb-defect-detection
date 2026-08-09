@@ -7,11 +7,10 @@
 | HRIPCB images and annotations | Upstream license unverified; not distributed in the candidate tree |
 | Base checkpoint | Third-party `v8.4.0` artifact; immutable URL/size/hash recorded, bytes not committed |
 | Fine-tuned checkpoints | Distribution blocked until dataset and upstream model obligations are resolved |
-| ONNX export | Distribution blocked until source license and fidelity/parity gates are resolved |
+| ONNX export | Candidate fidelity/parity gates are resolved; distribution remains blocked until redistribution rights and an official immutable publication are resolved |
 | TensorRT engine | Ephemeral, hardware-specific artifact; never commit or publish as portable evidence |
 | Aggregate plots | Retained only when they do not reproduce source pixels; still labelled legacy when applicable |
 
-The six raw demo images, GIF, prediction grid, and SAHI pixel comparison were removed from the
-current candidate tree because the dataset license is unresolved. They remain in earlier Git
-history because history rewriting is explicitly out of scope. That history must not be migrated to
-an official public account; use a clean reviewed source snapshot after release approval.
+The six raw demo images, GIF, prediction grid, and SAHI pixel comparison are excluded from official
+`main` because the dataset license is unresolved. They remain only in the unrelated private
+prototype history, which is outside the public repository and must not be merged into it.

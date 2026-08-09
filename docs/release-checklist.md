@@ -39,11 +39,11 @@ not imply the Colab or account-migration items are complete.
   terms.
 - [x] Official GitHub namespace is independently verified as `kuotunyu/pcb-defect-detection`.
 - [x] This candidate is based on official `main`; the unrelated prototype history is not merged.
-- [ ] The official push/review is completed and the Hugging Face namespace is selected.
+- [x] Official push/review is completed.
+- [ ] Hugging Face namespace is selected.
 - [ ] Official model artifact and immutable Hub revision are written into the app contract only
-  after the deployment gate passes.
+  after redistribution rights are resolved and publication is complete.
 
 The candidate's reachable history contains only the `kuotunyu` author/committer identity, has no
 co-author trailers, and excludes removed dataset pixels. The unrelated prototype history remains
-available for private audit but is not part of this clean promotion. The promotion stays local and
-unreleased until an explicit official push decision.
+available for private audit but is not part of this clean promotion. The clean promotion is published on official `main`; model artifacts remain private and unreleased.

@@ -758,8 +758,80 @@ def test_release_checklist_marks_returned_a100_and_private_l4_evidence_complete(
         "- [x] Official GitHub namespace is independently verified as "
         "`kuotunyu/pcb-defect-detection`." in checklist
     )
-    assert "- [ ] The official push/review is completed" in checklist
-    assert "Hugging Face namespace is selected" in checklist
+    assert "- [x] Official push/review is completed." in checklist
+    assert "- [ ] Hugging Face namespace is selected." in checklist
+
+
+def test_public_metadata_matches_authoritative_release_state() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    base_model = yaml.safe_load((ROOT / "configs" / "base_model.yaml").read_text(encoding="utf-8"))
+    claims = yaml.safe_load((ROOT / "reports" / "claims.yaml").read_text(encoding="utf-8"))[
+        "claims"
+    ]
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    checklist = (ROOT / "docs" / "release-checklist.md").read_text(encoding="utf-8")
+    limitations = (ROOT / "docs" / "limitations.md").read_text(encoding="utf-8")
+    license_boundary = (ROOT / "docs" / "license-boundary.md").read_text(encoding="utf-8")
+    contract = _read_json(ROOT / "app" / "model_contract.json")
+
+    python_floor = project["requires-python"].removeprefix(">=")
+    torch_requirement = next(
+        requirement
+        for requirement in project["optional-dependencies"]["train"]
+        if requirement.startswith("torch>=")
+    )
+    torch_floor = torch_requirement.removeprefix("torch>=")
+    license_expression = project["license"]
+    license_badge = license_expression.replace("-", "--")
+    model_filename = base_model["filename"]
+    model_name = Path(model_filename).stem
+    model_label = f"YOLO{model_name.removeprefix('yolo')}"
+
+    assert project["requires-python"].startswith(">=")
+    assert base_model["source"].endswith(f"/{model_filename}")
+    assert base_model["revision"] in claims["base_initialization"]["statement"]
+    assert model_label in claims["base_initialization"]["statement"]
+    assert claims["onnx_deployment"]["status"] == "verified_candidate"
+    assert "GNU AFFERO GENERAL PUBLIC LICENSE" in (ROOT / "LICENSE").read_text(encoding="utf-8")
+
+    for required in (
+        f"Python-{python_floor}%2B",
+        f"PyTorch-{torch_floor}%2B",
+        model_label,
+        f"License-{license_badge}",
+        license_expression,
+    ):
+        assert required in readme
+    public_source_paths = (
+        "src/pcb_defect/data_prep/paired.py",
+        "src/pcb_defect/experiment.py",
+        "src/pcb_defect/final_evaluation.py",
+    )
+    for relative in public_source_paths:
+        assert (ROOT / relative).is_file()
+        assert relative in readme
+    for stale in ("Python-3.10%2B", "PyTorch-2.0%2B", "YOLOv8", "License-MIT"):
+        assert stale not in readme
+
+    assert contract["status"] == "blocked"
+    assert "Deployment gate passed" in contract["reason"]
+    assert "redistribution rights remain unresolved" in contract["reason"]
+    for field in (
+        "onnx_sha256",
+        "source_checkpoint_sha256",
+        "deployment_gate_sha256",
+        "hf_repo_id",
+        "hf_revision",
+    ):
+        assert contract[field] is None
+
+    assert "fidelity/parity gates are resolved" in license_boundary
+    assert "- [x] Official push/review is completed." in checklist
+    assert "- [ ] Hugging Face namespace is selected." in checklist
+    assert "promotion is published on official `main`" in checklist
+    assert "Current official `main` has clean single-author reachable history" in limitations
+    assert "future L4 benchmark" not in limitations
+    assert "Git history contains legacy identity" not in limitations
 
 
 def test_candidate_tree_contains_no_dataset_or_model_binaries() -> None:

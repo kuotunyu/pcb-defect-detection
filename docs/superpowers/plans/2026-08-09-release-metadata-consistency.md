@@ -42,22 +42,51 @@ Add this test beside the existing portfolio/release checklist contract tests:
 
 ```python
 def test_public_metadata_matches_authoritative_release_state() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    base_model = yaml.safe_load((ROOT / "configs" / "base_model.yaml").read_text(encoding="utf-8"))
+    claims = yaml.safe_load((ROOT / "reports" / "claims.yaml").read_text(encoding="utf-8"))["claims"]
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     checklist = (ROOT / "docs" / "release-checklist.md").read_text(encoding="utf-8")
     limitations = (ROOT / "docs" / "limitations.md").read_text(encoding="utf-8")
     license_boundary = (ROOT / "docs" / "license-boundary.md").read_text(encoding="utf-8")
     contract = _read_json(ROOT / "app" / "model_contract.json")
 
+    python_floor = project["requires-python"].removeprefix(">=")
+    torch_requirement = next(
+        requirement
+        for requirement in project["optional-dependencies"]["train"]
+        if requirement.startswith("torch>=")
+    )
+    torch_floor = torch_requirement.removeprefix("torch>=")
+    license_expression = project["license"]
+    license_badge = license_expression.replace("-", "--")
+    model_filename = base_model["filename"]
+    model_name = Path(model_filename).stem
+    model_label = f"YOLO{model_name.removeprefix('yolo')}"
+
+    assert project["requires-python"].startswith(">=")
+    assert base_model["source"].endswith(f"/{model_filename}")
+    assert base_model["revision"] in claims["base_initialization"]["statement"]
+    assert model_label in claims["base_initialization"]["statement"]
+    assert claims["onnx_deployment"]["status"] == "verified_candidate"
+    assert "GNU AFFERO GENERAL PUBLIC LICENSE" in (ROOT / "LICENSE").read_text(encoding="utf-8")
+
     for required in (
-        "Python-3.11%2B",
-        "PyTorch-2.4%2B",
-        "YOLO26n",
-        "License-AGPL--3.0",
-        "AGPL-3.0-or-later",
-        "src/pcb_defect/data_prep/paired.py",
-        "src/pcb_defect/experiment.py",
+        f"Python-{python_floor}%2B",
+        f"PyTorch-{torch_floor}%2B",
+        model_label,
+        f"License-{license_badge}",
+        license_expression,
     ):
         assert required in readme
+    public_source_paths = (
+        "src/pcb_defect/data_prep/paired.py",
+        "src/pcb_defect/experiment.py",
+        "src/pcb_defect/final_evaluation.py",
+    )
+    for relative in public_source_paths:
+        assert (ROOT / relative).is_file()
+        assert relative in readme
     for stale in ("Python-3.10%2B", "PyTorch-2.0%2B", "YOLOv8", "License-MIT"):
         assert stale not in readme
 
@@ -97,7 +126,7 @@ Expected: FAIL because the current README contains the stale Python, PyTorch, YO
 Apply only these changes:
 
 - `README.md`
-  - Change badges to Python 3.11+, PyTorch 2.4+, Ultralytics YOLO26n, and AGPL-3.0.
+  - Change badges to Python 3.11+, PyTorch 2.4+, Ultralytics YOLO26n, and AGPL-3.0-or-later.
   - Replace every YOLOv8 reference with YOLO26n where it names this experiment/base model.
   - Replace MIT code-license text with `AGPL-3.0-or-later`, while retaining the separate unresolved upstream dataset/weight/export boundary.
   - Replace incomplete `pcb_defect/data_prep/` and `pcb_defect/experiment/` entries with exact existing `src/pcb_defect/data_prep/paired.py` and `src/pcb_defect/experiment.py` paths.

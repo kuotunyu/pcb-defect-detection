@@ -1,13 +1,13 @@
 # pcb-defect-detection
 
 [![CI](https://github.com/kuotunyu/pcb-defect-detection/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/pcb-defect-detection/actions/workflows/ci.yml)
-![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?logo=pytorch&logoColor=white)
-![Ultralytics YOLOv8](https://img.shields.io/badge/YOLOv8-Object%20Detection-blue?logo=ultralytics&logoColor=white)
+![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4%2B-EE4C2C?logo=pytorch&logoColor=white)
+![Ultralytics YOLO26n](https://img.shields.io/badge/YOLO26n-Object%20Detection-blue?logo=ultralytics&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-passing-success)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-lightgrey.svg)](LICENSE)
 
-本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLOv8** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與邊緣端硬體加速推論管線：在 frozen paired protocol 下，針對單一 held-out Board 08 的 30 張 final-test images，觀察到 same-board sibling exposure 對應 `21.3` 個百分點的 mAP50 差距。此結果限於固定 dataset 與 training recipe，不估計 between-board 或 production generalization。專案並提供 ONNX Runtime 算子對齊校驗與 **NVIDIA L4 TensorRT FP16** (50.89 ms / 19.65 FPS) 部署證據。
+本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLO26n** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與邊緣端硬體加速推論管線：在 frozen paired protocol 下，針對單一 held-out Board 08 的 30 張 final-test images，觀察到 same-board sibling exposure 對應 `21.3` 個百分點的 mAP50 差距。此結果限於固定 dataset 與 training recipe，不估計 between-board 或 production generalization。專案並提供 ONNX Runtime 算子對齊校驗與 **NVIDIA L4 TensorRT FP16** (50.89 ms / 19.65 FPS) 部署證據。
 
 ---
 
@@ -230,15 +230,15 @@ python -m pcb_defect.final_evaluation
 | 檔案 / 目錄 | 功能說明與職責 |
 |---|---|
 | `configs/paired_protocol.yaml` | 成對實驗資料分割與訓練超參數協定 |
-| `configs/base_model.yaml` | YOLOv8 基礎模型下載與 SHA-256 驗證組態 |
-| `pcb_defect/data_prep/` | HRIPCB 資料下載、VOC 轉 YOLO 與板級防洩漏分割 |
-| `pcb_defect/experiment/` | A100 訓練執行、斷點續跑門控與自動重試管理 |
-| `pcb_defect/final_evaluation.py` | 單次一擊 (One-shot) 最終測試集評測 |
+| `configs/base_model.yaml` | YOLO26n 基礎模型下載與 SHA-256 驗證組態 |
+| `src/pcb_defect/data_prep/paired.py` | HRIPCB 成對板級防洩漏資料準備 |
+| `src/pcb_defect/experiment.py` | A100 訓練執行、斷點續跑門控與自動重試管理 |
+| `src/pcb_defect/final_evaluation.py` | 單次一擊 (One-shot) 最終測試集評測 |
 | `reports/protocol/` | 凍結分割 Manifest 與配對哈希驗證紀錄 |
-| `reports/benchmark_l4.md` | NVIDIA L4 TensorRT FP16 完整延遲報告 |
+| `reports/benchmark_l4.md` | Private NVIDIA L4 TensorRT FP16 metadata-only 延遲摘要 |
 
 ---
 
 ## 授權與聲明
 
-本專案程式碼採 [MIT License](LICENSE)。HRIPCB 原始影像與標註請遵循原資料集發布條款。
+本專案原創程式碼採 [AGPL-3.0-or-later](LICENSE)。此 code license 不授予 HRIPCB 原始影像、標註、base weights、derived weights 或 exports 的再散佈權；詳見 [`docs/license-boundary.md`](docs/license-boundary.md)。
