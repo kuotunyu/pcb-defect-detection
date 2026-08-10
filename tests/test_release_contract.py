@@ -213,6 +213,16 @@ def test_citation_and_zenodo_metadata_are_single_author_and_license_bounded() ->
     assert "No dataset pixels, model weights, ONNX exports, or TensorRT engines" in zenodo["notes"]
     assert "strict per-box parity failed" in zenodo["notes"]
     assert "python -m pcb_defect.research_package" in research_package
+    assert "https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.1.0" in (
+        research_package
+    )
+    assert "https://doi.org/10.5281/zenodo.21877497" in research_package
+    assert "https://doi.org/10.5281/zenodo.21877496" in research_package
+    assert "56c086206eab9be1a9c6a4e36410fd13ed42f5ec" in research_package
+    assert "21abbe3c71c5f7b962a8c33a8bc649dbe98757199a6ae17b5a6af0bbe27998e1" in (research_package)
+    assert "not yet published" not in research_package
+    assert "Running this command from any other commit produces a different" in research_package
+    assert "not present that result as the `v0.1.0` asset" in research_package
     assert "dataset pixels" in research_package
     assert "TensorRT engines" in research_package
 
@@ -890,12 +900,15 @@ def test_release_checklist_marks_returned_a100_and_private_l4_evidence_complete(
         "- [x] Official GitHub namespace is independently verified as "
         "`kuotunyu/pcb-defect-detection`." in checklist
     )
-    assert (
-        "- [ ] Owner-authorized push, tag, GitHub Release, and Zenodo publication remain"
-        in checklist
-    )
+    assert "- [x] The annotated `v0.1.0` tag resolves to" in checklist
+    assert "`56c086206eab9be1a9c6a4e36410fd13ed42f5ec`" in checklist
+    assert "https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.1.0" in checklist
+    assert "- [x] Zenodo version DOI" in checklist
+    assert "10.5281/zenodo.21877497" in checklist
+    assert "10.5281/zenodo.21877496" in checklist
+    assert "A Zenodo deposit remains a separate external action" not in checklist
+    assert "Owner-authorized push, tag, GitHub Release" not in checklist
     assert "Official push/review is completed" not in checklist
-    assert "published on official `main`" not in checklist
     assert "Hugging Face publication and hosted inference are intentional non-goals" in checklist
 
 
@@ -1006,12 +1019,15 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
 
     assert "Aggregate fidelity passed" in license_boundary
     assert "strict backend prediction parity failed" in license_boundary
-    assert (
-        "- [ ] Owner-authorized push, tag, GitHub Release, and Zenodo publication remain"
-        in checklist
-    )
+    assert "- [x] The annotated `v0.1.0` tag resolves to" in checklist
+    assert "`56c086206eab9be1a9c6a4e36410fd13ed42f5ec`" in checklist
+    assert "https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.1.0" in checklist
+    assert "- [x] Zenodo version DOI" in checklist
+    assert "10.5281/zenodo.21877497" in checklist
+    assert "10.5281/zenodo.21877496" in checklist
+    assert "A Zenodo deposit remains a separate external action" not in checklist
+    assert "Owner-authorized push, tag, GitHub Release" not in checklist
     assert "Official push/review is completed" not in checklist
-    assert "published on official `main`" not in checklist
     assert "metadata-only portfolio release candidate" in model_card
     assert "identity review" not in model_card
     assert claims["hosted_demo"]["status"] == "out_of_scope"
@@ -1020,8 +1036,11 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "legacy_split_sensitivity" not in claims
     for document in (readme, limitations, model_card, checklist, paired_readme):
         assert "12.1" not in document
-    assert "metadata evidence is published on the official GitHub" not in paired_readme
-    assert "External publication is not asserted by this candidate tree" in paired_readme
+    assert "v0.1.0 source-and-metadata evidence is published on GitHub and Zenodo" in paired_readme
+    assert "External publication is not asserted" not in paired_readme
+    assert "No public checkpoint, ONNX export, model-Hub" in model_card
+    assert "revision, or hosted demo is claimed" in model_card
+    assert "External publication, a public checkpoint" not in model_card
     assert "Current release candidate has clean single-author reachable history" in limitations
     assert "future L4 benchmark" not in limitations
     assert "Git history contains legacy identity" not in limitations

@@ -104,8 +104,9 @@ defect classes.
 - Interleaved wrapper switching may influence cache state; between-session uncertainty is not
   estimated. The TensorRT engine is non-portable and untracked.
 - No production AOI acceptance, escape-rate SLA, calibration-drift, or safety claim is made.
-- This candidate tree contains source and metadata evidence only. External publication, a public
-  checkpoint, an ONNX export, a model-Hub revision, and a hosted demo are not claimed.
+- This candidate tree contains source and metadata evidence only. The v0.1.0 source-and-metadata
+  evidence is published on GitHub and Zenodo. No public checkpoint, ONNX export, model-Hub
+  revision, or hosted demo is claimed.
 
 The numerical limitations are recorded with the results in
 [`final_metrics.json`](../reports/paired_a100/final_metrics.json).

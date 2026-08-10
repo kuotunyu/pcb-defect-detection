@@ -2,14 +2,15 @@
 
 ## Publication status
 
-The v0.1.0 archive is published on Zenodo with version DOI
-[`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497). The all-versions DOI is
-[`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496). The deposited archive is the
-verified deterministic research package attached to GitHub Release `v0.1.0`, sourced from Git
-commit `56c086206eab9be1a9c6a4e36410fd13ed42f5ec`.
-
-The final L4 evidence records both aggregate fidelity passage and strict prediction-parity failure.
-Publication does not expand the package's redistribution or performance claims.
+The [v0.1.0 GitHub Release](https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.1.0)
+and Zenodo version record
+[`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497) publish the same deterministic
+archive built from source commit
+`56c086206eab9be1a9c6a4e36410fd13ed42f5ec`: 1,505,971 bytes with SHA-256
+`21abbe3c71c5f7b962a8c33a8bc649dbe98757199a6ae17b5a6af0bbe27998e1`. The all-versions DOI is
+[`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496). The final L4 evidence records
+both aggregate fidelity passage and strict prediction-parity failure. Publication does not expand
+the package's redistribution or performance claims.
 
 ## Scope
 
@@ -38,8 +39,10 @@ uv run python -m pcb_defect.research_package \
 
 The command refuses a dirty tracked worktree, refuses secret-shaped tracked paths, writes a
 deterministic ZIP plus `.sha256` sidecar, and verifies every member against the embedded manifest
-before returning success. The generated archive belongs in a Zenodo draft or GitHub Release
-attachment; it must not be committed back into this repository.
+before returning success. The verified archive generated from tagged commit
+`56c086206eab9be1a9c6a4e36410fd13ed42f5ec` is attached to the `v0.1.0` GitHub Release and
+deposited on Zenodo. Running this command from any other commit produces a different archive; do
+not present that result as the `v0.1.0` asset or commit it back into this repository.
 
 ## Citation and deposit metadata
 

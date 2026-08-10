@@ -79,7 +79,7 @@ PyTorch-reference per-box equivalence result.
 - No checkpoint, ONNX file, TensorRT engine, or returned package binary is distributed here.
 - Technical gate passage does not establish rights to release the dataset, selected checkpoint,
   or ONNX candidate.
-- External publication is not asserted by this candidate tree; no public model revision, Hugging
-  Face model publication, or hosted demo is claimed.
+- The v0.1.0 source-and-metadata evidence is published on GitHub and Zenodo. No public model
+  revision, Hugging Face model publication, or hosted demo is claimed.
 - The final test is one board, so these results do not establish factory-line or between-board
   generalization.

@@ -1,8 +1,8 @@
 # Release checklist
 
 This checklist records the completed technical gates for a metadata-only portfolio release candidate.
-It separates code readiness from scientific evidence and does not imply that model binaries, a
-hosted endpoint, or the candidate itself have been published.
+It separates code readiness from scientific evidence and does not imply that model binaries or a
+hosted endpoint have been published. External source-release facts are recorded explicitly below.
 
 ## CPU and clean-clone gates
 
@@ -41,8 +41,14 @@ hosted endpoint, or the candidate itself have been published.
 
 - [x] Official GitHub namespace is independently verified as `kuotunyu/pcb-defect-detection`.
 - [x] This candidate is based on official `main`; the unrelated prototype history is not merged.
-- [ ] Owner-authorized push, tag, GitHub Release, and Zenodo publication remain external actions
-  and are not claimed by this candidate tree.
+- [x] The annotated `v0.1.0` tag resolves to
+  `56c086206eab9be1a9c6a4e36410fd13ed42f5ec`; the corresponding
+  [GitHub Release](https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.1.0)
+  publishes the deterministic source-and-metadata research archive (1,505,971 bytes; SHA-256
+  `21abbe3c71c5f7b962a8c33a8bc649dbe98757199a6ae17b5a6af0bbe27998e1`).
+- [x] Zenodo version DOI [`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497)
+  and all-versions DOI [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496) resolve
+  to the same 1,505,971-byte archive recorded above.
 
 ## Intentional non-goals
 
@@ -54,5 +60,6 @@ hosted endpoint, or the candidate itself have been published.
 
 The candidate's reachable history contains only the `kuotunyu` author/committer identity, has no
 co-author trailers, and excludes removed dataset pixels. The unrelated prototype history remains
-available for private audit but is not part of this clean promotion. External publication is not
-asserted by this candidate tree; the candidate is intentionally metadata-only.
+available for private audit but is not part of this clean promotion. The `v0.1.0` source tag,
+GitHub Release, and Zenodo record are intentionally metadata-only and do not publish dataset
+pixels, labels, model weights, ONNX exports, TensorRT engines, or hosted inference.
