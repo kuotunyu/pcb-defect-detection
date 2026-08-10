@@ -9,12 +9,13 @@ a Zenodo draft deposit; external publication remains a separate deliberate actio
 
 ## Scope
 
-The package contains the clean, committed source tree and metadata evidence needed to audit the
+The package contains allowlisted UTF-8 source and metadata evidence from the clean, committed tree needed to audit the
 paired split, training recipe, statistical results, deployment contracts, and public claim
 boundaries. Each included file is recorded by relative path, byte count, and SHA-256 in the
 embedded `RESEARCH_PACKAGE_MANIFEST.json`.
 
-The package deliberately excludes dataset pixels, pixel-derived previews, checkpoints, ONNX
+Unknown or binary file types fail closed at the redistribution boundary; even an allowlisted text
+suffix must decode as UTF-8 and contain no NUL bytes. The package deliberately excludes dataset pixels, pixel-derived previews, checkpoints, ONNX
 exports, TensorRT engines, result ZIPs, logs, and caches. It includes the path-free L4 summary,
 complete raw timings, and pseudonymized per-box parity evidence. Those exclusions preserve the
 unresolved dataset/model redistribution boundary and prevent a hardware-specific engine from

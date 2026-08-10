@@ -61,7 +61,7 @@ def _raw_report() -> dict:
         "runtime_contract": {"before": {"state": "same"}, "after": {"state": "same"}},
         "hardware": {
             "gpu": "NVIDIA L4",
-            "driver": "fixture",
+            "driver": "580.82.07",
             "torch_cuda": "12.6",
             "cudnn": 9000,
             "tensorrt": "10.13.3.9",
@@ -155,7 +155,20 @@ def test_promote_l4_package_keeps_raw_timings_and_sanitizes_per_box_parity(
     assert "/content/" not in serialized
 
 
-@pytest.mark.parametrize("mutation", ["parity", "timing_count", "schema"])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "parity",
+        "timing_count",
+        "schema",
+        "hardware_extra",
+        "runtime_extra",
+        "protocol_extra",
+        "artifacts_extra",
+        "hardware_path",
+        "protocol_path",
+    ],
+)
 def test_promote_l4_package_rejects_incomplete_raw_evidence(tmp_path: Path, mutation: str) -> None:
     report = copy.deepcopy(_raw_report())
     if mutation == "parity":
@@ -164,6 +177,18 @@ def test_promote_l4_package_rejects_incomplete_raw_evidence(tmp_path: Path, muta
         report["timings"]["pytorch_fp32"]["raw_ms"].pop()
     elif mutation == "schema":
         report["schema_version"] = "2.0"
+    elif mutation == "hardware_extra":
+        report["hardware"]["private_path"] = "/content/private"
+    elif mutation == "runtime_extra":
+        report["runtime"]["api_token"] = "secret"
+    elif mutation == "protocol_extra":
+        report["protocol"]["workspace"] = "/content/private"
+    elif mutation == "artifacts_extra":
+        report["artifacts"]["checkpoint_path"] = "/content/private/best.pt"
+    elif mutation == "hardware_path":
+        report["hardware"]["driver"] = "/content/private/driver"
+    elif mutation == "protocol_path":
+        report["protocol"]["scope"] = "/content/private/protocol"
     else:
         raise AssertionError(f"unknown mutation: {mutation}")
 

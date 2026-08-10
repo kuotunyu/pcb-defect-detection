@@ -20,22 +20,21 @@ MAX_MEMBER_BYTES = 20 * 1024 * 1024
 MAX_TOTAL_BYTES = 100 * 1024 * 1024
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
 _GIT_SHA_RE = re.compile(r"[0-9a-f]{40}")
-_REDISTRIBUTION_BOUNDARY_SUFFIXES = {
-    ".bmp",
-    ".bundle",
-    ".cache",
-    ".engine",
-    ".gif",
-    ".jpeg",
-    ".jpg",
-    ".log",
-    ".onnx",
-    ".png",
-    ".pt",
-    ".tar",
-    ".webp",
-    ".zip",
+_PUBLIC_TEXT_SUFFIXES = {
+    ".cff",
+    ".ipynb",
+    ".json",
+    ".lock",
+    ".md",
+    ".py",
+    ".sha256",
+    ".toml",
+    ".txt",
+    ".xml",
+    ".yaml",
+    ".yml",
 }
+_PUBLIC_TEXT_NAMES = {".env.example", ".gitattributes", ".gitignore", ".python-version", "LICENSE"}
 _SECRET_SUFFIXES = {".key", ".p12", ".pem", ".pfx"}
 _REQUIRED_TRACKED_FILES = {
     ".zenodo.json",
@@ -84,7 +83,7 @@ def create_research_package(repo: Path, output: Path) -> Path:
         relative_text = relative.as_posix()
         if _is_secret_shaped(relative):
             raise ResearchPackageError(f"secret-shaped tracked path is forbidden: {relative_text}")
-        if relative.suffix.casefold() in _REDISTRIBUTION_BOUNDARY_SUFFIXES:
+        if not _is_public_text_metadata(relative):
             excluded.append({"path": relative_text, "reason": "redistribution-boundary"})
             continue
         source = repo / relative
@@ -102,6 +101,7 @@ def create_research_package(repo: Path, output: Path) -> Path:
             raise ResearchPackageError(
                 f"research-package member exceeds size limit: {relative_text}"
             )
+        _validate_public_text_payload(relative, payload)
         total_bytes += len(payload)
         if total_bytes > MAX_TOTAL_BYTES:
             raise ResearchPackageError("research package exceeds total size limit")
@@ -189,6 +189,7 @@ def verify_research_package(package: Path) -> dict[str, Any]:
                     raise ResearchPackageError(f"byte length mismatch: {row['path']}")
                 if _sha256_bytes(payload) != row["sha256"]:
                     raise ResearchPackageError(f"SHA-256 mismatch: {row['path']}")
+                _validate_public_text_payload(Path(row["path"]), payload)
             return manifest
     except ResearchPackageError:
         raise
@@ -228,6 +229,7 @@ def _validate_manifest(manifest: object) -> None:
         digest = row["sha256"]
         if not _safe_relative_path(path):
             raise ResearchPackageError("research package manifest path is unsafe")
+        _validate_public_text_path(Path(path))
         if not isinstance(size, int) or isinstance(size, bool) or not 0 <= size <= MAX_MEMBER_BYTES:
             raise ResearchPackageError("research package manifest size is invalid")
         if not isinstance(digest, str) or _SHA256_RE.fullmatch(digest) is None:
@@ -291,6 +293,31 @@ def _is_secret_shaped(path: Path) -> bool:
         or path.suffix.casefold() in _SECRET_SUFFIXES
         or name in {"id_ed25519", "id_rsa"}
     )
+
+
+def _is_public_text_metadata(path: Path) -> bool:
+    return path.name in _PUBLIC_TEXT_NAMES or path.suffix.casefold() in _PUBLIC_TEXT_SUFFIXES
+
+
+def _validate_public_text_path(path: Path) -> None:
+    if _is_secret_shaped(path) or not _is_public_text_metadata(path):
+        raise ResearchPackageError(
+            f"research-package member must be UTF-8 text metadata: {path.as_posix()}"
+        )
+
+
+def _validate_public_text_payload(path: Path, payload: bytes) -> None:
+    _validate_public_text_path(path)
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ResearchPackageError(
+            f"research-package member must be UTF-8 text metadata: {path.as_posix()}"
+        ) from exc
+    if "\0" in text:
+        raise ResearchPackageError(
+            f"research-package member must be UTF-8 text metadata: {path.as_posix()}"
+        )
 
 
 def _safe_relative_path(value: object) -> bool:

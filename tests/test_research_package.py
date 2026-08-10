@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 import zipfile
 from pathlib import Path
@@ -103,6 +104,50 @@ def test_research_package_rejects_tracked_secret_shaped_paths(
         create_research_package(repo, tmp_path / "research.zip")
 
 
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "artifacts/model.pth",
+        "artifacts/model.ckpt",
+        "artifacts/model.safetensors",
+        "artifacts/model.bin",
+        "artifacts/array.npy",
+        "artifacts/image.tif",
+        "artifacts/engine.plan",
+    ],
+)
+def test_research_package_excludes_every_unapproved_binary_suffix(
+    tmp_path: Path, relative: str
+) -> None:
+    repo = _research_repo(tmp_path)
+    artifact = repo / relative
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    artifact.write_bytes(b"\x00\xffprivate-binary")
+    _git(repo, "add", relative)
+    _git(repo, "commit", "-m", "binary fixture")
+
+    package = create_research_package(repo, tmp_path / "research.zip")
+    manifest = verify_research_package(package)
+    assert {"path": relative, "reason": "redistribution-boundary"} in manifest[
+        "excluded_tracked_files"
+    ]
+    with zipfile.ZipFile(package) as archive:
+        assert f"pcb-defect-detection/{relative}" not in archive.namelist()
+
+
+def test_research_package_rejects_non_utf8_payload_with_approved_text_suffix(
+    tmp_path: Path,
+) -> None:
+    repo = _research_repo(tmp_path)
+    poison = repo / "reports" / "poison.json"
+    poison.write_bytes(b"\xff\xfe\x00\x01")
+    _git(repo, "add", "reports/poison.json")
+    _git(repo, "commit", "-m", "invalid text fixture")
+
+    with pytest.raises(ResearchPackageError, match="UTF-8 text metadata"):
+        create_research_package(repo, tmp_path / "research.zip")
+
+
 def test_research_package_verifier_rejects_member_tampering(tmp_path: Path) -> None:
     repo = _research_repo(tmp_path)
     package = create_research_package(repo, tmp_path / "research.zip")
@@ -114,4 +159,39 @@ def test_research_package_verifier_rejects_member_tampering(tmp_path: Path) -> N
             output.writestr(name, payload)
 
     with pytest.raises(ResearchPackageError, match="SHA-256 mismatch"):
+        verify_research_package(package)
+
+
+@pytest.mark.parametrize(
+    ("relative", "payload"),
+    [
+        ("artifacts/model.safetensors", b"\x00\xffprivate-binary"),
+        ("reports/poison.json", b"\xff\xfe\x00\x01"),
+    ],
+)
+def test_research_package_verifier_rejects_self_consistent_non_text_member(
+    tmp_path: Path, relative: str, payload: bytes
+) -> None:
+    repo = _research_repo(tmp_path)
+    package = create_research_package(repo, tmp_path / "research.zip")
+    manifest_name = "pcb-defect-detection/RESEARCH_PACKAGE_MANIFEST.json"
+    readme_name = "pcb-defect-detection/README.md"
+    with zipfile.ZipFile(package) as source:
+        members = {info.filename: source.read(info) for info in source.infolist()}
+    manifest = json.loads(members[manifest_name])
+    manifest["files"] = [row for row in manifest["files"] if row["path"] != "README.md"]
+    manifest["files"].append(
+        {"path": relative, "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}
+    )
+    manifest["files"].sort(key=lambda row: row["path"])
+    del members[readme_name]
+    members[f"pcb-defect-detection/{relative}"] = payload
+    members[manifest_name] = (
+        json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    ).encode("utf-8")
+    with zipfile.ZipFile(package, "w", compression=zipfile.ZIP_STORED) as output:
+        for name in sorted(members):
+            output.writestr(name, members[name])
+
+    with pytest.raises(ResearchPackageError, match="UTF-8 text metadata"):
         verify_research_package(package)

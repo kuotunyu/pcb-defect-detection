@@ -11,10 +11,13 @@ from pathlib import Path
 from typing import Any
 
 from pcb_defect.benchmark import (
+    ARTIFACT_FIELDS,
     BENCHMARK_BACKENDS,
     CANONICAL_CYCLES,
     CANONICAL_WARMUP,
+    PROTOCOL_FIELDS,
     REPORT_FIELDS,
+    TIMING_FIELDS,
     _timings_match,
 )
 from pcb_defect.prediction_parity import prediction_parity_is_complete
@@ -23,6 +26,11 @@ from pcb_defect.result_package import PackageError, verify_verifiable_zip
 _REPORT_PATH_RE = re.compile(r"benchmark_l4/[0-9a-f]{12}/benchmark_l4\.json")
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
 _GIT_SHA_RE = re.compile(r"[0-9a-f]{40}")
+_VERSION_RE = re.compile(r"[0-9]+(?:\.[0-9]+)+")
+_HARDWARE_FIELDS = frozenset({"gpu", "driver", "torch_cuda", "cudnn", "tensorrt"})
+_RUNTIME_FIELDS = frozenset({"onnxruntime_providers"})
+_EXPECTED_PROVIDERS = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+_EXPECTED_SCOPE = "predecoded PIL image; preprocess + inference + postprocess; CUDA synchronized"
 
 
 class EvidencePromotionError(RuntimeError):
@@ -84,17 +92,26 @@ def promote_l4_package(package: Path) -> PromotedL4Evidence:
         "dataset_sha256": report["dataset_sha256"],
         "manifest_sha256": report["manifest_sha256"],
     }
+    hardware = _copy_fields(report["hardware"], _HARDWARE_FIELDS)
+    runtime = _copy_fields(report["runtime"], _RUNTIME_FIELDS)
+    protocol = _copy_fields(report["protocol"], PROTOCOL_FIELDS)
+    artifacts = _copy_fields(report["artifacts"], ARTIFACT_FIELDS)
+    fidelity = _copy_fields(report["fidelity"], set(report["fidelity"]))
+    raw_backend_timings = {
+        backend: _copy_fields(report["timings"][backend], TIMING_FIELDS)
+        for backend in sorted(BENCHMARK_BACKENDS)
+    }
     summary = {
         "schema_version": "2.0",
         "status": "complete",
         "evidence_visibility": "public_metadata_from_private_unreleased_package",
         **source,
         "provenance": provenance,
-        "hardware": report["hardware"],
-        "runtime": report["runtime"],
-        "protocol": report["protocol"],
-        "artifacts": report["artifacts"],
-        "fidelity": report["fidelity"],
+        "hardware": hardware,
+        "runtime": runtime,
+        "protocol": protocol,
+        "artifacts": artifacts,
+        "fidelity": fidelity,
         "prediction_parity": parity_summary,
         "timings": timing_summaries,
         "limitations": [
@@ -114,10 +131,10 @@ def promote_l4_package(package: Path) -> PromotedL4Evidence:
         "status": "complete",
         **source,
         "provenance": provenance,
-        "hardware": report["hardware"],
-        "runtime": report["runtime"],
-        "protocol": report["protocol"],
-        "timings": report["timings"],
+        "hardware": hardware,
+        "runtime": runtime,
+        "protocol": protocol,
+        "timings": raw_backend_timings,
         "statistical_scope": {
             "sessions": report["protocol"]["sessions"],
             "descriptive_only": True,
@@ -134,6 +151,8 @@ def _validate_raw_report(report: object) -> None:
     protocol = report["protocol"]
     artifacts = report["artifacts"]
     fidelity = report["fidelity"]
+    hardware = report["hardware"]
+    runtime = report["runtime"]
     if (
         report["schema_version"] != "3.0"
         or report["status"] != "complete"
@@ -144,6 +163,7 @@ def _validate_raw_report(report: object) -> None:
             for field in ("deployment_gate_sha256", "dataset_sha256", "manifest_sha256")
         )
         or not isinstance(protocol, dict)
+        or set(protocol) != PROTOCOL_FIELDS
         or protocol.get("split") != "calibration"
         or protocol.get("warmup") != CANONICAL_WARMUP
         or protocol.get("cycles") != CANONICAL_CYCLES
@@ -153,7 +173,12 @@ def _validate_raw_report(report: object) -> None:
         or not isinstance(protocol.get("images"), int)
         or isinstance(protocol.get("images"), bool)
         or protocol["images"] < 1
+        or not _sha256(protocol.get("image_list_sha256"))
+        or not _sha256(protocol.get("image_content_sha256"))
+        or protocol.get("confidence") != 0.25
+        or protocol.get("scope") != _EXPECTED_SCOPE
         or not isinstance(artifacts, dict)
+        or set(artifacts) != ARTIFACT_FIELDS
         or artifacts.get("engine_committable") is not False
         or any(
             not _sha256(artifacts.get(field))
@@ -171,8 +196,18 @@ def _validate_raw_report(report: object) -> None:
         or report["prediction_parity"].get("required_images") != protocol["images"]
         or not _timings_match(report["timings"], protocol["images"] * CANONICAL_CYCLES)
         or set(report["timings"]) != BENCHMARK_BACKENDS
-        or not isinstance(report["hardware"], dict)
-        or report["hardware"].get("gpu") != "NVIDIA L4"
+        or not isinstance(hardware, dict)
+        or set(hardware) != _HARDWARE_FIELDS
+        or hardware.get("gpu") != "NVIDIA L4"
+        or not _version(hardware.get("driver"))
+        or not _version(hardware.get("torch_cuda"))
+        or not _version(hardware.get("tensorrt"))
+        or not isinstance(hardware.get("cudnn"), int)
+        or isinstance(hardware.get("cudnn"), bool)
+        or hardware["cudnn"] <= 0
+        or not isinstance(runtime, dict)
+        or set(runtime) != _RUNTIME_FIELDS
+        or runtime.get("onnxruntime_providers") != _EXPECTED_PROVIDERS
     ):
         raise EvidencePromotionError("raw L4 benchmark evidence failed consistency checks")
 
@@ -275,3 +310,11 @@ def _git_sha(value: object) -> bool:
 
 def _finite(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _version(value: object) -> bool:
+    return isinstance(value, str) and _VERSION_RE.fullmatch(value) is not None
+
+
+def _copy_fields(source: dict[str, Any], fields: set[str] | frozenset[str]) -> dict[str, Any]:
+    return {field: source[field] for field in sorted(fields)}
