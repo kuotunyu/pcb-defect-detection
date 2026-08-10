@@ -205,6 +205,7 @@ def test_citation_and_zenodo_metadata_are_single_author_and_license_bounded() ->
     assert zenodo["access_right"] == "open"
     assert zenodo["license"] == "agpl-3.0"
     assert "No dataset pixels, model weights, ONNX exports, or TensorRT engines" in zenodo["notes"]
+    assert "strict per-box parity failed" in zenodo["notes"]
     assert "python -m pcb_defect.research_package" in research_package
     assert "not yet published" in research_package
     assert "dataset pixels" in research_package
@@ -596,7 +597,8 @@ def test_claim_evidence_paths_exist_and_only_supported_claims_are_verified() -> 
     assert {name for name, claim in claims.items() if claim["status"] == "verified_candidate"} == {
         "onnx_deployment"
     }
-    assert claims["tensorrt_performance"]["status"] == "verified_private"
+    assert claims["tensorrt_performance"]["status"] == "verified_metadata"
+    assert claims["backend_prediction_parity"]["status"] == "failed_gate"
     assert claims["hosted_demo"]["status"] == "out_of_scope"
     for claim in claims.values():
         for relative in claim["evidence"]:
@@ -607,6 +609,8 @@ def test_claim_evidence_paths_exist_and_only_supported_claims_are_verified() -> 
             "blocked",
             "verified_candidate",
             "verified_private",
+            "verified_metadata",
+            "failed_gate",
         }:
             assert claim["limitations"]
 
@@ -636,43 +640,107 @@ def test_promoted_claims_point_only_to_current_a100_evidence() -> None:
     assert "reports/onnx_parity.json" not in onnx["evidence"]
 
 
-def test_private_l4_evidence_is_metadata_only_and_hash_bound() -> None:
+def test_promoted_l4_evidence_is_hash_bound_complete_and_reports_failed_parity() -> None:
     claims = yaml.safe_load((ROOT / "reports" / "claims.yaml").read_text(encoding="utf-8"))[
         "claims"
     ]
     l4 = _read_json(ROOT / "reports" / "benchmark_l4.json")
+    raw = _read_json(ROOT / "reports" / "benchmark_l4_raw.json")
+    parity = _read_json(ROOT / "reports" / "backend_parity_l4.json")
     summary = (ROOT / "reports" / "benchmark_l4.md").read_text(encoding="utf-8")
 
-    assert claims["tensorrt_performance"]["status"] == "verified_private"
-    assert claims["tensorrt_performance"]["evidence"] == ["reports/benchmark_l4.json"]
-    assert l4["evidence_visibility"] == "private_unreleased"
+    assert claims["tensorrt_performance"]["status"] == "verified_metadata"
+    assert claims["tensorrt_performance"]["evidence"] == [
+        "reports/benchmark_l4.json",
+        "reports/benchmark_l4_raw.json",
+    ]
+    assert claims["backend_prediction_parity"]["status"] == "failed_gate"
+    assert claims["backend_prediction_parity"]["evidence"] == [
+        "reports/backend_parity_l4.json",
+        "reports/benchmark_l4.json",
+    ]
+    assert l4["schema_version"] == "2.0"
+    assert l4["status"] == "complete"
+    assert l4["evidence_visibility"] == "public_metadata_from_private_unreleased_package"
     assert l4["package"] == {
-        "filename": "paired-results-l4-9e3a1ed5827a-runner-4d533bcdbf31.zip",
-        "sha256": "d988fc6dad3f97d29a52a92cf8024f4919377e9d99011be837bd42a297f85d30",
+        "bytes": 24_150_052,
+        "filename": "paired-results-l4-9e3a1ed5827a-runner-fe9005d77920.zip",
+        "sha256": "482c3bc35d8069bc3301a34f483ed599206a488626e48f34de4c8c9b7619572b",
     }
+    assert l4["raw_report_sha256"] == (
+        "6080de5237755444ed516e46fd903e20016b3fc562bbdf0c33dfcf90f4e718ee"
+    )
     assert l4["provenance"] == {
-        "checkpoint_sha256": "44646b130b8b42282b752f77659cabfc1c484dc3aaa9a2dc8f710da8468f511a",
+        "dataset_sha256": "8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4",
         "deployment_gate_sha256": (
             "466bf152a30e7efe1768542a71647e8982d18df253b2b170aaa2a13d087c1803"
         ),
         "experiment_git_sha": "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
-        "onnx_sha256": "b62590a14e2e88a414eb06389058d13d69ff1ea3998232996877088951fe3bb8",
-        "runner_git_sha": "4d533bcdbf3152e71ec2e617dd5d2073ad7666e3",
+        "manifest_sha256": "5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5",
+        "runner_git_sha": "fe9005d7792036460029a376bbd9f97d7159ed41",
     }
     assert l4["protocol"]["split"] == "calibration"
     assert l4["protocol"]["images"] == 60
+    assert l4["protocol"]["timing_schedule"] == "interleaved-rotating-backend-order"
+    assert l4["protocol"]["sessions"] == 1
     assert l4["fidelity"]["passed"] is True
-    assert l4["timings"]["onnxruntime_cuda_fp32"]["p50_ms"] == 20.05252949993519
-    assert l4["timings"]["pytorch_fp32"]["p95_ms"] == 62.54312460007441
-    assert l4["timings"]["tensorrt_fp16"]["fps_from_p50"] == 19.65207977619047
+    assert l4["fidelity"]["tensorrt_minus_source"] == -0.014537137094089408
+    assert l4["timings"]["onnxruntime_cuda_fp32"]["p50_ms"] == 20.277195000005577
+    assert l4["timings"]["pytorch_fp32"]["p95_ms"] == 62.36269444993923
+    assert l4["timings"]["tensorrt_fp16"]["fps_from_p50"] == 19.561083709081387
+
+    assert raw["package"] == l4["package"]
+    assert raw["provenance"] == l4["provenance"]
+    assert raw["raw_report_sha256"] == l4["raw_report_sha256"]
+    assert raw["statistical_scope"] == {
+        "between_session_uncertainty_estimated": False,
+        "descriptive_only": True,
+        "sessions": 1,
+    }
+    for timing in raw["timings"].values():
+        assert timing["n_runs"] == 240
+        assert len(timing["raw_ms"]) == 240
+
+    assert parity["package"] == l4["package"]
+    assert parity["provenance"] == l4["provenance"]
+    assert parity["raw_report_sha256"] == l4["raw_report_sha256"]
+    assert parity["passed"] is False
+    assert parity["thresholds"] == {
+        "allowed_max_conf_delta": 0.15,
+        "confidence": 0.25,
+        "match_iou": 0.5,
+        "required_min_iou": 0.9,
+    }
+    expected_comparisons = {
+        "onnxruntime_cuda_fp32": (95, 62, 57, 38, 5, 40, 0.8410022500497364, 0.1983642280101776),
+        "tensorrt_fp16": (95, 61, 56, 39, 5, 40, 0.8451429620055757, 0.1961173713207245),
+    }
+    for backend, expected in expected_comparisons.items():
+        comparison = parity["comparisons"][backend]
+        observed = (
+            comparison["reference_detections"],
+            comparison["candidate_detections"],
+            comparison["matched_detections"],
+            comparison["unmatched_reference_detections"],
+            comparison["unmatched_candidate_detections"],
+            comparison["n_failed_images"],
+            comparison["min_iou"],
+            comparison["max_conf_delta"],
+        )
+        assert observed == expected
+        assert comparison["passed"] is False
+        assert list(comparison["per_image"]) == [f"image_{index:03d}" for index in range(1, 61)]
+    serialized_parity = json.dumps(parity, sort_keys=True)
+    assert "/content/" not in serialized_parity
+    assert "xyxy" not in serialized_parity
     for boundary in (
-        "private/unreleased",
-        "calibration split only",
-        "not portable",
+        "public metadata",
+        "private and unreleased",
+        "calibration-only",
+        "strict per-box prediction-parity gate failed",
+        "not a production SLA",
+        "non-portable",
         "No public model",
-        "no hosted demo",
-        "not-installed",
-        "tensorrt-cu12",
     ):
         assert boundary in summary
 
@@ -732,8 +800,8 @@ def test_portfolio_documents_match_promoted_a100_metrics() -> None:
     assert "0.6087" not in readme
     assert "0.8633" not in readme
     assert "60/60" in readme
-    assert "0.0" in readme
-    assert "1.0" in readme
+    assert "Same-ONNX wrapper parity" in readme
+    assert "非 PyTorch reference" in readme
 
 
 def test_portfolio_documents_bound_paired_inference_to_single_board() -> None:
@@ -775,19 +843,23 @@ def test_portfolio_documents_bound_paired_inference_to_single_board() -> None:
     assert "image, not board, is the resampling unit" in paired_report
 
 
-def test_portfolio_documents_bound_private_l4_metrics_to_calibration() -> None:
+def test_portfolio_documents_bound_l4_metrics_and_failed_parity_to_calibration() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     model_card = (ROOT / "docs" / "model-card.md").read_text(encoding="utf-8")
     l4 = _read_json(ROOT / "reports" / "benchmark_l4.json")
+    parity = _read_json(ROOT / "reports" / "backend_parity_l4.json")
 
     for document in (readme, model_card):
         assert "private" in document
         assert "calibration" in document
         assert "production" in document
         assert "public model" in document or "public checkpoint" in document
+        assert "strict per-box" in document
     assert str(l4["timings"]["tensorrt_fp16"]["p50_ms"]) in readme
     assert str(l4["timings"]["tensorrt_fp16"]["p95_ms"]) in model_card
     assert str(l4["fidelity"]["tensorrt_minus_source"]) in model_card
+    assert parity["passed"] is False
+    assert "strict per-box prediction-parity gate failed" in model_card
 
 
 def test_release_checklist_marks_returned_a100_and_private_l4_evidence_complete() -> None:
@@ -805,6 +877,9 @@ def test_release_checklist_marks_returned_a100_and_private_l4_evidence_complete(
         assert f"- [x] {text}" in checklist
     assert "- [x] L4 PyTorch/ORT CUDA/TensorRT FP16" in checklist
     assert "reports/benchmark_l4.json" in checklist
+    assert "reports/benchmark_l4_raw.json" in checklist
+    assert "reports/backend_parity_l4.json" in checklist
+    assert "strict per-box prediction-parity gate failed" in checklist
     assert "- [ ]" not in checklist
     assert "metadata-only portfolio release" in checklist
     assert (
@@ -896,7 +971,9 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "python -m pcb_defect.experiment --help" in readme
 
     assert contract["status"] == "blocked"
-    assert "Deployment gate passed" in contract["reason"]
+    assert "Aggregate fidelity gate passed" in contract["reason"]
+    assert "strict L4 backend prediction-parity gate failed" in contract["reason"]
+    assert "Deployment gate passed" not in contract["reason"]
     assert "metadata-only portfolio release" in contract["reason"]
     assert contract["reason"] in app_readme
     app_metadata = yaml.safe_load(app_readme.split("---", 2)[1])
@@ -918,7 +995,8 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     ):
         assert contract[field] is None
 
-    assert "fidelity/parity gates are resolved" in license_boundary
+    assert "Aggregate fidelity passed" in license_boundary
+    assert "strict backend prediction parity failed" in license_boundary
     assert "- [x] Official push/review is completed." in checklist
     assert "- [ ]" not in checklist
     assert "promotion is published on official `main`" in checklist

@@ -2,9 +2,10 @@
 
 ## Publication status
 
-This archive design is **not yet published** and has no DOI. It is a release candidate for a
-future Zenodo software deposit after the final L4 prediction-parity evidence has been reviewed and
-the corresponding Git commit has been frozen.
+This archive design is **not yet published** and has no DOI. The final L4 evidence has been
+reviewed and records both aggregate fidelity passage and strict prediction-parity failure. After
+the corresponding Git commit is frozen and the deterministic archive is verified, it is ready for
+a Zenodo draft deposit; external publication remains a separate deliberate action.
 
 ## Scope
 
@@ -14,9 +15,10 @@ boundaries. Each included file is recorded by relative path, byte count, and SHA
 embedded `RESEARCH_PACKAGE_MANIFEST.json`.
 
 The package deliberately excludes dataset pixels, pixel-derived previews, checkpoints, ONNX
-exports, TensorRT engines, result ZIPs, logs, and caches. Those exclusions preserve the unresolved
-dataset/model redistribution boundary and prevent a hardware-specific engine from being mistaken
-for a portable artifact.
+exports, TensorRT engines, result ZIPs, logs, and caches. It includes the path-free L4 summary,
+complete raw timings, and pseudonymized per-box parity evidence. Those exclusions preserve the
+unresolved dataset/model redistribution boundary and prevent a hardware-specific engine from
+being mistaken for a portable artifact.
 
 ## Build after the final commit
 

@@ -27,9 +27,13 @@ from scientific evidence and does not imply that model binaries or a hosted endp
 - [x] One-shot common final evaluation completes and reports three-seed mean/std and paired image
   bootstrap intervals.
 - [x] Calibration-only ONNX fidelity and standalone parity gates pass.
-- [x] L4 PyTorch/ORT CUDA/TensorRT FP16 raw-timing benchmark uses calibration images only and
-  passes calibration fidelity; private package provenance and metrics are summarized in
-  [`reports/benchmark_l4.json`](../reports/benchmark_l4.json).
+- [x] L4 PyTorch/ORT CUDA/TensorRT FP16 benchmark uses calibration images only and passes
+  aggregate calibration fidelity; verified public metadata and complete raw timings are recorded
+  in [`reports/benchmark_l4.json`](../reports/benchmark_l4.json) and
+  [`reports/benchmark_l4_raw.json`](../reports/benchmark_l4_raw.json).
+- [x] The frozen strict per-box prediction-parity gate failed for both exported backends; the
+  failure, thresholds, summaries, and pseudonymized per-image evidence are retained in
+  [`reports/backend_parity_l4.json`](../reports/backend_parity_l4.json) without relaxing the gate.
 - [x] Final result ZIP and sidecar SHA-256 are returned from Drive.
 
 ## Identity and official publication
@@ -46,6 +50,7 @@ from scientific evidence and does not imply that model binaries or a hosted endp
 - Hugging Face publication and hosted inference are intentional non-goals for this portfolio.
 - Factory-line generalization, production throughput, and AOI acceptance/SLA claims are out of
   scope.
+- Backend prediction equivalence is not claimed because the strict per-box prediction-parity gate failed.
 
 The candidate's reachable history contains only the `kuotunyu` author/committer identity, has no
 co-author trailers, and excludes removed dataset pixels. The unrelated prototype history remains

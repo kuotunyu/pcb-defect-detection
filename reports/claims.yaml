@@ -46,7 +46,8 @@ claims:
     status: verified_candidate
     statement: >-
       The validation-selected grouped seed-42 checkpoint passed the hash-pinned calibration
-      fidelity gate and standalone ONNX Runtime parity gate as an unreleased deployment candidate.
+      aggregate fidelity gate; the standalone 60/60 gate verifies agreement between two
+      execution paths over the same ONNX artifact, not PyTorch-to-ONNX per-box equivalence.
     evidence:
       - reports/paired_a100/input_lock.json
       - reports/paired_a100/deployment_gate.public.json
@@ -54,19 +55,35 @@ claims:
     limitations:
       - Technical gate passage does not establish redistribution rights for the checkpoint or ONNX file.
       - No public model revision or hosted endpoint is claimed.
+      - The later L4 PyTorch-reference strict per-box parity gate failed and is tracked separately.
 
   tensorrt_performance:
-    status: verified_private
+    status: verified_metadata
     statement: >-
-      A hash-bound private L4 benchmark measured PyTorch FP32, ONNX Runtime CUDA FP32, and
-      TensorRT FP16 on the 60-image calibration split; TensorRT FP16 passed the calibration
-      mAP50-95 fidelity threshold.
+      Public, hash-bound metadata derived from a verified private L4 package records PyTorch FP32,
+      ONNX Runtime CUDA FP32, and TensorRT FP16 latency on the 60-image calibration split;
+      TensorRT FP16 passed the aggregate calibration mAP50-95 fidelity threshold.
     evidence:
       - reports/benchmark_l4.json
+      - reports/benchmark_l4_raw.json
     limitations:
-      - The returned package is private/unreleased; no checkpoint, ONNX export, engine, or raw package is tracked.
+      - The source package remains private/unreleased; no checkpoint, ONNX export, engine, or result package is tracked.
       - Timings are calibration-only on the recorded NVIDIA L4 stack and are not a final-test, hosted-demo, or production-SLA claim.
+      - One session with interleaved backend execution provides descriptive timing statistics only and does not estimate between-session variance.
       - TensorRT engines are not portable artifacts, and distribution/licensing approval remains unresolved.
+
+  backend_prediction_parity:
+    status: failed_gate
+    statement: >-
+      The frozen strict per-box PyTorch-reference parity gate failed for both ONNX Runtime CUDA
+      FP32 and TensorRT FP16 on the 60-image calibration split, despite aggregate fidelity passing.
+    evidence:
+      - reports/backend_parity_l4.json
+      - reports/benchmark_l4.json
+    limitations:
+      - This result blocks any claim that the three backend prediction sets are equivalent.
+      - It is a calibration-only diagnostic from one L4 session, not final-test accuracy evidence.
+      - Thresholds were frozen before the run and were not relaxed after observing the failure.
 
   hosted_demo:
     status: out_of_scope

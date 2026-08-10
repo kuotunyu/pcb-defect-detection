@@ -62,14 +62,20 @@ candidate is identified by SHA-256
 [`deployment_selection.json`](deployment_selection.json) and
 [`deployment_gate.public.json`](deployment_gate.public.json).
 
-On the 60-image calibration split, PyTorch-to-ONNX fidelity deltas were `-0.0186` mAP50 and
-`-0.0128` mAP50-95, both within the absolute `0.02` gate. Standalone ONNX Runtime parity passed
-60/60 images with minimum IoU `1.0`, maximum confidence delta `0.0`, and no failed image.
+On the 60-image calibration split, PyTorch-to-ONNX aggregate fidelity deltas were `-0.0186` mAP50
+and `-0.0128` mAP50-95, both within the absolute `0.02` gate. Standalone ONNX Runtime parity
+passed 60/60 images with minimum IoU `1.0`, maximum confidence delta `0.0`, and no failed image;
+that historical check compares two execution paths over the same ONNX artifact and is not a
+PyTorch-reference per-box equivalence result.
 
 ## Non-claims
 
-- This A100 report itself does not include an L4 benchmark. The private L4 metadata summary is in
-  [`benchmark_l4.md`](../benchmark_l4.md) and [`benchmark_l4.json`](../benchmark_l4.json).
+- This A100 report itself does not include an L4 benchmark. Verified public metadata derived from
+  the private L4 package is in [`benchmark_l4.md`](../benchmark_l4.md),
+  [`benchmark_l4.json`](../benchmark_l4.json),
+  [`benchmark_l4_raw.json`](../benchmark_l4_raw.json), and
+  [`backend_parity_l4.json`](../backend_parity_l4.json). The strict PyTorch-reference per-box gate
+  failed and is reported without threshold changes.
 - No checkpoint, ONNX file, TensorRT engine, or returned package binary is distributed here.
 - Technical gate passage does not establish rights to release the dataset, selected checkpoint,
   or ONNX candidate.

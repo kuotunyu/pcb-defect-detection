@@ -7,7 +7,7 @@
 | HRIPCB images and annotations | Upstream license unverified; not distributed in the candidate tree |
 | Base checkpoint | Third-party `v8.4.0` artifact; immutable URL/size/hash recorded, bytes not committed |
 | Fine-tuned checkpoints | Distribution blocked until dataset and upstream model obligations are resolved |
-| ONNX export | Candidate fidelity/parity gates are resolved; distribution remains blocked until redistribution rights and an official immutable publication are resolved |
+| ONNX export | Aggregate fidelity passed, but strict backend prediction parity failed; distribution remains blocked until redistribution rights and an official immutable publication are resolved |
 | TensorRT engine | Ephemeral, hardware-specific artifact; never commit or publish as portable evidence |
 
 The six raw demo images, GIF, prediction grid, and SAHI pixel comparison are excluded from official

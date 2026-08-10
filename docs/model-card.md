@@ -2,7 +2,8 @@
 
 ## Status
 
-Technically gate-passed candidate documented in a metadata-only portfolio release; model binaries
+Evaluation candidate documented in a metadata-only portfolio release. Aggregate export fidelity
+passed, but the later strict per-box PyTorch-reference backend parity gate failed. Model binaries
 and hosted inference are intentionally excluded.
 
 ## Model and provenance
@@ -53,26 +54,37 @@ SHA-256 is `b62590a14e2e88a414eb06389058d13d69ff1ea3998232996877088951fe3bb8`.
 See [`deployment_selection.json`](../reports/paired_a100/deployment_selection.json) and
 [`deployment_gate.public.json`](../reports/paired_a100/deployment_gate.public.json).
 
-## ONNX deployment gate
+## ONNX deployment evidence
 
 On the 60-image calibration split, PyTorch-to-ONNX deltas were `-0.0186` mAP50 and `-0.0128`
-mAP50-95, within the absolute `0.02` fidelity threshold. Standalone ONNX Runtime parity passed
-60/60 images, with minimum IoU `1.0`, maximum confidence delta `0.0`, and zero failed images.
-This verifies a technical candidate only. Source:
+mAP50-95, within the absolute `0.02` aggregate fidelity threshold. The historical standalone
+60/60 gate, with minimum IoU `1.0` and maximum confidence delta `0.0`, compares two execution
+paths over the same ONNX artifact. It does **not** establish PyTorch-to-ONNX per-box prediction
+equivalence. The later PyTorch-reference L4 gate below supplies that stricter test. Source:
 [`deployment_gate.public.json`](../reports/paired_a100/deployment_gate.public.json).
 
-## Private L4 deployment benchmark
+## Verified L4 deployment metadata
 
-The hash-bound private L4 package measured 60 calibration images with batch size 1, 30 warmup
-iterations, and four cycles. NVIDIA L4 timings were: PyTorch FP32 p50/p95
-`60.562907999951676`/`62.54312460007441` ms, ONNX Runtime CUDA FP32
-`20.05252949993519`/`20.71104239996657` ms, and TensorRT FP16
-`50.88519949993042`/`52.37864604996503` ms. TensorRT FP16 achieved
-`19.65207977619047` FPS from p50 and passed the calibration mAP50-95 fidelity gate with a
-`-0.014108167577079167` delta against the source checkpoint, within the absolute `0.02`
-threshold. These timing and fidelity observations are private, calibration-only evidence on the
-recorded L4 stack; they are not a final-test, production-SLA, or factory-line claim. See
-[`benchmark_l4.json`](../reports/benchmark_l4.json).
+Public metadata derived from a verified private L4 package records one 60-image calibration
+session with batch size 1, 30 warmup iterations, four cycles, and an interleaved rotating backend
+order. NVIDIA L4 p50/p95 timings were: PyTorch FP32
+`60.85868150000806`/`62.36269444993923` ms, ONNX Runtime CUDA FP32
+`20.277195000005577`/`20.87069180000185` ms, and TensorRT FP16
+`51.12191199998506`/`52.25180029992771` ms. TensorRT FP16 achieved
+`19.561083709081387` FPS from p50 and passed the aggregate calibration mAP50-95 fidelity gate
+with a `-0.014537137094089408` delta against the source checkpoint, within the absolute `0.02`
+threshold.
+
+The frozen strict per-box prediction-parity gate failed for both exported backends. Against 95
+PyTorch detections, ONNX Runtime CUDA matched 57 and left 38 reference plus 5 candidate detections
+unmatched; TensorRT matched 56 and left 39 reference plus 5 candidate detections unmatched. Each
+backend failed on 40/60 images. Observed minimum IoU values (`0.8410022500497364` and
+`0.8451429620055757`) were below the required `0.9`, while maximum confidence deltas
+(`0.1983642280101776` and `0.1961173713207245`) exceeded the allowed `0.15`. Therefore the
+repository does not claim backend prediction equivalence, even though aggregate fidelity passed.
+See [`benchmark_l4.json`](../reports/benchmark_l4.json),
+[`benchmark_l4_raw.json`](../reports/benchmark_l4_raw.json), and
+[`backend_parity_l4.json`](../reports/backend_parity_l4.json).
 
 ## Intended use
 
@@ -85,8 +97,12 @@ defect classes.
 - The final test contains 30 images from a single PCB template board; it does not establish
   between-board, factory-line, or production generalization.
 - Image-bootstrap intervals do not estimate board-level uncertainty.
-- The private L4 benchmark does not establish latency on other hardware, drivers, TensorRT builds,
-  batch sizes, datasets, or a hosted environment; the TensorRT engine is non-portable and untracked.
+- The L4 metadata derives from one private calibration-only session and does not establish latency
+  on other hardware, drivers, TensorRT builds, batch sizes, datasets, or a hosted environment.
+- The strict per-box prediction-parity gate failed; aggregate mAP fidelity must not be presented as
+  backend prediction equivalence or release readiness.
+- Interleaved wrapper switching may influence cache state; between-session uncertainty is not
+  estimated. The TensorRT engine is non-portable and untracked.
 - No production AOI acceptance, escape-rate SLA, calibration-drift, or safety claim is made.
 - The official GitHub repository publishes source and metadata evidence only. No public checkpoint,
   ONNX export, model-Hub revision, or hosted demo is claimed.
@@ -96,8 +112,9 @@ The numerical limitations are recorded with the results in
 
 ## Release boundary
 
-The repository distributes neither the selected checkpoint nor its ONNX export. Technical gate
-passage does not establish redistribution rights. The metadata-only portfolio release is complete;
-public model artifacts and hosted inference remain intentionally out of scope. See
+The repository distributes neither the selected checkpoint nor its ONNX export. Aggregate
+fidelity passage does not override strict parity failure and does not establish redistribution
+rights. The metadata-only portfolio release records both passing and failing gates; public model
+artifacts and hosted inference remain intentionally out of scope. See
 [`result_package_receipt.json`](../reports/paired_a100/result_package_receipt.json) and
 [`docs/license-boundary.md`](license-boundary.md).

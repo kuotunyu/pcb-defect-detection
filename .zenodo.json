@@ -15,7 +15,7 @@
     "TensorRT"
   ],
   "license": "agpl-3.0",
-  "notes": "No dataset pixels, model weights, ONNX exports, or TensorRT engines are included. The upstream dataset license remains unverified; model and export redistribution rights are not asserted. Performance evidence is calibration-only where stated and is not a production SLA.",
+  "notes": "No dataset pixels, model weights, ONNX exports, or TensorRT engines are included. The upstream dataset license remains unverified; model and export redistribution rights are not asserted. Performance evidence is calibration-only where stated and is not a production SLA. Aggregate L4 fidelity passed, while strict per-box parity failed for both exported backends under frozen thresholds.",
   "related_identifiers": [
     {
       "identifier": "https://github.com/kuotunyu/pcb-defect-detection",
