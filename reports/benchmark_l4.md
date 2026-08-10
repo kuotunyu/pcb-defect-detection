@@ -1,7 +1,7 @@
 # Verified NVIDIA L4 deployment evidence
 
-This report publishes public metadata, path-free and derived from a locally verified private and unreleased
-result package. The source package is
+This report records candidate public metadata, path-free and derived from a locally verified
+private and unreleased result package. The source package is
 `paired-results-l4-9e3a1ed5827a-runner-fe9005d77920.zip`, has 24,150,052 bytes, and has SHA-256
 `482c3bc35d8069bc3301a34f483ed599206a488626e48f34de4c8c9b7619572b`. The package itself,
 checkpoint, ONNX export, TensorRT engine, calibration images, and command logs are not committed.

@@ -6,6 +6,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import tarfile
 import tomllib
 from pathlib import Path
 from types import SimpleNamespace
@@ -192,6 +193,7 @@ def test_historical_training_recipe_resolves_augmentation_without_rewriting_evid
 
 
 def test_citation_and_zenodo_metadata_are_single_author_and_license_bounded() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     citation = yaml.safe_load((ROOT / "CITATION.cff").read_text(encoding="utf-8"))
     zenodo = _read_json(ROOT / ".zenodo.json")
     research_package = (ROOT / "docs" / "research-package.md").read_text(encoding="utf-8")
@@ -200,10 +202,12 @@ def test_citation_and_zenodo_metadata_are_single_author_and_license_bounded() ->
     assert citation["authors"] == [{"alias": "kuotunyu", "family-names": "kuotunyu"}]
     assert citation["repository-code"] == "https://github.com/kuotunyu/pcb-defect-detection"
     assert citation["license"] == "AGPL-3.0-or-later"
+    assert citation["version"] == project["version"]
     assert zenodo["creators"] == [{"name": "kuotunyu"}]
     assert zenodo["upload_type"] == "software"
     assert zenodo["access_right"] == "open"
-    assert zenodo["license"] == "agpl-3.0"
+    assert zenodo["license"] == citation["license"]
+    assert zenodo["version"] == project["version"]
     assert "No dataset pixels, model weights, ONNX exports, or TensorRT engines" in zenodo["notes"]
     assert "strict per-box parity failed" in zenodo["notes"]
     assert "python -m pcb_defect.research_package" in research_package
@@ -880,13 +884,17 @@ def test_release_checklist_marks_returned_a100_and_private_l4_evidence_complete(
     assert "reports/benchmark_l4_raw.json" in checklist
     assert "reports/backend_parity_l4.json" in checklist
     assert "strict per-box prediction-parity gate failed" in checklist
-    assert "- [ ]" not in checklist
-    assert "metadata-only portfolio release" in checklist
+    assert "metadata-only portfolio release candidate" in checklist
     assert (
         "- [x] Official GitHub namespace is independently verified as "
         "`kuotunyu/pcb-defect-detection`." in checklist
     )
-    assert "- [x] Official push/review is completed." in checklist
+    assert (
+        "- [ ] Owner-authorized push, tag, GitHub Release, and Zenodo publication remain"
+        in checklist
+    )
+    assert "Official push/review is completed" not in checklist
+    assert "published on official `main`" not in checklist
     assert "Hugging Face publication and hosted inference are intentional non-goals" in checklist
 
 
@@ -974,7 +982,7 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "Aggregate fidelity gate passed" in contract["reason"]
     assert "strict L4 backend prediction-parity gate failed" in contract["reason"]
     assert "Deployment gate passed" not in contract["reason"]
-    assert "metadata-only portfolio release" in contract["reason"]
+    assert "metadata-only portfolio release candidate" in contract["reason"]
     assert contract["reason"] in app_readme
     app_metadata = yaml.safe_load(app_readme.split("---", 2)[1])
     assert app_metadata["license"] == "agpl-3.0"
@@ -997,18 +1005,23 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
 
     assert "Aggregate fidelity passed" in license_boundary
     assert "strict backend prediction parity failed" in license_boundary
-    assert "- [x] Official push/review is completed." in checklist
-    assert "- [ ]" not in checklist
-    assert "promotion is published on official `main`" in checklist
-    assert "metadata-only portfolio release" in model_card
+    assert (
+        "- [ ] Owner-authorized push, tag, GitHub Release, and Zenodo publication remain"
+        in checklist
+    )
+    assert "Official push/review is completed" not in checklist
+    assert "published on official `main`" not in checklist
+    assert "metadata-only portfolio release candidate" in model_card
     assert "identity review" not in model_card
     assert claims["hosted_demo"]["status"] == "out_of_scope"
+    assert "metadata-only portfolio release candidate" in claims["hosted_demo"]["statement"]
     assert "out of scope" in claims["hosted_demo"]["limitations"][0]
     assert "legacy_split_sensitivity" not in claims
     for document in (readme, limitations, model_card, checklist, paired_readme):
         assert "12.1" not in document
-    assert "official GitHub or Hugging Face publication" not in paired_readme
-    assert "Current official `main` has clean single-author reachable history" in limitations
+    assert "metadata evidence is published on the official GitHub" not in paired_readme
+    assert "External publication is not asserted by this candidate tree" in paired_readme
+    assert "Current release candidate has clean single-author reachable history" in limitations
     assert "future L4 benchmark" not in limitations
     assert "Git history contains legacy identity" not in limitations
 
@@ -1209,6 +1222,38 @@ def test_release_python_and_ci_install_contract_are_consistent() -> None:
     assert (ROOT / ".python-version").read_text(encoding="utf-8").strip() == "3.11"
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "uv sync --locked --no-editable" in workflow
+
+
+def test_non_editable_install_cache_tracks_local_wheel_inputs() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    cache_patterns = {
+        entry["file"] for entry in project["tool"]["uv"]["cache-keys"] if "file" in entry
+    }
+
+    assert {"pyproject.toml", "README.md", "LICENSE", "src/**/*.py"} <= cache_patterns
+    source_files = subprocess.run(
+        ["git", "ls-files", "src"], cwd=ROOT, check=True, capture_output=True, text=True
+    ).stdout.splitlines()
+    assert source_files
+    assert all(Path(relative).suffix == ".py" for relative in source_files)
+
+
+def test_source_distribution_excludes_binary_test_fixtures(tmp_path: Path) -> None:
+    subprocess.run(
+        ["uv", "build", "--sdist", "--out-dir", str(tmp_path)],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    archives = list(tmp_path.glob("*.tar.gz"))
+    assert len(archives) == 1
+
+    with tarfile.open(archives[0], mode="r:gz") as archive:
+        members = archive.getnames()
+
+    forbidden_suffixes = {".engine", ".jpg", ".onnx", ".plan", ".pt", ".zip"}
+    assert not [name for name in members if Path(name).suffix.lower() in forbidden_suffixes]
 
 
 def test_linux_onnxruntime_contract_targets_colab_cuda_12() -> None:

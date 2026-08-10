@@ -1,7 +1,8 @@
 # Release checklist
 
-This checklist records the completed metadata-only portfolio release. It separates code readiness
-from scientific evidence and does not imply that model binaries or a hosted endpoint are public.
+This checklist records the completed technical gates for a metadata-only portfolio release candidate.
+It separates code readiness from scientific evidence and does not imply that model binaries, a
+hosted endpoint, or the candidate itself have been published.
 
 ## CPU and clean-clone gates
 
@@ -36,13 +37,12 @@ from scientific evidence and does not imply that model binaries or a hosted endp
   [`reports/backend_parity_l4.json`](../reports/backend_parity_l4.json) without relaxing the gate.
 - [x] Final result ZIP and sidecar SHA-256 are returned from Drive.
 
-## Identity and official publication
+## Identity and external publication
 
 - [x] Official GitHub namespace is independently verified as `kuotunyu/pcb-defect-detection`.
 - [x] This candidate is based on official `main`; the unrelated prototype history is not merged.
-- [x] Official push/review is completed.
-- [x] The metadata-only portfolio release is published without dataset pixels, weights, exports,
-  engines, result packages, or secrets.
+- [ ] Owner-authorized push, tag, GitHub Release, and Zenodo publication remain external actions
+  and are not claimed by this candidate tree.
 
 ## Intentional non-goals
 
@@ -54,4 +54,5 @@ from scientific evidence and does not imply that model binaries or a hosted endp
 
 The candidate's reachable history contains only the `kuotunyu` author/committer identity, has no
 co-author trailers, and excludes removed dataset pixels. The unrelated prototype history remains
-available for private audit but is not part of this clean promotion. The clean promotion is published on official `main`; the release is intentionally metadata-only.
+available for private audit but is not part of this clean promotion. External publication is not
+asserted by this candidate tree; the candidate is intentionally metadata-only.

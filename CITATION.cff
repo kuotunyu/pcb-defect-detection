@@ -3,6 +3,7 @@ message: >-
   If you use this source-and-metadata research package, please cite the software.
 title: "PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence"
 type: software
+version: 0.1.0
 authors:
   - family-names: kuotunyu
     alias: kuotunyu

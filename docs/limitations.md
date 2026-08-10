@@ -10,5 +10,5 @@
 - L4 timings come from one session. The interleaved wrapper schedule reduces fixed-order bias but
   does not estimate between-session, machine, driver, cache, or thermal variance.
 - A code license does not establish rights to the dataset, base weights, derived weights, or images.
-- Current official `main` has clean single-author reachable history and excludes dataset pixels.
-  The unrelated private prototype history remains outside the public repository.
+- Current release candidate has clean single-author reachable history and excludes dataset pixels.
+  The unrelated private prototype history remains outside the candidate history.

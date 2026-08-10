@@ -56,6 +56,14 @@ Issues = "https://github.com/kuotunyu/pcb-defect-detection/issues"
 [tool.uv]
 # cu126 index has no macOS wheels; lock only for the platforms we actually use.
 environments = ["sys_platform == 'win32'", "sys_platform == 'linux'"]
+# uv's default directory cache key only watches build metadata. Track every local
+# wheel input so a non-editable sync cannot reuse a wheel built from stale source.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "README.md" },
+    { file = "LICENSE" },
+    { file = "src/**/*.py" },
+]
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cu126" }]
@@ -72,6 +80,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pcb_defect"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/tests/fixtures"]
 
 [tool.ruff]
 line-length = 100

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "status": "blocked",
-  "reason": "Aggregate fidelity gate passed, but the strict L4 backend prediction-parity gate failed; this metadata-only portfolio release intentionally provides no public ONNX artifact, hosted model revision, or inference endpoint.",
+  "reason": "Aggregate fidelity gate passed, but the strict L4 backend prediction-parity gate failed; this metadata-only portfolio release candidate intentionally provides no public ONNX artifact, hosted model revision, or inference endpoint.",
   "filename": "best.onnx",
   "onnx_sha256": null,
   "source_checkpoint_sha256": null,
