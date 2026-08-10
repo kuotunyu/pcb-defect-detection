@@ -1,6 +1,7 @@
 # pcb-defect-detection
 
 [![CI](https://github.com/kuotunyu/pcb-defect-detection/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/pcb-defect-detection/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21877497.svg)](https://doi.org/10.5281/zenodo.21877497)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4%2B-EE4C2C?logo=pytorch&logoColor=white)
 ![Ultralytics YOLO26n](https://img.shields.io/badge/YOLO26n-Object%20Detection-blue?logo=ultralytics&logoColor=white)
@@ -248,6 +249,21 @@ uv run --locked --no-editable --extra train --group eval \
 | `src/pcb_defect/final_evaluation.py` | 單次一擊 (One-shot) 最終測試集評測 |
 | `reports/protocol/` | 凍結分割 Manifest 與配對哈希驗證紀錄 |
 | `reports/benchmark_l4.md` | Verified NVIDIA L4 latency、aggregate fidelity 與 failed strict parity 摘要 |
+
+---
+
+## 引用
+
+本專案的 v0.1.0 source-and-metadata research package 已由 Zenodo 永久典藏：
+
+- 版本 DOI：[`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497)
+- 全版本 DOI：[`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496)
+
+引用本次釋出時，請使用版本 DOI：
+
+> kuotunyu. (2026). *PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence* (Version 0.1.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21877497
+
+機器可讀的引用資料請見 [`CITATION.cff`](CITATION.cff)。
 
 ---
 

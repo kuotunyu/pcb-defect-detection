@@ -4,6 +4,8 @@ message: >-
 title: "PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence"
 type: software
 version: 0.1.0
+doi: "10.5281/zenodo.21877497"
+date-released: 2026-08-11
 authors:
   - family-names: kuotunyu
     alias: kuotunyu

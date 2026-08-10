@@ -203,6 +203,8 @@ def test_citation_and_zenodo_metadata_are_single_author_and_license_bounded() ->
     assert citation["repository-code"] == "https://github.com/kuotunyu/pcb-defect-detection"
     assert citation["license"] == "AGPL-3.0-or-later"
     assert citation["version"] == project["version"]
+    assert citation["doi"] == "10.5281/zenodo.21877497"
+    assert str(citation["date-released"]) == "2026-08-11"
     assert zenodo["creators"] == [{"name": "kuotunyu"}]
     assert zenodo["upload_type"] == "software"
     assert zenodo["access_right"] == "open"
@@ -211,7 +213,6 @@ def test_citation_and_zenodo_metadata_are_single_author_and_license_bounded() ->
     assert "No dataset pixels, model weights, ONNX exports, or TensorRT engines" in zenodo["notes"]
     assert "strict per-box parity failed" in zenodo["notes"]
     assert "python -m pcb_defect.research_package" in research_package
-    assert "not yet published" in research_package
     assert "dataset pixels" in research_package
     assert "TensorRT engines" in research_package
 

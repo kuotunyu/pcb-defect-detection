@@ -2,10 +2,14 @@
 
 ## Publication status
 
-This archive design is **not yet published** and has no DOI. The final L4 evidence has been
-reviewed and records both aggregate fidelity passage and strict prediction-parity failure. After
-the corresponding Git commit is frozen and the deterministic archive is verified, it is ready for
-a Zenodo draft deposit; external publication remains a separate deliberate action.
+The v0.1.0 archive is published on Zenodo with version DOI
+[`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497). The all-versions DOI is
+[`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496). The deposited archive is the
+verified deterministic research package attached to GitHub Release `v0.1.0`, sourced from Git
+commit `56c086206eab9be1a9c6a4e36410fd13ed42f5ec`.
+
+The final L4 evidence records both aggregate fidelity passage and strict prediction-parity failure.
+Publication does not expand the package's redistribution or performance claims.
 
 ## Scope
 
@@ -39,9 +43,10 @@ attachment; it must not be committed back into this repository.
 
 ## Citation and deposit metadata
 
-- `CITATION.cff` defines the single software author and GitHub source URL.
+- `CITATION.cff` defines the single software author, v0.1.0 DOI, release date, and GitHub source URL.
 - `.zenodo.json` defines the title, keywords, access mode, license, and redistribution note.
 - `docs/license-boundary.md` remains authoritative for third-party data and model artifacts.
 
-Create a DOI only after the final evidence commit is immutable. Do not enter a fabricated DOI,
-release date, or public-model URL before the corresponding external publication exists.
+Use the version DOI when citing v0.1.0 and the all-versions DOI when referring to the evolving
+software record. Future versions must receive their own Zenodo version DOI; do not reuse the
+v0.1.0 DOI or add a public-model URL unless the corresponding artifact has actually been published.
