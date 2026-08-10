@@ -1,0 +1,85 @@
+{
+  "augmentation": {
+    "close_mosaic": {
+      "origin": "explicit-train-config",
+      "value": 10
+    },
+    "resolved_values": {
+      "bgr": 0.0,
+      "copy_paste": 0.0,
+      "cutmix": 0.0,
+      "degrees": 0.0,
+      "fliplr": 0.5,
+      "flipud": 0.0,
+      "hsv_h": 0.015,
+      "hsv_s": 0.7,
+      "hsv_v": 0.4,
+      "mixup": 0.0,
+      "mosaic": 1.0,
+      "perspective": 0.0,
+      "scale": 0.5,
+      "shear": 0.0,
+      "translate": 0.1
+    },
+    "source": "https://github.com/ultralytics/ultralytics/blob/v8.4.89/ultralytics/cfg/default.yaml",
+    "value_origin": "ultralytics-v8.4.89-default.yaml"
+  },
+  "data_access_contract": {
+    "augmentation_inputs": [
+      "grouped_train",
+      "leaky_train"
+    ],
+    "augmented_training_samples_exported_to_evaluation": false,
+    "excluded_from_augmentation": [
+      "validation",
+      "calibration",
+      "final_test"
+    ],
+    "runtime_preview_plots_may_be_written": true,
+    "source_dataset_mutated": false
+  },
+  "evidence_scope": "historical-metadata-reconstruction",
+  "explicit_training_config": {
+    "amp": true,
+    "batch": 32,
+    "cache": false,
+    "close_mosaic": 10,
+    "cos_lr": false,
+    "deterministic": true,
+    "device": 0,
+    "epochs": 100,
+    "imgsz": 640,
+    "model": "yolo26n.pt",
+    "optimizer": "auto",
+    "patience": 20,
+    "plots": true,
+    "rect": false,
+    "save": true,
+    "save_period": 10,
+    "val": true,
+    "workers": 4
+  },
+  "historical_evidence": {
+    "experiment_git_sha": "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
+    "train_config_sha256": "6ba44a0024884c11de37a29b294543c9736cb30b6e96b4a6d27dcb93ebcf185b",
+    "ultralytics_version": "8.4.89",
+    "ultralytics_wheel_sha256": "3b50379a0a0d99f9accab640b2dbaa6b7fdc947f71a0cb56266bc2d87426e5be"
+  },
+  "limitations": [
+    "The original result package did not preserve each run's framework-generated args.yaml, so implicit values are reconstructed from the hash-pinned project config and the version-pinned Ultralytics 8.4.89 defaults rather than presented as a captured runtime dump.",
+    "deterministic=true requests deterministic behavior, but AMP, CUDA kernels, dataloader workers, and hardware/runtime differences prevent a bitwise reproducibility claim.",
+    "Three training seeds characterize seed sensitivity within one frozen dataset protocol; they do not estimate between-board or production variance."
+  ],
+  "reproducibility": {
+    "bitwise_reproducibility_claimed": false,
+    "deterministic_requested": true,
+    "seed_applied_by": "explicit model.train(seed=seed) argument",
+    "version_and_dependency_lock": "uv.lock"
+  },
+  "schema_version": "1.0",
+  "training_seeds": [
+    42,
+    43,
+    44
+  ]
+}

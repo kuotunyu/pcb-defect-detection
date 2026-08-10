@@ -1,0 +1,12 @@
+schema_version: "1.0"
+reference_backend: pytorch_fp32
+candidate_backends:
+  - onnxruntime_cuda_fp32
+  - tensorrt_fp16
+split: calibration
+required_images: 60
+confidence: 0.25
+match_iou: 0.5
+required_min_iou: 0.9
+allowed_max_conf_delta: 0.15
+allow_unmatched_detections: false

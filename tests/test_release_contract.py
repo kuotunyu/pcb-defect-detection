@@ -138,6 +138,79 @@ def test_promoted_a100_input_and_finalization_chain_is_hash_bound() -> None:
     assert finalization["results_sha256"] == _sha256(PAIRED_A100 / "final_metrics.json")
 
 
+def test_historical_training_recipe_resolves_augmentation_without_rewriting_evidence() -> None:
+    recipe = _read_json(ROOT / "reports" / "training_recipe.json")
+    input_lock = _read_json(PAIRED_A100 / "input_lock.json")
+    train_config_path = ROOT / "configs" / "train_paired.yaml"
+    train_config = yaml.safe_load(train_config_path.read_text(encoding="utf-8"))
+
+    assert recipe["schema_version"] == "1.0"
+    assert recipe["evidence_scope"] == "historical-metadata-reconstruction"
+    assert recipe["historical_evidence"] == {
+        "experiment_git_sha": input_lock["git_sha"],
+        "train_config_sha256": input_lock["config_sha256"],
+        "ultralytics_version": "8.4.89",
+        "ultralytics_wheel_sha256": (
+            "3b50379a0a0d99f9accab640b2dbaa6b7fdc947f71a0cb56266bc2d87426e5be"
+        ),
+    }
+    assert recipe["historical_evidence"]["train_config_sha256"] == _sha256(train_config_path)
+    assert recipe["explicit_training_config"] == train_config
+    assert recipe["training_seeds"] == [42, 43, 44]
+    assert recipe["augmentation"]["resolved_values"] == {
+        "bgr": 0.0,
+        "copy_paste": 0.0,
+        "cutmix": 0.0,
+        "degrees": 0.0,
+        "fliplr": 0.5,
+        "flipud": 0.0,
+        "hsv_h": 0.015,
+        "hsv_s": 0.7,
+        "hsv_v": 0.4,
+        "mixup": 0.0,
+        "mosaic": 1.0,
+        "perspective": 0.0,
+        "scale": 0.5,
+        "shear": 0.0,
+        "translate": 0.1,
+    }
+    assert recipe["augmentation"]["value_origin"] == "ultralytics-v8.4.89-default.yaml"
+    assert recipe["augmentation"]["close_mosaic"] == {
+        "value": train_config["close_mosaic"],
+        "origin": "explicit-train-config",
+    }
+    assert recipe["data_access_contract"] == {
+        "augmentation_inputs": ["grouped_train", "leaky_train"],
+        "excluded_from_augmentation": ["validation", "calibration", "final_test"],
+        "source_dataset_mutated": False,
+        "augmented_training_samples_exported_to_evaluation": False,
+        "runtime_preview_plots_may_be_written": True,
+    }
+    assert recipe["reproducibility"]["deterministic_requested"] is True
+    assert recipe["reproducibility"]["bitwise_reproducibility_claimed"] is False
+    assert recipe["limitations"]
+
+
+def test_citation_and_zenodo_metadata_are_single_author_and_license_bounded() -> None:
+    citation = yaml.safe_load((ROOT / "CITATION.cff").read_text(encoding="utf-8"))
+    zenodo = _read_json(ROOT / ".zenodo.json")
+    research_package = (ROOT / "docs" / "research-package.md").read_text(encoding="utf-8")
+
+    assert citation["cff-version"] == "1.2.0"
+    assert citation["authors"] == [{"alias": "kuotunyu", "family-names": "kuotunyu"}]
+    assert citation["repository-code"] == "https://github.com/kuotunyu/pcb-defect-detection"
+    assert citation["license"] == "AGPL-3.0-or-later"
+    assert zenodo["creators"] == [{"name": "kuotunyu"}]
+    assert zenodo["upload_type"] == "software"
+    assert zenodo["access_right"] == "open"
+    assert zenodo["license"] == "agpl-3.0"
+    assert "No dataset pixels, model weights, ONNX exports, or TensorRT engines" in zenodo["notes"]
+    assert "python -m pcb_defect.research_package" in research_package
+    assert "not yet published" in research_package
+    assert "dataset pixels" in research_package
+    assert "TensorRT engines" in research_package
+
+
 def test_public_deployment_gate_is_path_free_and_bound_to_raw_manifest_entry() -> None:
     public_path = PAIRED_A100 / "deployment_gate.public.json"
     public_text = public_path.read_text(encoding="utf-8")

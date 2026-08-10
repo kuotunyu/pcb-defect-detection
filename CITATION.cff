@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: >-
+  If you use this source-and-metadata research package, please cite the software.
+title: "PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence"
+type: software
+authors:
+  - family-names: kuotunyu
+    alias: kuotunyu
+repository-code: "https://github.com/kuotunyu/pcb-defect-detection"
+url: "https://github.com/kuotunyu/pcb-defect-detection"
+license: AGPL-3.0-or-later
+abstract: >-
+  A portfolio research package for board-aware PCB defect-detection evaluation,
+  controlled same-board exposure analysis, content-addressed evidence, and
+  calibration-only PyTorch, ONNX Runtime, and TensorRT deployment validation.
+keywords:
+  - computer vision
+  - industrial AI
+  - object detection
+  - evaluation leakage
+  - ONNX Runtime
+  - TensorRT

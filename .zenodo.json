@@ -1,0 +1,28 @@
+{
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "kuotunyu"
+    }
+  ],
+  "description": "Source code and metadata-only evidence for a board-aware PCB defect-detection study of same-board exposure, reproducible evaluation contracts, and calibration-only deployment validation.",
+  "keywords": [
+    "computer vision",
+    "industrial AI",
+    "object detection",
+    "evaluation leakage",
+    "ONNX Runtime",
+    "TensorRT"
+  ],
+  "license": "agpl-3.0",
+  "notes": "No dataset pixels, model weights, ONNX exports, or TensorRT engines are included. The upstream dataset license remains unverified; model and export redistribution rights are not asserted. Performance evidence is calibration-only where stated and is not a production SLA.",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/kuotunyu/pcb-defect-detection",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ],
+  "title": "PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence",
+  "upload_type": "software"
+}

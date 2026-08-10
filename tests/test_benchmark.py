@@ -108,6 +108,22 @@ def _fake_l4_benchmark(
     dataset_root = tmp_path / "dataset" / "pcb"
     repo.mkdir()
     workspace.mkdir()
+    parity_config = repo / "configs" / "backend_parity.yaml"
+    parity_config.parent.mkdir()
+    parity_config.write_text(
+        """schema_version: \"1.0\"
+reference_backend: pytorch_fp32
+candidate_backends: [onnxruntime_cuda_fp32, tensorrt_fp16]
+split: calibration
+required_images: 1
+confidence: 0.25
+match_iou: 0.5
+required_min_iou: 0.9
+allowed_max_conf_delta: 0.15
+allow_unmatched_detections: false
+""",
+        encoding="utf-8",
+    )
     checkpoint = workspace / "best.pt"
     onnx = workspace / "deployment" / "best.onnx"
     calibration = dataset_root / "images" / "calibration.jpg"
@@ -271,6 +287,33 @@ def test_benchmark_rejects_partial_output_without_mutation(
     assert _directory_inventory(output) == {"owner.marker": b"other-invocation"}
 
 
+def test_failed_attempt_never_publishes_partial_final_and_retry_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import pcb_defect.benchmark as benchmark_module
+
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
+    successful_export = benchmark_module._export_engine
+
+    def fail_export(_weights: Path, _output: Path) -> Path:
+        raise BenchmarkError("fixture export failure")
+
+    monkeypatch.setattr(benchmark_module, "_export_engine", fail_export)
+    with pytest.raises(BenchmarkError, match="fixture export failure"):
+        benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
+
+    benchmark_root = workspace / "benchmark_l4"
+    final = benchmark_root / identity.runner_git_sha[:12]
+    assert not final.exists()
+    assert any(path.name.startswith(".attempt-") for path in benchmark_root.iterdir())
+
+    monkeypatch.setattr(benchmark_module, "_export_engine", successful_export)
+    report = benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
+
+    assert report == final / "benchmark_l4.json"
+    assert report.is_file()
+
+
 def _configure_preflight_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> tuple[Path, Path, Path, L4RunIdentity]:
@@ -373,6 +416,8 @@ def _mutate_completed_benchmark(
         report["hardware"]["gpu"] = "NVIDIA L40"
     elif mutation == "fidelity":
         report["fidelity"]["absolute_delta_threshold"] = 1.0
+    elif mutation == "prediction_parity":
+        report["prediction_parity"]["config_sha256"] = "f" * 64
     elif mutation == "artifacts":
         report["artifacts"]["engine_committable"] = True
     elif mutation == "command":
@@ -387,6 +432,7 @@ from pcb_defect.benchmark import (  # noqa: E402
     BenchmarkError,
     _benchmark_image_paths,
     _time_backend,
+    _time_backends_interleaved,
     benchmark,
     benchmark_is_complete,
     main,
@@ -427,6 +473,41 @@ def test_time_backend_warms_then_measures_four_complete_cycles() -> None:
     assert calls.count("sync") == 17
 
 
+def test_interleaved_timing_rotates_every_backend_through_each_position() -> None:
+    calls: list[str] = []
+    images = ["image0", "image1", "image2"]
+    backends = {
+        name: (lambda image, backend=name: calls.append(f"{backend}:{image}"))
+        for name in ("pytorch_fp32", "onnxruntime_cuda_fp32", "tensorrt_fp16")
+    }
+
+    timings = _time_backends_interleaved(
+        backends,
+        images,
+        lambda: None,
+        warmup=3,
+        cycles=2,
+    )
+
+    assert all(timing["n_runs"] == 6 for timing in timings.values())
+    inference_groups = [calls[index : index + 3] for index in range(0, len(calls), 3)]
+    assert inference_groups[:3] == [
+        ["pytorch_fp32:image0", "onnxruntime_cuda_fp32:image0", "tensorrt_fp16:image0"],
+        ["onnxruntime_cuda_fp32:image1", "tensorrt_fp16:image1", "pytorch_fp32:image1"],
+        ["tensorrt_fp16:image2", "pytorch_fp32:image2", "onnxruntime_cuda_fp32:image2"],
+    ]
+    measured = inference_groups[3:]
+    for position in range(3):
+        assert sorted(group[position].split(":", 1)[0] for group in measured) == [
+            "onnxruntime_cuda_fp32",
+            "onnxruntime_cuda_fp32",
+            "pytorch_fp32",
+            "pytorch_fp32",
+            "tensorrt_fp16",
+            "tensorrt_fp16",
+        ]
+
+
 def test_benchmark_report_records_runner_and_parent_provenance(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -444,6 +525,16 @@ def test_benchmark_report_records_runner_and_parent_provenance(
     assert report["artifacts"]["onnx_sha256"] == identity.parent.onnx_sha256
     assert report["runtime_contract"]["before"] == fake_runtime
     assert report["runtime_contract"]["after"] == fake_runtime
+    assert report["schema_version"] == "3.0"
+    assert report["prediction_parity"]["reference_backend"] == "pytorch_fp32"
+    assert report["prediction_parity"]["candidate_backends"] == [
+        "onnxruntime_cuda_fp32",
+        "tensorrt_fp16",
+    ]
+    assert report["prediction_parity"]["n_images"] == 1
+    assert report["prediction_parity"]["passed"] is True
+    assert report["protocol"]["timing_schedule"] == "interleaved-rotating-backend-order"
+    assert report["protocol"]["sessions"] == 1
 
 
 def test_cli_requires_all_immutable_expectations(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -631,6 +722,7 @@ def test_completed_benchmark_rejects_different_dataset_root(
         "protocol",
         "artifacts",
         "fidelity",
+        "prediction_parity",
         "timings",
         "int8",
     ],
@@ -656,6 +748,7 @@ def test_completed_benchmark_rejects_missing_required_field(
         "runtime",
         "hardware",
         "fidelity",
+        "prediction_parity",
         "artifacts",
         "command",
         "timestamps",

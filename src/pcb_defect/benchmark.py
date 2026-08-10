@@ -24,11 +24,19 @@ from PIL import Image
 
 from pcb_defect.experiment import _environment, _sha256_file
 from pcb_defect.l4_contract import L4ContractError, L4RunIdentity, verify_l4_inputs
+from pcb_defect.prediction_parity import (
+    ParityConfig,
+    ParityError,
+    compare_backend_predictions,
+    load_parity_config,
+    prediction_parity_is_complete,
+)
 from pcb_defect.runtime_contract import (
     RuntimeContractError,
     configure_hermetic_ultralytics,
     onnxruntime_state,
 )
+from pcb_defect.viz import Box, boxes_from_ultralytics
 
 configure_hermetic_ultralytics()
 
@@ -64,6 +72,8 @@ PROTOCOL_FIELDS = frozenset(
         "batch",
         "confidence",
         "scope",
+        "timing_schedule",
+        "sessions",
     }
 )
 ARTIFACT_FIELDS = frozenset(
@@ -88,6 +98,7 @@ REPORT_FIELDS = frozenset(
         "protocol",
         "artifacts",
         "fidelity",
+        "prediction_parity",
         "timings",
         "int8",
     }
@@ -140,6 +151,33 @@ def summarize_latencies(latencies_ms: list[float]) -> dict[str, float | int]:
         "max_ms": ordered[-1],
         "fps_from_p50": 1000.0 / p50,
     }
+
+
+def _ultralytics_boxes(model: Any, image: object, confidence: float) -> list[Box]:
+    results = model.predict(image, conf=confidence, verbose=False)
+    if not results:
+        return []
+    if not isinstance(results, list) or len(results) != 1:
+        raise BenchmarkError("Ultralytics parity inference must return exactly one result")
+    return boxes_from_ultralytics(results[0])
+
+
+def _collect_predictions(
+    image_paths: list[Path],
+    images: list[object],
+    inference: Callable[[object], list[Box]],
+    synchronize: Callable[[], None],
+) -> dict[str, list[Box]]:
+    if len(image_paths) != len(images):
+        raise BenchmarkError("prediction parity image paths and decoded images differ")
+    predictions: dict[str, list[Box]] = {}
+    for path, image in zip(image_paths, images, strict=True):
+        if path.stem in predictions:
+            raise BenchmarkError(f"duplicate prediction parity image stem: {path.stem}")
+        boxes = inference(image)
+        synchronize()
+        predictions[path.stem] = boxes
+    return predictions
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -199,25 +237,39 @@ def benchmark(
         raise BenchmarkError("TensorRT runtime is unavailable")
     if (warmup, cycles) != (CANONICAL_WARMUP, CANONICAL_CYCLES):
         raise BenchmarkError("benchmark requires exactly warmup=30 and cycles=4")
+    parity_config_path = repo / "configs" / "backend_parity.yaml"
+    try:
+        parity_config = load_parity_config(parity_config_path)
+    except ParityError as exc:
+        raise BenchmarkError(str(exc)) from exc
+    if len(verified.parent.calibration_images) != parity_config.required_images:
+        raise BenchmarkError(
+            "calibration image count does not match the frozen prediction-parity config"
+        )
     started_at_utc = _utc_now()
 
-    output_dir = workspace / "benchmark_l4" / identity.runner_git_sha[:12]
-    report_path = output_dir / "benchmark_l4.json"
-    if report_path.is_file():
+    benchmark_root = workspace / "benchmark_l4"
+    final_output_dir = benchmark_root / identity.runner_git_sha[:12]
+    final_report_path = final_output_dir / "benchmark_l4.json"
+    if final_report_path.is_file():
         try:
-            report = json.loads(report_path.read_text(encoding="utf-8"))
+            report = json.loads(final_report_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise BenchmarkError(f"invalid existing benchmark report: {report_path}") from exc
+            raise BenchmarkError(f"invalid existing benchmark report: {final_report_path}") from exc
         if not isinstance(report, dict):
-            raise BenchmarkError(f"invalid existing benchmark report: {report_path}")
+            raise BenchmarkError(f"invalid existing benchmark report: {final_report_path}")
         if benchmark_is_complete(repo, workspace, dataset_root, identity, report):
-            print(f"SKIP completed L4 benchmark: {report_path}")
-            return report_path
-        raise BenchmarkError(f"existing benchmark evidence is incomplete: {report_path}")
-    if output_dir.exists():
-        raise BenchmarkError(f"partial benchmark directory exists: {output_dir}")
+            print(f"SKIP completed L4 benchmark: {final_report_path}")
+            return final_report_path
+        raise BenchmarkError(f"existing benchmark evidence is incomplete: {final_report_path}")
+    if final_output_dir.exists():
+        raise BenchmarkError(f"partial benchmark directory exists: {final_output_dir}")
 
-    output_dir.mkdir(parents=True)
+    benchmark_root.mkdir(parents=True, exist_ok=True)
+    output_dir = Path(
+        tempfile.mkdtemp(prefix=f".attempt-{identity.runner_git_sha[:12]}-", dir=benchmark_root)
+    )
+    report_path = output_dir / "benchmark_l4.json"
     engine_path = _export_engine(verified.parent.checkpoint_path, output_dir)
     engine_metrics = gpu.yolo(str(engine_path)).val(
         data=str(verified.parent.calibration_yaml),
@@ -246,14 +298,51 @@ def benchmark(
         raise BenchmarkError(f"ONNX Runtime did not activate CUDAExecutionProvider: {providers}")
 
     backends = {
-        "pytorch_fp32": lambda image: pt_model.predict(image, conf=0.25, verbose=False),
-        "onnxruntime_cuda_fp32": lambda image: ort_model.predict(image, conf=0.25),
-        "tensorrt_fp16": lambda image: trt_model.predict(image, conf=0.25, verbose=False),
+        "pytorch_fp32": lambda image: pt_model.predict(
+            image, conf=parity_config.thresholds.confidence, verbose=False
+        ),
+        "onnxruntime_cuda_fp32": lambda image: ort_model.predict(
+            image, conf=parity_config.thresholds.confidence
+        ),
+        "tensorrt_fp16": lambda image: trt_model.predict(
+            image, conf=parity_config.thresholds.confidence, verbose=False
+        ),
     }
-    timings = {
-        name: _time_backend(function, images, gpu.torch.cuda.synchronize, warmup, cycles)
-        for name, function in backends.items()
+    timings = _time_backends_interleaved(
+        backends, images, gpu.torch.cuda.synchronize, warmup, cycles
+    )
+    prediction_functions: dict[str, Callable[[object], list[Box]]] = {
+        "pytorch_fp32": lambda image: _ultralytics_boxes(
+            pt_model, image, parity_config.thresholds.confidence
+        ),
+        "onnxruntime_cuda_fp32": lambda image: ort_model.predict(
+            image, conf=parity_config.thresholds.confidence
+        ),
+        "tensorrt_fp16": lambda image: _ultralytics_boxes(
+            trt_model, image, parity_config.thresholds.confidence
+        ),
     }
+    predictions = {
+        backend: _collect_predictions(
+            image_paths, images, prediction_functions[backend], gpu.torch.cuda.synchronize
+        )
+        for backend in (
+            parity_config.reference_backend,
+            *parity_config.candidate_backends,
+        )
+    }
+    try:
+        prediction_parity = compare_backend_predictions(
+            predictions[parity_config.reference_backend],
+            {backend: predictions[backend] for backend in parity_config.candidate_backends},
+            reference_backend=parity_config.reference_backend,
+            split=parity_config.split,
+            thresholds=parity_config.thresholds,
+            required_images=parity_config.required_images,
+            config_sha256=_sha256_file(parity_config_path),
+        )
+    except ParityError as exc:
+        raise BenchmarkError(str(exc)) from exc
     runtime_after = _require_cuda_onnxruntime_state()
     if runtime_after != runtime_before:
         raise BenchmarkError("ONNX Runtime state changed during the L4 benchmark")
@@ -261,7 +350,7 @@ def benchmark(
     if not fidelity_passed:
         raise BenchmarkError("TensorRT FP16 calibration fidelity failed")
     report = {
-        "schema_version": "2.0",
+        "schema_version": "3.0",
         "status": "complete",
         "started_at_utc": started_at_utc,
         "completed_at_utc": _utc_now(),
@@ -283,10 +372,12 @@ def benchmark(
             "cycles": cycles,
             "warmup": warmup,
             "batch": 1,
-            "confidence": 0.25,
+            "confidence": parity_config.thresholds.confidence,
             "scope": (
                 "predecoded PIL image; preprocess + inference + postprocess; CUDA synchronized"
             ),
+            "timing_schedule": "interleaved-rotating-backend-order",
+            "sessions": 1,
         },
         "artifacts": {
             "source_checkpoint_sha256": identity.parent.checkpoint_sha256,
@@ -303,6 +394,7 @@ def benchmark(
             "absolute_delta_threshold": verified.parent.gate["fidelity"]["threshold"],
             "passed": fidelity_passed,
         },
+        "prediction_parity": prediction_parity,
         "timings": timings,
         "int8": {
             "status": "not_run",
@@ -317,8 +409,16 @@ def benchmark(
         json.dump(report, handle, indent=2, sort_keys=True)
         handle.write("\n")
     os.replace(temporary_report, report_path)
-    print(f"L4 BENCHMARK COMPLETE: {report_path}")
-    return report_path
+    if final_output_dir.exists():
+        raise BenchmarkError(f"refusing to overwrite L4 benchmark: {final_output_dir}")
+    try:
+        output_dir.rename(final_output_dir)
+    except OSError as exc:
+        raise BenchmarkError(
+            f"completed L4 benchmark could not publish final directory: {final_output_dir}"
+        ) from exc
+    print(f"L4 BENCHMARK COMPLETE: {final_report_path}")
+    return final_report_path
 
 
 def benchmark_is_complete(
@@ -343,6 +443,8 @@ def benchmark_is_complete(
         image_paths = list(verified.parent.calibration_images)
         current_runtime = _require_cuda_onnxruntime_state()
         current_hardware = _hardware(gpu.torch, device_name, gpu.tensorrt_version)
+        parity_config_path = repo / "configs" / "backend_parity.yaml"
+        parity_config = load_parity_config(parity_config_path)
         return _report_matches_complete_evidence(
             report,
             identity,
@@ -351,10 +453,13 @@ def benchmark_is_complete(
             engine,
             current_runtime,
             current_hardware,
+            parity_config,
+            _sha256_file(parity_config_path),
         )
     except (
         BenchmarkError,
         L4ContractError,
+        ParityError,
         ImportError,
         OSError,
         KeyError,
@@ -377,6 +482,8 @@ def _report_matches_complete_evidence(
     engine: Path,
     current_runtime: dict[str, object],
     current_hardware: dict[str, Any],
+    parity_config: ParityConfig,
+    parity_config_sha256: str,
 ) -> bool:
     if set(report) != REPORT_FIELDS:
         return False
@@ -391,7 +498,7 @@ def _report_matches_complete_evidence(
             "engine_committable": False,
         }
         return (
-            report.get("schema_version") == "2.0"
+            report.get("schema_version") == "3.0"
             and report.get("status") == "complete"
             and completed >= started
             and _command_matches(report["command"])
@@ -408,6 +515,9 @@ def _report_matches_complete_evidence(
             and _runtime_matches(report["runtime"], current_runtime)
             and _runtime_contract_matches(report["runtime_contract"], current_runtime)
             and _fidelity_matches(report["fidelity"], gate)
+            and _prediction_parity_matches(
+                report["prediction_parity"], parity_config, parity_config_sha256
+            )
             and _timings_match(report["timings"], len(image_paths) * CANONICAL_CYCLES)
             and report["int8"]
             == {
@@ -451,6 +561,8 @@ def _benchmark_protocol(image_paths: list[Path]) -> dict[str, Any]:
         "batch": 1,
         "confidence": 0.25,
         "scope": "predecoded PIL image; preprocess + inference + postprocess; CUDA synchronized",
+        "timing_schedule": "interleaved-rotating-backend-order",
+        "sessions": 1,
     }
 
 
@@ -465,13 +577,19 @@ def _command_matches(command: Any) -> bool:
 def _protocol_matches(protocol: Any, expected: dict[str, Any]) -> bool:
     if not isinstance(protocol, dict) or set(protocol) != PROTOCOL_FIELDS:
         return False
-    integer_fields = ("images", "cycles", "warmup", "batch")
+    integer_fields = ("images", "cycles", "warmup", "batch", "sessions")
     return (
         all(type(protocol[field]) is int for field in integer_fields)
         and type(protocol["confidence"]) is float
         and all(
             isinstance(protocol[field], str)
-            for field in ("split", "image_list_sha256", "image_content_sha256", "scope")
+            for field in (
+                "split",
+                "image_list_sha256",
+                "image_content_sha256",
+                "scope",
+                "timing_schedule",
+            )
         )
         and protocol == expected
     )
@@ -549,6 +667,26 @@ def _fidelity_matches(fidelity: Any, gate: dict[str, Any]) -> bool:
         and fidelity["absolute_delta_threshold"] == threshold
         and delta == engine - source
         and fidelity["passed"] is (abs(delta) <= float(threshold))
+    )
+
+
+def _prediction_parity_matches(report: Any, config: ParityConfig, config_sha256: str) -> bool:
+    return (
+        isinstance(report, dict)
+        and report.get("split") == config.split
+        and report.get("reference_backend") == config.reference_backend
+        and report.get("candidate_backends") == list(config.candidate_backends)
+        and report.get("required_images") == config.required_images
+        and report.get("n_images") == config.required_images
+        and report.get("config_sha256") == config_sha256
+        and report.get("thresholds")
+        == {
+            "confidence": config.thresholds.confidence,
+            "match_iou": config.thresholds.match_iou,
+            "required_min_iou": config.thresholds.required_min_iou,
+            "allowed_max_conf_delta": config.thresholds.allowed_max_conf_delta,
+        }
+        and prediction_parity_is_complete(report)
     )
 
 
@@ -653,6 +791,47 @@ def _time_backend(
             synchronize()
             latencies.append((time.perf_counter() - started) * 1000)
     return {**summarize_latencies(latencies), "raw_ms": latencies}
+
+
+def _time_backends_interleaved(
+    backends: dict[str, Callable[[object], Any]],
+    images: list[object],
+    synchronize: Callable[[], None],
+    warmup: int,
+    cycles: int,
+) -> dict[str, dict[str, Any]]:
+    """Rotate backend order per image so each backend occupies each timing position equally."""
+    names = tuple(backends)
+    if set(names) != BENCHMARK_BACKENDS or len(names) != len(BENCHMARK_BACKENDS):
+        raise BenchmarkError("interleaved timing requires all canonical backends exactly once")
+    if not images:
+        raise BenchmarkError("interleaved timing requires at least one image")
+
+    for index in range(warmup):
+        image = images[index % len(images)]
+        for name in _rotated(names, index):
+            backends[name](image)
+            synchronize()
+
+    latencies: dict[str, list[float]] = {name: [] for name in names}
+    for cycle in range(cycles):
+        for image_index, image in enumerate(images):
+            schedule_index = cycle * len(images) + image_index
+            for name in _rotated(names, schedule_index):
+                synchronize()
+                started = time.perf_counter()
+                backends[name](image)
+                synchronize()
+                latencies[name].append((time.perf_counter() - started) * 1000)
+    return {
+        name: {**summarize_latencies(values), "raw_ms": values}
+        for name, values in latencies.items()
+    }
+
+
+def _rotated(values: tuple[str, ...], index: int) -> tuple[str, ...]:
+    offset = index % len(values)
+    return values[offset:] + values[:offset]
 
 
 def _export_engine(source_weights: Path, output_dir: Path) -> Path:
