@@ -27,7 +27,7 @@ The Gradio app now presents the project as a Traditional Chinese PCB review work
 Run from the repository root:
 
 ```powershell
-uv run --isolated --no-project --with-requirements app/requirements.txt python -m app.app
+uv run --locked --no-editable --extra app python -m app.app
 ```
 
 The PCB preview is original synthetic artwork labeled `介面示意 · 非模型輸出`. Dataset images and examples are not bundled because the upstream dataset license has not been verified by this project.

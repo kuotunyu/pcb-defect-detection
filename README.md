@@ -21,7 +21,7 @@
 ### 本機啟動
 
 ```powershell
-uv run --isolated --no-project --with-requirements app/requirements.txt python -m app.app
+uv run --locked --no-editable --extra app python -m app.app
 ```
 
 目前啟動後會進入 Recorded evidence mode。未來只有在 `model_contract.json` 宣告 `passed`、artifact SHA-256 相符且 ONNX session 建立成功時，才會顯示上傳與 `執行偵測` 控制項。
