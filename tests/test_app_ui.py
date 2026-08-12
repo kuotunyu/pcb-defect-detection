@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import app.theme as theme
 import numpy as np
 from app.evidence import build_app_state, load_evidence
 from app.inference import InferenceService
@@ -34,6 +35,7 @@ def test_theme_forces_the_approved_light_canvas_in_dark_system_mode() -> None:
     assert "background-color: var(--pcb-ivory) !important" in css
     assert ".pcb-integrity span { color: var(--pcb-muted) !important; }" in css
     assert ".pcb-title-line { display: block; color: var(--pcb-ink) !important; }" in css
+    assert ".pcb-review-card h3 { color: var(--pcb-ink) !important;" in css
     assert "scroll-margin-top" in css
 
 
@@ -43,7 +45,26 @@ def test_evidence_mode_renders_the_complete_portfolio_without_live_action() -> N
     assert "PCB Defect Intelligence" in text
     assert "Deployment Gate，" in text
     assert "介面示意 · 非模型輸出" in text
+    assert "Aggregate fidelity 已通過" in text
+    assert "this metadata-only portfolio release candidate intentionally" not in text
     assert "執行偵測" not in text
+
+
+def test_document_metadata_prefers_zh_tw_and_announces_async_results() -> None:
+    head = getattr(theme, "APP_HEAD", "")
+    javascript = getattr(theme, "APP_JS", "")
+
+    assert 'name="theme-color" content="#f4f3ef"' in head
+    assert "document.documentElement.lang = \"zh-TW\"" in javascript
+    assert 'setAttribute("aria-live", "polite")' in javascript
+
+
+def test_preview_images_reserve_space_and_use_intentional_loading_priority() -> None:
+    text = _config_text()
+
+    assert text.count('width="1200" height="720"') == 2
+    assert 'fetchpriority="high"' in text
+    assert 'loading="lazy"' in text
 
 
 def test_hero_title_uses_intentional_editorial_line_breaks() -> None:
@@ -93,6 +114,8 @@ def test_degraded_mode_keeps_portfolio_and_shows_inline_error() -> None:
     assert "PCB Defect Intelligence" in text
     assert "Evidence unavailable" in text
     assert "Cannot read committed evidence" in text
+    assert "Aggregate fidelity passed" not in text
+    assert "無法驗證 Promotion Gate" in text
     assert "執行偵測" not in text
 
 
