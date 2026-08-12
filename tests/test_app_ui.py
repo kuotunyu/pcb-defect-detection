@@ -55,7 +55,7 @@ def test_document_metadata_prefers_zh_tw_and_announces_async_results() -> None:
     javascript = getattr(theme, "APP_JS", "")
 
     assert 'name="theme-color" content="#f4f3ef"' in head
-    assert "document.documentElement.lang = \"zh-TW\"" in javascript
+    assert 'document.documentElement.lang = "zh-TW"' in javascript
     assert 'setAttribute("aria-live", "polite")' in javascript
 
 
@@ -90,9 +90,7 @@ def test_portfolio_sections_have_stable_browser_targets() -> None:
 
 
 def test_preview_asset_is_original_ui_artwork_without_claimed_confidence() -> None:
-    svg = (ROOT / "app" / "assets" / "pcb-workstation-preview.svg").read_text(
-        encoding="utf-8"
-    )
+    svg = (ROOT / "app" / "assets" / "pcb-workstation-preview.svg").read_text(encoding="utf-8")
 
     assert "介面示意 · 非模型輸出" in svg
     assert "0.9" not in svg

@@ -1054,9 +1054,7 @@ def test_project_metadata_points_to_official_single_author_portfolio() -> None:
         "Repository": "https://github.com/kuotunyu/pcb-defect-detection",
         "Issues": "https://github.com/kuotunyu/pcb-defect-detection/issues",
     }
-    assert {"computer vision", "object detection", "model evaluation"} <= set(
-        project["keywords"]
-    )
+    assert {"computer vision", "object detection", "model evaluation"} <= set(project["keywords"])
 
 
 def test_readme_presents_the_recorded_evidence_workstation() -> None:

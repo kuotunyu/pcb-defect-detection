@@ -68,9 +68,7 @@ def resolve_model(contract: dict, model_path_override: str | None = None) -> Pat
             raise RuntimeError("Passed model contract must pin a repository and immutable revision")
         from huggingface_hub import hf_hub_download
 
-        path = Path(
-            hf_hub_download(repo_id=repo_id, filename=filename, revision=revision)
-        )
+        path = Path(hf_hub_download(repo_id=repo_id, filename=filename, revision=revision))
 
     observed = _sha256_file(path)
     if observed != expected:

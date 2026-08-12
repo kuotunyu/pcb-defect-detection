@@ -72,10 +72,26 @@ def _kpis_html(evidence: EvidenceSummary | None) -> str:
     else:
         cards = "".join(
             (
-                _metric_card("Defect Classes", f"{evidence.defect_classes} 類", "PCB bare-board defect taxonomy"),
-                _metric_card(evidence.leakage_effect.label, evidence.leakage_effect.display_value, evidence.leakage_effect.context),
-                _metric_card(evidence.grouped_map50.label, evidence.grouped_map50.display_value, evidence.grouped_map50.context),
-                _metric_card(evidence.ort_cuda_p50.label, evidence.ort_cuda_p50.display_value, evidence.ort_cuda_p50.context),
+                _metric_card(
+                    "Defect Classes",
+                    f"{evidence.defect_classes} 類",
+                    "PCB bare-board defect taxonomy",
+                ),
+                _metric_card(
+                    evidence.leakage_effect.label,
+                    evidence.leakage_effect.display_value,
+                    evidence.leakage_effect.context,
+                ),
+                _metric_card(
+                    evidence.grouped_map50.label,
+                    evidence.grouped_map50.display_value,
+                    evidence.grouped_map50.context,
+                ),
+                _metric_card(
+                    evidence.ort_cuda_p50.label,
+                    evidence.ort_cuda_p50.display_value,
+                    evidence.ort_cuda_p50.context,
+                ),
             )
         )
     return f"<section class='pcb-kpi-area' aria-label='核心工程指標'><dl class='pcb-shell pcb-kpi-grid'>{cards}</dl></section>"
@@ -87,7 +103,9 @@ def _workstation_html(state: AppState) -> str:
     if state.mode is AppMode.DEGRADED:
         gate_status = "UNAVAILABLE"
         gate_explanation = "Committed evidence 或 model runtime 無法完成驗證；inference 已停用。"
-        technical_detail = f'<p class="pcb-contract-detail"><span>Technical detail</span>{status_detail}</p>'
+        technical_detail = (
+            f'<p class="pcb-contract-detail"><span>Technical detail</span>{status_detail}</p>'
+        )
     else:
         gate_status = "BLOCKED"
         gate_explanation = "Aggregate fidelity 已通過；strict L4 backend prediction-parity gate 未通過，因此不發布 public ONNX artifact、hosted model revision 或 inference endpoint。"
@@ -118,7 +136,9 @@ def _evidence_html(evidence: EvidenceSummary | None, state: AppState) -> str:
         gate_class = "pcb-card"
     elif evidence is None:
         parity = "UNVERIFIED"
-        gate_copy = "Committed evidence 無法完整載入，因此無法驗證 Promotion Gate；inference 已停用。"
+        gate_copy = (
+            "Committed evidence 無法完整載入，因此無法驗證 Promotion Gate；inference 已停用。"
+        )
         gate_class = "pcb-card pcb-card-blocked"
     else:
         parity = "BLOCKED"

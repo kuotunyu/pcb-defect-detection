@@ -18,14 +18,14 @@ APP_THEME = gr.themes.Base(
 
 APP_HEAD = '<meta name="theme-color" content="#f4f3ef">'
 
-APP_JS = r'''() => {
+APP_JS = r"""() => {
   document.documentElement.lang = "zh-TW";
   const liveRegion = document.getElementById("inference-summary");
   if (liveRegion) {
     liveRegion.setAttribute("aria-live", "polite");
     liveRegion.setAttribute("aria-atomic", "true");
   }
-}'''
+}"""
 
 
 APP_CSS = """
