@@ -16,7 +16,23 @@ short_description: Metadata-only portfolio; public model artifact intentionally 
 pinned: false
 ---
 
-# Deployment status
+# PCB review workstation
+
+The Gradio app now presents the project as a Traditional Chinese PCB review workstation instead of replacing the entire page with a deployment warning. The complete portfolio remains visible in every mode:
+
+- `Recorded evidence`: the current public release; committed metrics, review-workstation structure, and Promotion Gate are visible without claiming live inference.
+- `Live inference`: appears only after the model contract passes, its ONNX SHA-256 matches, and the runtime session initializes.
+- `Degraded`: preserves the page and shows a scoped inline error when evidence or a release-approved model cannot be loaded.
+
+Run from the repository root:
+
+```powershell
+uv run --isolated --no-project --with-requirements app/requirements.txt python -m app.app
+```
+
+The PCB preview is original synthetic artwork labeled `介面示意 · 非模型輸出`. Dataset images and examples are not bundled because the upstream dataset license has not been verified by this project.
+
+## Deployment status
 
 Aggregate fidelity gate passed, but the strict L4 backend prediction-parity gate failed; this metadata-only portfolio release candidate intentionally provides no public ONNX artifact, hosted model revision, or inference endpoint.
 
@@ -25,5 +41,4 @@ serve a model only if a future, separately reviewed release supplies the exact O
 checkpoint SHA-256, deployment-gate SHA-256, official model repository, and immutable revision in
 `model_contract.json`.
 
-Dataset images and examples are not bundled because the upstream dataset license has not been
-verified by this project.
+The app does not use placeholder metrics or a silent fallback model. All public KPI values are read from committed reports at startup.

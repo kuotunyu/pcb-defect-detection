@@ -1054,7 +1054,25 @@ def test_project_metadata_points_to_official_single_author_portfolio() -> None:
         "Repository": "https://github.com/kuotunyu/pcb-defect-detection",
         "Issues": "https://github.com/kuotunyu/pcb-defect-detection/issues",
     }
-    assert {"computer vision", "object detection", "model evaluation"} <= set(project["keywords"])
+    assert {"computer vision", "object detection", "model evaluation"} <= set(
+        project["keywords"]
+    )
+
+
+def test_readme_presents_the_recorded_evidence_workstation() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "docs/assets/ui-workstation-desktop.png" in readme
+    assert "PCB 人工複核工作站" in readme
+    assert "Recorded evidence" in readme
+    assert "不宣稱提供 hosted inference" in readme
+
+
+def test_public_ui_screenshots_exist() -> None:
+    for name in ("ui-workstation-desktop.png", "ui-workstation-mobile.png"):
+        path = ROOT / "docs" / "assets" / name
+        assert path.is_file()
+        assert path.stat().st_size > 20_000
 
 
 def test_candidate_tree_contains_no_dataset_or_model_binaries() -> None:

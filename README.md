@@ -8,6 +8,33 @@
 ![Tests](https://img.shields.io/badge/Tests-passing-success)
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-lightgrey.svg)](LICENSE)
 
+## PCB 人工複核工作站
+
+![PCB 人工複核工作站](docs/assets/ui-workstation-desktop.png)
+
+新版 UI 將模型、評估與發布證據整理成一個可閱讀的 **PCB 人工複核工作站**：第一個畫面同時呈現產品用途、關鍵 metrics、model version 與 Promotion Gate。介面目前以 **Recorded evidence** 模式呈現 committed metrics 與介面示意，不宣稱提供 hosted inference。
+
+- **影像複核視角**：原圖／標註檢視並排，保留 confidence、latency 與複核摘要的產品結構。
+- **Evidence-first**：`+21.3 pp` leakage effect、`63.30%` grouped mAP50 與 `20.28 ms` L4 calibration latency 皆直接來自 committed reports。
+- **Fail closed**：aggregate fidelity 通過但 strict per-box parity failed；UI 保留完整作品集內容，但不解鎖未通過 contract 的 inference。
+
+### 本機啟動
+
+```powershell
+uv run --isolated --no-project --with-requirements app/requirements.txt python -m app.app
+```
+
+目前啟動後會進入 Recorded evidence mode。未來只有在 `model_contract.json` 宣告 `passed`、artifact SHA-256 相符且 ONNX session 建立成功時，才會顯示上傳與 `執行偵測` 控制項。
+
+<details>
+<summary>Mobile layout</summary>
+
+![PCB 人工複核工作站 mobile](docs/assets/ui-workstation-mobile.png)
+
+</details>
+
+---
+
 本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLO26n** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與多後端部署驗證管線：在 frozen paired protocol 下，針對單一 held-out Board 08 的 30 張 final-test images，觀察到 same-board sibling exposure 對應 `21.3` 個百分點的 mAP50 差距。此結果限於固定 dataset 與 training recipe，不估計 between-board 或 production generalization。專案另提供 aggregate ONNX fidelity、strict per-box prediction parity，以及 NVIDIA L4 上 PyTorch、ONNX Runtime CUDA 與 TensorRT 的 calibration-only 部署證據；其中 aggregate fidelity 通過，但 strict per-box parity gate 未通過。
 
 ## 30 秒證據索引
