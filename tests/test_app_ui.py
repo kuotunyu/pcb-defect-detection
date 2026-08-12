@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.evidence import build_app_state
+import numpy as np
+from app.evidence import build_app_state, load_evidence
+from app.inference import InferenceService
+from app.models import AppMode, AppState
 from app.theme import APP_CSS
-from app.ui import build_demo
+from app.ui import build_demo, run_inference_ui
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -51,3 +55,60 @@ def test_preview_asset_is_original_ui_artwork_without_claimed_confidence() -> No
 
     assert "介面示意 · 非模型輸出" in svg
     assert "0.9" not in svg
+
+
+def test_degraded_mode_keeps_portfolio_and_shows_inline_error() -> None:
+    state = AppState(
+        mode=AppMode.DEGRADED,
+        evidence=None,
+        contract={},
+        status_title="Evidence unavailable",
+        status_detail="Cannot read committed evidence",
+        inference_enabled=False,
+        errors=("Cannot read committed evidence",),
+    )
+
+    text = str(build_demo(state).get_config_file())
+
+    assert "PCB Defect Intelligence" in text
+    assert "Evidence unavailable" in text
+    assert "Cannot read committed evidence" in text
+    assert "執行偵測" not in text
+
+
+def test_live_mode_exposes_upload_and_inference_controls() -> None:
+    state = AppState(
+        mode=AppMode.LIVE,
+        evidence=load_evidence(ROOT),
+        contract={"schema_version": "1.0", "status": "passed"},
+        status_title="Live inference",
+        status_detail="Runtime verified",
+        inference_enabled=True,
+    )
+
+    text = str(build_demo(state, InferenceService(_EmptySession(), "images")).get_config_file())
+
+    assert "PCB image" in text
+    assert "Confidence threshold" in text
+    assert "執行偵測" in text
+
+
+def test_no_detection_message_does_not_claim_the_board_is_defect_free() -> None:
+    image = Image.new("RGB", (64, 64), "white")
+
+    annotated, summary, rows = run_inference_ui(
+        image,
+        0.25,
+        InferenceService(_EmptySession(), "images"),
+    )
+
+    assert annotated == (image, [])
+    assert "未偵測到高於目前 confidence threshold 的瑕疵" in summary
+    assert "不代表 PCB 無缺陷" in summary
+    assert rows == []
+
+
+class _EmptySession:
+    def run(self, output_names, inputs):
+        del output_names, inputs
+        return [np.empty((1, 0, 6), dtype=np.float32)]

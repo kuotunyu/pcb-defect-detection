@@ -5,11 +5,16 @@ from __future__ import annotations
 
 import base64
 import html
+import os
+from dataclasses import replace
 from pathlib import Path
 
 import gradio as gr
+from PIL import Image
 
-from app.models import AppState, EvidenceSummary
+from app.evidence import build_app_state
+from app.inference import CLASSES, Detection, InferenceService
+from app.models import AppMode, AppState, EvidenceSummary
 
 REPOSITORY_URL = "https://github.com/kuotunyu/pcb-defect-detection"
 APP_DIR = Path(__file__).resolve().parent
@@ -140,10 +145,108 @@ def _project_links_html() -> str:
     """
 
 
-def build_demo(state: AppState, service: object | None = None) -> gr.Blocks:
-    """Build the portfolio shell; live controls are wired only in LIVE mode later."""
+def _annotations(detections: tuple[Detection, ...]) -> list[tuple[tuple[int, ...], str]]:
+    return [
+        (
+            tuple(round(value) for value in detection.xyxy),
+            f"{CLASSES[detection.cls_id]} · {detection.confidence:.2f}",
+        )
+        for detection in detections
+    ]
 
-    del service
+
+def _detection_rows(detections: tuple[Detection, ...]) -> list[list[object]]:
+    return [
+        [
+            CLASSES[detection.cls_id],
+            round(detection.confidence, 3),
+            *[round(value, 1) for value in detection.xyxy],
+        ]
+        for detection in detections
+    ]
+
+
+def run_inference_ui(
+    image: Image.Image | None,
+    confidence: float,
+    service: InferenceService,
+) -> tuple[tuple[Image.Image, list[tuple[tuple[int, ...], str]]] | None, str, list[list[object]]]:
+    """Adapt the inference service result to stable, zh-TW Gradio outputs."""
+
+    if image is None:
+        return None, "請先選擇 PCB 圖片，再執行偵測。", []
+    try:
+        result = service.run(image, confidence)
+    except Exception as error:  # keep the selected input and surface the runtime failure
+        return (image, []), f"偵測失敗：{html.escape(str(error))}", []
+
+    if not result.detections:
+        summary = (
+            "未偵測到高於目前 confidence threshold 的瑕疵；"
+            "此結果不代表 PCB 無缺陷。"
+            f"\n\nEnd-to-end latency：{result.latency_ms:.0f} ms"
+        )
+    else:
+        summary = (
+            f"偵測到 **{len(result.detections)}** 個候選瑕疵，請進行人工複核。"
+            f"\n\nEnd-to-end latency：{result.latency_ms:.0f} ms"
+        )
+    return (image, _annotations(result.detections)), summary, _detection_rows(result.detections)
+
+
+def _render_live_workstation(service: InferenceService) -> None:
+    gr.HTML(
+        """
+        <section class="pcb-section pcb-surface" aria-labelledby="live-workstation-title">
+          <div class="pcb-shell"><div class="pcb-section-head"><div>
+            <span class="pcb-section-kicker">Live review workstation</span>
+            <h2 id="live-workstation-title">上傳 PCB 影像並複核模型候選瑕疵</h2>
+            <p>模型 artifact、revision 與 SHA-256 已在啟動時通過 committed contract 驗證。</p>
+          </div></div></div>
+        </section>
+        """,
+        elem_id="workstation",
+        container=False,
+    )
+    with gr.Row(elem_id="live-workstation", elem_classes="pcb-shell live-workstation-grid"):
+        with gr.Column(elem_classes="live-control-panel"):
+            image_input = gr.Image(type="pil", label="PCB image", elem_id="pcb-image-input")
+            confidence = gr.Slider(
+                0.05,
+                0.90,
+                value=0.25,
+                step=0.01,
+                label="Confidence threshold",
+                elem_id="confidence-threshold",
+            )
+            run_button = gr.Button("執行偵測", variant="primary", elem_id="run-inference")
+        with gr.Column(elem_classes="live-result-panel"):
+            annotated = gr.AnnotatedImage(label="偵測結果", elem_id="detection-result")
+            summary = gr.Markdown(
+                "選擇影像後執行偵測；所有模型輸出仍需人工複核。",
+                elem_id="inference-summary",
+            )
+            table = gr.Dataframe(
+                headers=["class", "confidence", "x1", "y1", "x2", "y2"],
+                datatype=["str", "number", "number", "number", "number", "number"],
+                interactive=False,
+                label="Detection details",
+                elem_id="detection-table",
+            )
+    run_button.click(
+        fn=lambda selected_image, threshold: run_inference_ui(
+            selected_image,
+            threshold,
+            service,
+        ),
+        inputs=[image_input, confidence],
+        outputs=[annotated, summary, table],
+    )
+
+
+def build_demo(state: AppState, service: InferenceService | None = None) -> gr.Blocks:
+    """Build the complete portfolio and expose inference only in verified LIVE mode."""
+
     with gr.Blocks(
         title="PCB Defect Intelligence",
         fill_width=True,
@@ -152,8 +255,36 @@ def build_demo(state: AppState, service: object | None = None) -> gr.Blocks:
         gr.HTML(_header_html(), elem_id="app-header", container=False)
         gr.HTML(_hero_html(state), elem_id="hero", container=False)
         gr.HTML(_kpis_html(state.evidence), elem_id="kpi-strip", container=False)
-        gr.HTML(_workstation_html(state), elem_id="workstation", container=False)
+        if state.mode is AppMode.LIVE and service is not None:
+            _render_live_workstation(service)
+        else:
+            gr.HTML(_workstation_html(state), elem_id="workstation", container=False)
         gr.HTML(_evidence_html(state.evidence), elem_id="evidence", container=False)
         gr.HTML(_defects_html(), elem_id="defect-taxonomy", container=False)
         gr.HTML(_project_links_html(), elem_id="project-links", container=False)
     return demo
+
+
+def create_demo(repo_root: Path | None = None) -> gr.Blocks:
+    """Build startup state, hash-verify an optional model, and compose the UI."""
+
+    root = repo_root or Path(__file__).resolve().parents[1]
+    state = build_app_state(root)
+    service = None
+    if state.mode is AppMode.LIVE:
+        try:
+            service = InferenceService.from_contract(
+                state.contract,
+                os.environ.get("MODEL_PATH_OVERRIDE"),
+            )
+        except Exception as error:
+            message = str(error)
+            state = replace(
+                state,
+                mode=AppMode.DEGRADED,
+                inference_enabled=False,
+                status_title="Model unavailable",
+                status_detail=message,
+                errors=state.errors + (message,),
+            )
+    return build_demo(state, service)

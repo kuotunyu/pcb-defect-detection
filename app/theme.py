@@ -236,6 +236,36 @@ footer, .built-with { display: none !important; }
 .pcb-review-row b { color: var(--pcb-ink); text-align: right; }
 .pcb-honesty-note { margin: 0; padding: 12px 14px; border: 1px solid #d3ddd5; border-radius: 11px; color: #50665a; background: #edf3ee; font-size: 14px; }
 
+#live-workstation {
+  width: min(1360px, calc(100% - 40px));
+  margin: -26px auto 48px !important;
+  padding: 16px !important;
+  gap: 16px !important;
+  border-radius: 20px;
+  background: var(--pcb-pine-deep);
+  box-shadow: var(--pcb-shadow);
+}
+#live-workstation .live-control-panel,
+#live-workstation .live-result-panel {
+  gap: 13px !important;
+  padding: 18px !important;
+  border-radius: 14px;
+  background: var(--pcb-paper);
+}
+#live-workstation .form,
+#live-workstation .block {
+  border-color: var(--pcb-line) !important;
+  box-shadow: none !important;
+}
+#run-inference button {
+  min-height: 48px;
+  border: 0 !important;
+  color: #fff !important;
+  background: var(--pcb-pine) !important;
+  font-size: 16px !important;
+  font-weight: 750 !important;
+}
+
 .pcb-evidence-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .pcb-card {
   padding: 22px;
@@ -307,6 +337,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
   .pcb-project-panel { grid-template-columns: 1fr; padding: 24px 20px; }
   .pcb-project-links { justify-content: flex-start; }
   .pcb-footer { flex-direction: column; gap: 7px; }
+  #live-workstation { width: min(100% - 24px, 620px); margin-top: -20px !important; padding: 9px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
