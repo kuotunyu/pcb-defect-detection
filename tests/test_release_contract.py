@@ -1069,10 +1069,18 @@ def test_readme_presents_the_recorded_evidence_workstation() -> None:
 
 
 def test_public_ui_screenshots_exist() -> None:
+    from PIL import Image
+
+    expected_dimensions = {
+        "ui-workstation-desktop.png": (1440, 900),
+        "ui-workstation-mobile.png": (390, 844),
+    }
     for name in ("ui-workstation-desktop.png", "ui-workstation-mobile.png"):
         path = ROOT / "docs" / "assets" / name
         assert path.is_file()
         assert path.stat().st_size > 20_000
+        with Image.open(path) as screenshot:
+            assert screenshot.size == expected_dimensions[name]
 
 
 def test_candidate_tree_contains_no_dataset_or_model_binaries() -> None:

@@ -111,11 +111,20 @@ def postprocess(
     original_size: tuple[int, int],
     confidence: float,
 ) -> list[Detection]:
+    if output.ndim != 3 or output.shape[0] != 1 or output.shape[2] != 6:
+        raise ValueError(f"Unexpected model output shape: {output.shape}")
     rows = output[0]
     rows = rows[rows[:, 4] >= confidence]
     original_width, original_height = original_size
     detections: list[Detection] = []
     for x1, y1, x2, y2, score, cls_id in rows:
+        box = np.asarray((x1, y1, x2, y2), dtype=np.float64)
+        if not np.isfinite(box).all() or x2 < x1 or y2 < y1:
+            raise ValueError("Model output contains an invalid detection box")
+        if not np.isfinite(score):
+            raise ValueError("Model output contains a non-finite confidence score")
+        if not np.isfinite(cls_id) or cls_id != int(cls_id) or not 0 <= int(cls_id) < len(CLASSES):
+            raise ValueError(f"Model output contains invalid class id: {cls_id}")
         ox1 = float(max(0.0, min((x1 - info.pad_left) / info.gain, original_width)))
         oy1 = float(max(0.0, min((y1 - info.pad_top) / info.gain, original_height)))
         ox2 = float(max(0.0, min((x2 - info.pad_left) / info.gain, original_width)))
@@ -151,3 +160,12 @@ class InferenceService:
         detections = tuple(postprocess(raw_output, info, image.size, confidence))
         elapsed_ms = (time.perf_counter() - started) * 1000
         return InferenceResult(image=image, detections=detections, latency_ms=elapsed_ms)
+
+    @property
+    def runtime_label(self) -> str:
+        get_providers = getattr(self._session, "get_providers", None)
+        if not callable(get_providers):
+            return "ONNX Runtime"
+        providers = get_providers()
+        provider = providers[0] if providers else "provider unavailable"
+        return f"ONNX Runtime · {provider}"

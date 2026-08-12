@@ -29,6 +29,7 @@ def _preview_data_uri() -> str:
 
 def _header_html() -> str:
     return f"""
+    <a class="pcb-skip-link" href="#main-content">跳至主要內容</a>
     <div class="pcb-nav-wrap">
       <nav class="pcb-nav pcb-shell" aria-label="主要導覽">
         <a class="pcb-brand" href="#hero">
@@ -47,7 +48,7 @@ def _header_html() -> str:
 def _hero_html(state: AppState) -> str:
     integrity = html.escape(state.status_title)
     return f"""
-    <section class="pcb-hero" aria-labelledby="hero-title">
+    <section id="main-content" class="pcb-hero" aria-labelledby="hero-title">
       <div class="pcb-shell pcb-hero-grid">
         <div class="pcb-hero-copy">
           <div class="pcb-eyebrow"><span class="pcb-eyebrow-dot"></span>Leakage-aware Computer Vision Portfolio</div>
@@ -101,18 +102,28 @@ def _workstation_html(state: AppState) -> str:
     """
 
 
-def _evidence_html(evidence: EvidenceSummary | None) -> str:
+def _evidence_html(evidence: EvidenceSummary | None, state: AppState) -> str:
     grouped = evidence.grouped_map50.display_value if evidence else "Unavailable"
     leakage = evidence.leakage_effect.display_value if evidence else "Unavailable"
-    parity = "PASS" if evidence and evidence.strict_parity_passed else "BLOCKED"
+    parity = (
+        "PASS"
+        if state.mode is AppMode.LIVE or (evidence and evidence.strict_parity_passed)
+        else "BLOCKED"
+    )
+    gate_copy = (
+        "Release-approved strict per-box prediction parity evidence is committed."
+        if state.mode is AppMode.LIVE
+        else "Aggregate fidelity passed，但 strict per-box prediction parity failed，因此不發布 public model artifact。"
+    )
+    gate_class = "pcb-card" if state.mode is AppMode.LIVE else "pcb-card pcb-card-blocked"
     return f"""
     <section class="pcb-section" aria-labelledby="evidence-title">
       <div class="pcb-shell">
         <div class="pcb-section-head"><div><span class="pcb-section-kicker">Committed evidence</span><h2 id="evidence-title">不是只展示漂亮的 bounding boxes</h2><p>每個數字都有 frozen protocol、hash-bound artifact 與 limitation；失敗的 gate 也完整保留。</p></div></div>
         <div class="pcb-evidence-grid">
-          <article class="pcb-card"><span class="pcb-evidence-number">01</span><h3>Board-level Split</h3><p>以 PCB Board ID 做資料切分，避免同板 sibling image 同時落入 train 與 test。</p><div class="pcb-evidence-result"><span>Protocol frozen · PASS</span><a href="{REPOSITORY_URL}/blob/main/reports/protocol/paired_split_manifest.json" target="_blank">Evidence ↗</a></div></article>
-          <article class="pcb-card"><span class="pcb-evidence-number">02</span><h3>Paired Evaluation</h3><p>Grouped 與 leaky-control 共用 final test 與三組 seeds，量化 same-board exposure effect。</p><div class="pcb-evidence-result"><span>{leakage} · mAP50 {grouped}</span><a href="{REPOSITORY_URL}/blob/main/reports/paired_a100/final_metrics.json" target="_blank">Evidence ↗</a></div></article>
-          <article class="pcb-card pcb-card-blocked"><span class="pcb-evidence-number">03</span><h3>Promotion Gate</h3><p>Aggregate fidelity passed，但 strict per-box prediction parity failed，因此不發布 public model artifact。</p><div class="pcb-evidence-result"><span>Strict parity · {parity}</span><a href="{REPOSITORY_URL}/blob/main/reports/backend_parity_l4.json" target="_blank">Evidence ↗</a></div></article>
+          <article class="pcb-card"><span class="pcb-evidence-number">01</span><h3>Board-level Split</h3><p>以 PCB Board ID 做資料切分，避免同板 sibling image 同時落入 train 與 test。</p><div class="pcb-evidence-result"><span>Protocol frozen · PASS</span><a href="{REPOSITORY_URL}/blob/main/reports/protocol/paired_split_manifest.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
+          <article class="pcb-card"><span class="pcb-evidence-number">02</span><h3>Paired Evaluation</h3><p>Grouped 與 leaky-control 共用 final test 與三組 seeds，量化 same-board exposure effect。</p><div class="pcb-evidence-result"><span>{leakage} · mAP50 {grouped}</span><a href="{REPOSITORY_URL}/blob/main/reports/paired_a100/final_metrics.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
+          <article class="{gate_class}"><span class="pcb-evidence-number">03</span><h3>Promotion Gate</h3><p>{gate_copy}</p><div class="pcb-evidence-result"><span>Strict parity · {parity}</span><a href="{REPOSITORY_URL}/blob/main/reports/backend_parity_l4.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
         </div>
       </div>
     </section>
@@ -141,7 +152,7 @@ def _defects_html() -> str:
 
 def _project_links_html() -> str:
     return f"""
-    <section class="pcb-section"><div class="pcb-shell"><div class="pcb-project-panel"><div><span class="pcb-section-kicker" style="color:#d8e6dc">REPRODUCIBLE RESEARCH PACKAGE</span><h2>深入檢視 protocol、model card 與發布證據</h2><p>從資料 fingerprint、paired experiment 到 L4 backend parity，所有公開宣稱都指向 committed evidence。</p></div><div class="pcb-project-links"><a href="{REPOSITORY_URL}" target="_blank">Repository ↗</a><a href="{REPOSITORY_URL}/blob/main/docs/model-card.md" target="_blank">Model Card ↗</a><a href="{REPOSITORY_URL}/blob/main/docs/research-package.md" target="_blank">Research Package ↗</a></div></div><footer class="pcb-footer"><span>PCB Defect Intelligence · AGPL-3.0-or-later</span><span>Designed for evidence-first Computer Vision review</span></footer></div></section>
+    <section class="pcb-section"><div class="pcb-shell"><div class="pcb-project-panel"><div><span class="pcb-section-kicker" style="color:#d8e6dc">REPRODUCIBLE RESEARCH PACKAGE</span><h2>深入檢視 protocol、model card 與發布證據</h2><p>從資料 fingerprint、paired experiment 到 L4 backend parity，所有公開宣稱都指向 committed evidence。</p></div><div class="pcb-project-links"><a href="{REPOSITORY_URL}" target="_blank" rel="noopener noreferrer">Repository ↗</a><a href="{REPOSITORY_URL}/blob/main/docs/model-card.md" target="_blank" rel="noopener noreferrer">Model Card ↗</a><a href="{REPOSITORY_URL}/blob/main/docs/research-package.md" target="_blank" rel="noopener noreferrer">Research Package ↗</a></div></div><footer class="pcb-footer"><span>PCB Defect Intelligence · AGPL-3.0-or-later</span><span>Designed for evidence-first Computer Vision review</span></footer></div></section>
     """
 
 
@@ -194,15 +205,19 @@ def run_inference_ui(
     return (image, _annotations(result.detections)), summary, _detection_rows(result.detections)
 
 
-def _render_live_workstation(service: InferenceService) -> None:
+def _render_live_workstation(state: AppState, service: InferenceService) -> None:
+    repo_id = html.escape(str(state.contract.get("hf_repo_id", "release-approved artifact")))
+    revision = html.escape(str(state.contract.get("hf_revision", "unavailable"))[:12])
+    sha256 = html.escape(str(state.contract.get("onnx_sha256", "unavailable"))[:12])
+    runtime = html.escape(service.runtime_label)
     gr.HTML(
-        """
+        f"""
         <section class="pcb-section pcb-surface" aria-labelledby="live-workstation-title">
           <div class="pcb-shell"><div class="pcb-section-head"><div>
             <span class="pcb-section-kicker">Live review workstation</span>
             <h2 id="live-workstation-title">上傳 PCB 影像並複核模型候選瑕疵</h2>
             <p>模型 artifact、revision 與 SHA-256 已在啟動時通過 committed contract 驗證。</p>
-          </div></div></div>
+          </div></div><div class="pcb-live-provenance"><span><b>PROMOTED</b> Promotion Gate</span><span><b>{repo_id}</b> Model</span><span><b>{revision}</b> Revision</span><span><b>{sha256}</b> ONNX SHA-256</span><span><b>{runtime}</b> Runtime</span></div></div>
         </section>
         """,
         elem_id="workstation",
@@ -256,10 +271,10 @@ def build_demo(state: AppState, service: InferenceService | None = None) -> gr.B
         gr.HTML(_hero_html(state), elem_id="hero", container=False)
         gr.HTML(_kpis_html(state.evidence), elem_id="kpi-strip", container=False)
         if state.mode is AppMode.LIVE and service is not None:
-            _render_live_workstation(service)
+            _render_live_workstation(state, service)
         else:
             gr.HTML(_workstation_html(state), elem_id="workstation", container=False)
-        gr.HTML(_evidence_html(state.evidence), elem_id="evidence", container=False)
+        gr.HTML(_evidence_html(state.evidence, state), elem_id="evidence", container=False)
         gr.HTML(_defects_html(), elem_id="defect-taxonomy", container=False)
         gr.HTML(_project_links_html(), elem_id="project-links", container=False)
     return demo

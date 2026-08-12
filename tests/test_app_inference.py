@@ -51,3 +51,18 @@ def test_model_override_requires_matching_sha256(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="ONNX SHA-256 mismatch"):
         resolve_model(contract, str(model))
+
+
+@pytest.mark.parametrize("class_id", [-1, 6, 2.5])
+def test_postprocess_rejects_out_of_range_or_fractional_class_ids(class_id: float) -> None:
+    output = np.array([[[20, 180, 220, 380, 0.9, class_id]]], dtype=np.float32)
+
+    with pytest.raises(ValueError, match="class id"):
+        postprocess(output, LetterboxInfo(2.0, 0, 160), (320, 160), 0.25)
+
+
+def test_postprocess_rejects_non_finite_or_inverted_boxes() -> None:
+    output = np.array([[[220, 180, 20, np.nan, 0.9, 2]]], dtype=np.float32)
+
+    with pytest.raises(ValueError, match="box"):
+        postprocess(output, LetterboxInfo(2.0, 0, 160), (320, 160), 0.25)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from app.models import AppMode, AppState, EvidenceSummary, Metric
@@ -10,6 +11,24 @@ from app.models import AppMode, AppState, EvidenceSummary, Metric
 
 class EvidenceError(RuntimeError):
     """A committed evidence file is missing or violates the expected schema."""
+
+
+def _require_ratio(value: object, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise EvidenceError(f"{name} must be a number between 0 and 1")
+    parsed = float(value)
+    if not math.isfinite(parsed) or not 0 <= parsed <= 1:
+        raise EvidenceError(f"{name} must be finite and between 0 and 1")
+    return parsed
+
+
+def _require_positive_number(value: object, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise EvidenceError(f"{name} must be a positive number")
+    parsed = float(value)
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise EvidenceError(f"{name} must be finite and positive")
+    return parsed
 
 
 def _read_json(path: Path) -> dict:
@@ -37,10 +56,18 @@ def load_evidence(repo_root: Path) -> EvidenceSummary:
 
     try:
         arms = final_metrics["aggregate"]["by_arm"]
-        grouped = float(arms["grouped"]["map50"]["mean"])
-        leaky = float(arms["leaky_control"]["map50"]["mean"])
-        ort_p50 = float(benchmark["timings"]["onnxruntime_cuda_fp32"]["p50_ms"])
-        strict_parity_passed = bool(parity["passed"])
+        grouped = _require_ratio(arms["grouped"]["map50"]["mean"], "Grouped mAP50")
+        leaky = _require_ratio(
+            arms["leaky_control"]["map50"]["mean"],
+            "Leaky-control mAP50",
+        )
+        ort_p50 = _require_positive_number(
+            benchmark["timings"]["onnxruntime_cuda_fp32"]["p50_ms"],
+            "ONNX Runtime CUDA p50",
+        )
+        strict_parity_passed = parity["passed"]
+        if not isinstance(strict_parity_passed, bool):
+            raise EvidenceError("Backend parity passed must be a boolean")
     except (KeyError, TypeError, ValueError) as error:
         raise EvidenceError(f"Committed evidence schema mismatch: {error}") from error
 
@@ -106,6 +133,18 @@ def build_app_state(repo_root: Path, contract: dict | None = None) -> AppState:
             status_title="Recorded evidence mode",
             status_detail=detail,
             inference_enabled=False,
+        )
+
+    if not evidence.strict_parity_passed:
+        message = "Passed model contract contradicts failed committed strict parity evidence"
+        return AppState(
+            mode=AppMode.DEGRADED,
+            evidence=evidence,
+            contract=loaded_contract,
+            status_title="Release evidence mismatch",
+            status_detail=message,
+            inference_enabled=False,
+            errors=(message,),
         )
 
     return AppState(

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -32,6 +34,7 @@ def test_theme_forces_the_approved_light_canvas_in_dark_system_mode() -> None:
     assert "background-color: var(--pcb-ivory) !important" in css
     assert ".pcb-integrity span { color: var(--pcb-muted) !important; }" in css
     assert ".pcb-title-line { display: block; color: var(--pcb-ink) !important; }" in css
+    assert "scroll-margin-top" in css
 
 
 def test_evidence_mode_renders_the_complete_portfolio_without_live_action() -> None:
@@ -62,6 +65,7 @@ def test_portfolio_sections_have_stable_browser_targets() -> None:
         "project-links",
     ):
         assert element_id in text
+    assert "跳至主要內容" in text
 
 
 def test_preview_asset_is_original_ui_artwork_without_claimed_confidence() -> None:
@@ -96,7 +100,13 @@ def test_live_mode_exposes_upload_and_inference_controls() -> None:
     state = AppState(
         mode=AppMode.LIVE,
         evidence=load_evidence(ROOT),
-        contract={"schema_version": "1.0", "status": "passed"},
+        contract={
+            "schema_version": "1.0",
+            "status": "passed",
+            "onnx_sha256": "a" * 64,
+            "hf_repo_id": "owner/model",
+            "hf_revision": "b" * 40,
+        },
         status_title="Live inference",
         status_detail="Runtime verified",
         inference_enabled=True,
@@ -107,6 +117,12 @@ def test_live_mode_exposes_upload_and_inference_controls() -> None:
     assert "PCB image" in text
     assert "Confidence threshold" in text
     assert "執行偵測" in text
+    assert "PROMOTED" in text
+    assert "owner/model" in text
+    assert "bbbbbbbbbbbb" in text
+    assert "aaaaaaaaaaaa" in text
+    assert "ONNX Runtime" in text
+    assert "Strict parity · PASS" in text
 
 
 def test_no_detection_message_does_not_claim_the_board_is_defect_free() -> None:
@@ -128,3 +144,38 @@ class _EmptySession:
     def run(self, output_names, inputs):
         del output_names, inputs
         return [np.empty((1, 0, 6), dtype=np.float32)]
+
+    def get_providers(self):
+        return ["CPUExecutionProvider"]
+
+
+def test_malformed_output_becomes_inline_error_and_preserves_input() -> None:
+    image = Image.new("RGB", (64, 64), "white")
+    service = InferenceService(_MalformedClassSession(), "images")
+
+    annotated, summary, rows = run_inference_ui(image, 0.25, service)
+
+    assert annotated == (image, [])
+    assert "偵測失敗" in summary
+    assert "class id" in summary
+    assert rows == []
+
+
+class _MalformedClassSession(_EmptySession):
+    def run(self, output_names, inputs):
+        del output_names, inputs
+        return [np.array([[[1, 1, 10, 10, 0.8, 9]]], dtype=np.float32)]
+
+
+def test_declared_direct_app_entry_point_builds_successfully() -> None:
+    result = subprocess.run(
+        [sys.executable, "app/app.py", "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "PCB Defect Intelligence" in result.stdout
