@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">PCB 人工複核工作站介面示意</title>
+  <desc id="desc">原創 PCB 線路插畫呈現原圖與標註結果並排，不是模型輸出。</desc>
+  <defs>
+    <linearGradient id="board" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5f806d"/>
+      <stop offset="1" stop-color="#294d3a"/>
+    </linearGradient>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0V44" fill="none" stroke="#d4c28b" stroke-width="4" opacity=".42"/>
+      <circle cx="0" cy="0" r="7" fill="#d4c28b" opacity=".7"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#17241e" flood-opacity=".22"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="720" rx="34" fill="#26332e"/>
+  <rect x="34" y="30" width="1132" height="58" rx="14" fill="#34483e"/>
+  <circle cx="62" cy="59" r="7" fill="#e8c5b8"/>
+  <text x="82" y="66" fill="#f5f3ed" font-family="sans-serif" font-size="22" font-weight="700">PCB 人工複核工作站</text>
+  <rect x="940" y="45" width="192" height="28" rx="14" fill="#56423d"/>
+  <text x="1036" y="65" text-anchor="middle" fill="#edc9bd" font-family="sans-serif" font-size="14" font-weight="700">RECORDED EVIDENCE</text>
+
+  <g transform="translate(34 108)">
+    <rect width="552" height="466" rx="18" fill="#edf1ed"/>
+    <text x="22" y="36" fill="#56655e" font-family="sans-serif" font-size="16" font-weight="700">原始影像</text>
+    <text x="520" y="36" text-anchor="end" fill="#758079" font-family="monospace" font-size="13">UI PREVIEW</text>
+    <g transform="translate(18 54)" filter="url(#shadow)">
+      <rect width="516" height="390" rx="12" fill="url(#board)"/>
+      <rect x="16" y="16" width="484" height="358" rx="8" fill="url(#grid)"/>
+      <rect x="94" y="82" width="116" height="76" rx="7" fill="#23352d" stroke="#c9b579" stroke-width="5"/>
+      <path d="M72 120H34M230 120h88v70h58" fill="none" stroke="#d4c28b" stroke-width="8" stroke-linecap="round"/>
+      <rect x="342" y="224" width="88" height="112" rx="7" fill="#23352d" stroke="#c9b579" stroke-width="5"/>
+      <path d="M300 280h42M430 280h52M386 224V182h64" fill="none" stroke="#d4c28b" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="76" cy="288" r="27" fill="#2a4136" stroke="#d4c28b" stroke-width="7"/>
+      <circle cx="250" cy="320" r="18" fill="#2a4136" stroke="#d4c28b" stroke-width="6"/>
+    </g>
+  </g>
+
+  <g transform="translate(614 108)">
+    <rect width="552" height="466" rx="18" fill="#edf1ed"/>
+    <text x="22" y="36" fill="#56655e" font-family="sans-serif" font-size="16" font-weight="700">標註檢視</text>
+    <text x="520" y="36" text-anchor="end" fill="#758079" font-family="monospace" font-size="13">ILLUSTRATION</text>
+    <g transform="translate(18 54)" filter="url(#shadow)">
+      <rect width="516" height="390" rx="12" fill="url(#board)"/>
+      <rect x="16" y="16" width="484" height="358" rx="8" fill="url(#grid)"/>
+      <rect x="94" y="82" width="116" height="76" rx="7" fill="#23352d" stroke="#c9b579" stroke-width="5"/>
+      <path d="M72 120H34M230 120h88v70h58" fill="none" stroke="#d4c28b" stroke-width="8" stroke-linecap="round"/>
+      <rect x="342" y="224" width="88" height="112" rx="7" fill="#23352d" stroke="#c9b579" stroke-width="5"/>
+      <path d="M300 280h42M430 280h52M386 224V182h64" fill="none" stroke="#d4c28b" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="76" cy="288" r="27" fill="#2a4136" stroke="#d4c28b" stroke-width="7"/>
+      <circle cx="250" cy="320" r="18" fill="#2a4136" stroke="#d4c28b" stroke-width="6"/>
+      <rect x="294" y="174" width="168" height="128" rx="5" fill="none" stroke="#efab97" stroke-width="6"/>
+      <rect x="294" y="140" width="190" height="30" rx="7" fill="#efab97"/>
+      <text x="310" y="161" fill="#342822" font-family="monospace" font-size="14" font-weight="700">ANNOTATION PREVIEW</text>
+    </g>
+  </g>
+
+  <rect x="34" y="598" width="1132" height="88" rx="18" fill="#34483e"/>
+  <text x="64" y="635" fill="#e8c5b8" font-family="sans-serif" font-size="18" font-weight="700">介面示意 · 非模型輸出</text>
+  <text x="64" y="662" fill="#c7d2cb" font-family="sans-serif" font-size="15">Synthetic PCB artwork for layout demonstration · no dataset media included</text>
+  <g transform="translate(916 619)">
+    <circle cx="14" cy="14" r="8" fill="#738e7d"/>
+    <text x="34" y="20" fill="#f5f3ed" font-family="monospace" font-size="15">INTEGRITY FIRST</text>
+  </g>
+</svg>
+
