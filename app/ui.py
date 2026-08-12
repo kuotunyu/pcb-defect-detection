@@ -51,7 +51,7 @@ def _hero_html(state: AppState) -> str:
       <div class="pcb-shell pcb-hero-grid">
         <div class="pcb-hero-copy">
           <div class="pcb-eyebrow"><span class="pcb-eyebrow-dot"></span>Leakage-aware Computer Vision Portfolio</div>
-          <h1 id="hero-title">從資料切分到 <em>Deployment Gate</em>，完整呈現 PCB 瑕疵偵測工程。</h1>
+          <h1 id="hero-title"><span class="pcb-title-line">從資料切分到</span><span class="pcb-title-line">Deployment Gate，</span><span class="pcb-title-line">完整呈現 PCB</span><span class="pcb-title-line">瑕疵偵測工程。</span></h1>
           <p class="pcb-lead">以 YOLO26n 建構六類裸板瑕疵偵測，透過 Board-level protocol 揭露資料洩漏造成的效能膨脹，並用 committed evidence 驗證模型發布邊界。</p>
           <div class="pcb-actions"><a class="pcb-button pcb-button-primary" href="#workstation">查看複核工作站</a><a class="pcb-button" href="#evidence">瀏覽工程證據</a></div>
           <div class="pcb-integrity"><span class="pcb-integrity-icon">●</span><span><strong>{integrity}</strong> · 不下載 floating model，也不把未通過 gate 的 artifact 包裝成 public inference。</span></div>

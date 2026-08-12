@@ -34,8 +34,11 @@ APP_CSS = """
   --pcb-shadow: 0 18px 48px rgba(44, 61, 52, 0.11);
 }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; background-color: var(--pcb-ivory) !important; }
 body {
+  margin: 0 !important;
+  color-scheme: light;
+  background-color: var(--pcb-ivory) !important;
   background:
     radial-gradient(circle at 8% 0%, rgba(115, 142, 125, 0.13), transparent 30rem),
     linear-gradient(180deg, #f8f7f3 0%, var(--pcb-ivory) 100%) !important;
@@ -48,7 +51,11 @@ body {
   font-family: "IBM Plex Sans", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif !important;
   font-size: 17px !important;
   line-height: 1.65 !important;
-  background: transparent !important;
+  min-height: 100vh;
+  background-color: var(--pcb-ivory) !important;
+  background-image:
+    radial-gradient(circle at 8% 0%, rgba(115, 142, 125, 0.13), transparent 30rem),
+    linear-gradient(180deg, #f8f7f3 0%, var(--pcb-ivory) 100%) !important;
 }
 .gradio-container > .main { padding: 0 !important; }
 .gradio-container .block { margin: 0 !important; }
@@ -83,7 +90,7 @@ footer, .built-with { display: none !important; }
   font: 700 12px/1 "IBM Plex Mono", monospace;
   letter-spacing: 0.04em;
 }
-.pcb-brand-copy strong { display: block; font-size: 16px; line-height: 1.2; letter-spacing: -0.02em; }
+.pcb-brand-copy strong { display: block; color: var(--pcb-ink) !important; font-size: 16px; line-height: 1.2; letter-spacing: -0.02em; }
 .pcb-brand-copy span { display: block; color: var(--pcb-muted); font-size: 13px; line-height: 1.2; margin-top: 3px; }
 .pcb-nav-links { display: flex; align-items: center; gap: 24px; }
 .pcb-nav-links a {
@@ -106,7 +113,7 @@ footer, .built-with { display: none !important; }
 .pcb-hero {
   position: relative;
   overflow: hidden;
-  padding: 54px 0 34px;
+  padding: 36px 0 18px;
 }
 .pcb-hero::before {
   content: "";
@@ -145,11 +152,13 @@ footer, .built-with { display: none !important; }
   max-width: 720px;
   margin: 20px 0 18px;
   color: var(--pcb-ink);
-  font-size: clamp(42px, 4.2vw, 62px);
+  font-size: clamp(40px, 4vw, 58px);
   line-height: 1.08;
   letter-spacing: -0.052em;
 }
 .pcb-hero h1 em { color: var(--pcb-pine); font-style: normal; }
+.pcb-title-line { display: block; color: var(--pcb-ink) !important; }
+.pcb-title-line:nth-child(2) { color: var(--pcb-pine) !important; }
 .pcb-lead { max-width: 660px; margin: 0; color: #596760; font-size: 18px; line-height: 1.72; }
 .pcb-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
 .pcb-button {
@@ -171,7 +180,8 @@ footer, .built-with { display: none !important; }
 .pcb-button:hover { transform: translateY(-2px); border-color: var(--pcb-sage); box-shadow: 0 10px 24px rgba(44, 61, 52, 0.11); }
 .pcb-button-primary { color: #fff; border-color: var(--pcb-pine); background: var(--pcb-pine); }
 .pcb-integrity { display: flex; align-items: flex-start; gap: 9px; margin-top: 19px; color: var(--pcb-muted); font-size: 14px; }
-.pcb-integrity strong { color: #76564e; }
+.pcb-integrity span { color: var(--pcb-muted) !important; }
+.pcb-integrity strong { color: #76564e !important; }
 .pcb-integrity-icon { color: var(--pcb-brick); font-size: 16px; line-height: 1.5; }
 
 .pcb-preview-frame {
@@ -196,8 +206,8 @@ footer, .built-with { display: none !important; }
 .pcb-kpi-area { padding: 6px 0 46px; }
 .pcb-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .pcb-kpi {
-  min-height: 142px;
-  padding: 19px 20px;
+  min-height: 122px;
+  padding: 16px 18px;
   border: 1px solid var(--pcb-line);
   border-radius: 16px;
   background: rgba(255, 254, 251, 0.88);

@@ -25,13 +25,29 @@ def test_theme_keeps_primary_copy_readable_and_honors_reduced_motion() -> None:
     assert "prefers-reduced-motion" in css
 
 
+def test_theme_forces_the_approved_light_canvas_in_dark_system_mode() -> None:
+    css = APP_CSS.lower()
+
+    assert "background: transparent !important" not in css
+    assert "background-color: var(--pcb-ivory) !important" in css
+    assert ".pcb-integrity span { color: var(--pcb-muted) !important; }" in css
+    assert ".pcb-title-line { display: block; color: var(--pcb-ink) !important; }" in css
+
+
 def test_evidence_mode_renders_the_complete_portfolio_without_live_action() -> None:
     text = _config_text()
 
     assert "PCB Defect Intelligence" in text
-    assert "從資料切分到 <em>Deployment Gate</em>" in text
+    assert "Deployment Gate，" in text
     assert "介面示意 · 非模型輸出" in text
     assert "執行偵測" not in text
+
+
+def test_hero_title_uses_intentional_editorial_line_breaks() -> None:
+    text = _config_text()
+
+    for line in ("從資料切分到", "Deployment Gate，", "完整呈現 PCB", "瑕疵偵測工程。"):
+        assert f'<span class="pcb-title-line">{line}</span>' in text
 
 
 def test_portfolio_sections_have_stable_browser_targets() -> None:
