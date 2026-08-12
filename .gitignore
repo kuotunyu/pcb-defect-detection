@@ -26,6 +26,7 @@ wandb/
 .pytest_cache/
 .ruff_cache/
 .worktrees/
+.superpowers/
 
 # personal notes - not part of the public repo
 .claude/
