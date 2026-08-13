@@ -61,19 +61,28 @@ def test_navigation_and_hero_actions_use_comfortable_control_type() -> None:
     assert "font-size: 17px" in button_rule
 
 
-def test_hero_rhythm_and_blocked_gate_keep_readable_visual_hierarchy() -> None:
+def test_heading_and_compact_summary_roles_have_comfortable_line_height() -> None:
     css = APP_CSS.lower()
     hero_title_rule = css.split(".pcb-hero h1 {", 1)[1].split("}", 1)[0]
+    section_title_rule = css.split(".pcb-section h2 {", 1)[1].split("}", 1)[0]
+    paired_title_rule = css.split(".pcb-evidence-number {", 1)[1].split("}", 1)[0]
+    review_row_rule = css.split(".pcb-review-row {", 1)[1].split("}", 1)[0]
+    evidence_result_rule = css.split(".pcb-evidence-result {", 1)[1].split("}", 1)[0]
     status_card_rule = css.split(".pcb-status-card {", 1)[1].split("}", 1)[0]
     status_label_rule = css.split(".pcb-status-label {", 1)[1].split("}", 1)[0]
     status_value_rule = css.split(".pcb-status-card strong {", 1)[1].split("}", 1)[0]
     status_copy_rule = css.split(".pcb-status-card p {", 1)[1].split("}", 1)[0]
 
-    assert "line-height: 1.12" in hero_title_rule
+    assert "line-height: 1.16" in hero_title_rule
+    assert "line-height: 1.26" in section_title_rule
+    assert "21px/1.3" in paired_title_rule
+    assert "line-height: 1.46" in review_row_rule
+    assert "line-height: 1.46" in evidence_result_rule
     assert "background: #563832" in status_card_rule
     assert "color: #f4d6cc !important" in status_label_rule
     assert "color: #fffaf7 !important" in status_value_rule
     assert "font-size: 24px" in status_value_rule
+    assert "line-height: 1.2" in status_value_rule
     assert "color: #fff1eb !important" in status_copy_rule
 
 
@@ -100,7 +109,7 @@ def test_evidence_and_defect_headings_use_matching_type_at_opposite_corners() ->
         assert "flex-wrap: nowrap" in rules[selector]
         assert "width: 100%" in rules[selector]
 
-    matching_type = 'font: 700 21px/1.25 "noto sans tc", "microsoft jhenghei", sans-serif'
+    matching_type = 'font: 700 21px/1.3 "noto sans tc", "microsoft jhenghei", sans-serif'
     for selector in (".pcb-evidence-number", ".pcb-card h3", ".pcb-defect-code", ".pcb-defect h3"):
         assert matching_type in rules[selector]
         assert "white-space: nowrap" in rules[selector]
