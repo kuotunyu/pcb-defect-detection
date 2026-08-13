@@ -1,7 +1,7 @@
 # pcb-defect-detection
 
 [![CI](https://github.com/kuotunyu/pcb-defect-detection/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/pcb-defect-detection/actions/workflows/ci.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21877496.svg)](https://doi.org/10.5281/zenodo.21877496)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21877496-1682D4.svg)](https://doi.org/10.5281/zenodo.21877496)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4%2B-EE4C2C?logo=pytorch&logoColor=white)
 ![Ultralytics YOLO26n](https://img.shields.io/badge/YOLO26n-Object%20Detection-blue?logo=ultralytics&logoColor=white)

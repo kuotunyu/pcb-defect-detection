@@ -1071,6 +1071,18 @@ def test_readme_presents_the_recorded_evidence_workstation() -> None:
     assert "不宣稱提供 hosted inference" in readme
 
 
+def test_readme_uses_a_camo_compatible_doi_badge() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    badge = (
+        "[![DOI](https://img.shields.io/badge/"
+        "DOI-10.5281%2Fzenodo.21877496-1682D4.svg)]"
+        "(https://doi.org/10.5281/zenodo.21877496)"
+    )
+    assert badge in readme
+    assert "https://zenodo.org/badge/" not in readme
+
+
 def test_readme_primary_diagrams_form_an_evidence_narrative() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     headings = (
