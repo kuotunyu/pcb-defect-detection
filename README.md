@@ -44,36 +44,23 @@ uv run --locked --no-editable --extra app python -m app.app
 公開 repository 提供可閱讀、可核對的作品集與 committed evidence；受授權資料、模型 artifacts 與 GPU 執行環境維持在 private evidence-production boundary。兩者只透過 hash-bound reports 與版本化 metadata 連接。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '18px'}}}%%
-flowchart LR
+%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+flowchart TB
     accTitle: PCB 瑕疵偵測系統全貌與公開證據邊界
-    accDescr: GitHub 訪客透過 README 與人工複核工作站閱讀 committed evidence；受授權資料、GPU 訓練與私有模型 artifacts 不進入 public repository。
+    accDescr: GitHub 訪客由公開作品集閱讀 committed evidence；受授權資料、GPU 工作與模型 artifacts 留在 private boundary，只發布 hash-bound reports。
 
-    Visitor["GitHub 訪客／技術面試官"]
+    Visitor(["GitHub 訪客／技術面試官"])
+    Portfolio["Public Portfolio<br/>README · 複核工作站"]
+    Evidence["Committed Evidence<br/>reports · hashes"]
+    Production["Private Evidence Production<br/>licensed data · GPU"]
+    Artifacts["Private Artifacts<br/>weights · ONNX · engine"]
+    Archive["GitHub Release + Zenodo DOI<br/>versioned archive"]
 
-    subgraph Public["Public Portfolio"]
-        direction TB
-        Readme["README<br/>UI screenshots · claims · limitations"]
-        Workstation["PCB 人工複核工作站<br/>Recorded evidence mode"]
-        Evidence["Committed evidence<br/>JSON · Markdown · hashes"]
-        Archive["GitHub Release + Zenodo DOI<br/>versioned source · metadata"]
-    end
-
-    subgraph Private["Private Evidence Production"]
-        direction TB
-        Media["HRIPCB licensed media"]
-        Compute["A100 paired training<br/>NVIDIA L4 benchmark"]
-        Artifacts["Private weights · ONNX<br/>TensorRT engine"]
-    end
-
-    Visitor -->|瀏覽與核對| Readme
-    Visitor -->|檢視複核介面| Workstation
-    Readme --> Evidence
-    Workstation --> Evidence
-    Evidence --> Archive
-    Media --> Compute --> Artifacts
-    Compute -.->|只 promotion 去識別化、hash-bound reports| Evidence
-    Artifacts -.->|No hosted inference · No public model artifact| Workstation
+    Visitor -->|瀏覽與核對| Portfolio
+    Portfolio --> Evidence --> Archive
+    Production --> Artifacts
+    Production -.->|hash-bound reports| Evidence
+    Artifacts -.->|No hosted inference<br/>No public model artifact| Portfolio
 
     classDef actor fill:#F3F0E8,stroke:#35594A,stroke-width:2px,color:#26352F
     classDef public fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
@@ -82,13 +69,10 @@ flowchart LR
     classDef blocked fill:#F3E2DD,stroke:#785650,stroke-width:2px,color:#3F2E2B
 
     class Visitor actor
-    class Readme,Workstation public
+    class Portfolio public
     class Evidence,Archive evidence
-    class Media,Compute private
+    class Production private
     class Artifacts blocked
-
-    style Public fill:#F6F7F4,stroke:#35594A,stroke-width:2px,color:#26352F
-    style Private fill:#FBF7EE,stroke:#9A7438,stroke-width:2px,color:#26352F,stroke-dasharray:5 4
 ```
 
 ## 30 秒證據索引
@@ -107,71 +91,29 @@ flowchart LR
 系統不是把 training、benchmark 與 UI 當成彼此無關的展示，而是讓每一層輸出下一層可驗證的 contract。failed gate 仍會成為 evidence，但不會被轉譯成已發布模型。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '18px'}}}%%
-flowchart LR
+%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+flowchart TB
     accTitle: PCB 瑕疵偵測的 evidence-first 四層架構
-    accDescr: 凍結資料 contract 驅動成對實驗與部署驗證，產生 committed evidence；failed strict parity 只能進入 Recorded evidence 或 Degraded mode。
+    accDescr: Frozen data contract 依序驅動 paired evaluation、deployment gate 與 evidence presentation；失敗的 gate 只進入 Recorded evidence 或 Degraded mode。
 
-    subgraph Data["01 · Data Contract"]
-        direction TB
-        Config["paired_protocol.yaml"]
-        Split["Board-level split manifest"]
-        Hash["Dataset／manifest<br/>SHA-256"]
-        Config --> Split --> Hash
-    end
+    Data["01 · Data Contract<br/>frozen split · SHA-256"]
+    Evaluation["02 · Paired Evaluation<br/>Grouped vs Leaky"]
+    Gate["03 · Deployment Gate<br/>fidelity · strict parity"]
+    Presentation["04 · Evidence Presentation<br/>Recorded · Degraded · Live"]
 
-    subgraph Experiment["02 · Experiment & Evaluation"]
-        direction TB
-        Paired["Grouped vs Leaky Control"]
-        A100["A100<br/>Seeds 42／43／44"]
-        Final["Common Board 08<br/>final test"]
-        Paired --> A100 --> Final
-    end
-
-    subgraph Validation["03 · Deployment Validation"]
-        direction TB
-        Export["PyTorch → ONNX"]
-        Aggregate["Aggregate fidelity<br/>PASS"]
-        L4["NVIDIA L4<br/>calibration latency"]
-        Strict["Strict per-box parity<br/>FAILED"]
-        Export --> Aggregate --> L4 --> Strict
-    end
-
-    subgraph Presentation["04 · Evidence Presentation"]
-        direction TB
-        Reports["Committed reports<br/>JSON · Markdown"]
-        State["build_app_state()"]
-        EvidenceMode["EVIDENCE<br/>Recorded evidence"]
-        Degraded["DEGRADED<br/>inference disabled"]
-        Live["LIVE candidate<br/>guarded path"]
-        Reports --> State
-        Contract["Passed model contract<br/>+ artifact SHA-256"] --> State
-        State -->|blocked contract| EvidenceMode
-        State -->|mismatch／error| Degraded
-        State -->|all release checks pass| Live
-    end
-
-    Hash --> Paired
-    Final --> Export
-    Strict --> Reports
-    Strict -.->|FAILED · Recorded evidence only| EvidenceMode
+    Data -->|固定資料邊界| Evaluation
+    Evaluation -->|committed metrics| Gate
+    Gate -->|狀態與限制| Presentation
 
     classDef contract fill:#DCE7DF,stroke:#35594A,stroke-width:2px,color:#26352F
     classDef process fill:#EDE2C8,stroke:#9A7438,stroke-width:2px,color:#26352F
+    classDef gate fill:#F3E2DD,stroke:#785650,stroke-width:2px,color:#3F2E2B
     classDef verified fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
-    classDef blocked fill:#F3E2DD,stroke:#785650,stroke-width:2px,color:#3F2E2B
-    classDef neutral fill:#F3F0E8,stroke:#587069,stroke-width:2px,color:#26352F
 
-    class Config,Split,Hash contract
-    class Paired,A100,Final,Export,L4 process
-    class Aggregate,Reports,Live verified
-    class Strict,EvidenceMode,Degraded blocked
-    class State,Contract neutral
-
-    style Data fill:#F6F7F4,stroke:#35594A,stroke-width:2px,color:#26352F
-    style Experiment fill:#FBF7EE,stroke:#9A7438,stroke-width:2px,color:#26352F
-    style Validation fill:#FBF5F3,stroke:#785650,stroke-width:2px,color:#3F2E2B
-    style Presentation fill:#F6F7F4,stroke:#35594A,stroke-width:2px,color:#26352F
+    class Data contract
+    class Evaluation process
+    class Gate gate
+    class Presentation verified
 ```
 
 1. **Board-level Stratified Partition**：依 PCB Board ID 嚴格隔離 Train／Test，避免同款 sibling images 跨 split 造成虛高表現。
@@ -186,44 +128,33 @@ flowchart LR
 工作站啟動時先驗證 committed evidence 與 release contract，不會先下載 floating model。任何 evidence、contract、hash 或 runtime 失敗都會隱藏 inference controls，並保留可說明的 Recorded evidence 或 Degraded state。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '17px', 'actorBkg': '#35594A', 'actorBorder': '#26352F', 'actorTextColor': '#FFFFFF', 'actorLineColor': '#8EA098', 'signalColor': '#35594A', 'signalTextColor': '#26352F', 'labelBoxBkgColor': '#F3E2DD', 'labelBoxBorderColor': '#785650', 'labelTextColor': '#26352F', 'loopTextColor': '#26352F', 'noteBkgColor': '#EDE2C8', 'noteBorderColor': '#9A7438', 'noteTextColor': '#26352F'}}}%%
-sequenceDiagram
-    accTitle: PCB 人工複核工作站的 fail-closed 啟動時序
-    accDescr: Gradio UI 先讀取 committed reports 與 model contract；只有 strict parity、contract、artifact hash 與 ONNX Runtime session 全部成功才顯示 live inference controls。
-    actor Visitor as GitHub 訪客
-    participant UI as Gradio UI
-    participant State as App State Builder
-    participant Evidence as Evidence Loader
-    participant Contract as Model Contract
-    participant ORT as ONNX Runtime
+%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+flowchart TB
+    accTitle: PCB 人工複核工作站的 fail-closed 啟動門控
+    accDescr: 工作站先讀取 committed evidence 與 model contract；blocked contract 顯示 Recorded evidence，資料錯誤進入 Degraded，全部 release checks 通過才進入 Live。
 
-    Visitor->>UI: 開啟工作站
-    UI->>State: create_demo()
-    State->>Contract: 讀取 app/model_contract.json
-    State->>Evidence: 載入 committed reports
-    Evidence-->>State: metrics + strict parity status
+    Start["啟動工作站<br/>讀取 evidence + contract"]
+    Gate{"Release checks<br/>結果為何？"}
+    Evidence["EVIDENCE<br/>Recorded evidence only"]
+    Degraded["DEGRADED<br/>inference disabled"]
+    Live["LIVE<br/>verified inference"]
 
-    alt evidence 缺失或 schema mismatch
-        State-->>UI: DEGRADED · inference disabled
-    else contract status 不是 passed
-        State-->>UI: EVIDENCE · Recorded evidence mode
-        Note over UI,ORT: 不下載模型、不建立 ONNX session
-    else passed contract 與 failed strict parity 衝突
-        State-->>UI: DEGRADED · release evidence mismatch
-    else release evidence 一致
-        State->>Contract: 解析 immutable revision + ONNX SHA-256
-        Contract->>ORT: resolve model + verify hash + create session
-        alt artifact／hash／session failure
-            ORT-->>UI: DEGRADED · inference disabled
-        else runtime verified
-            ORT-->>UI: LIVE · 顯示 upload／confidence／執行偵測
-            opt 使用者執行人工複核
-                Visitor->>UI: 上傳 PCB image
-                UI->>ORT: preprocess → inference → postprocess
-                ORT-->>UI: candidates + confidence + latency
-            end
-        end
-    end
+    Start --> Gate
+    Gate -->|blocked contract| Evidence
+    Gate -->|missing · mismatch · failure| Degraded
+    Gate -->|contract · hash · runtime passed| Live
+
+    classDef neutral fill:#F3F0E8,stroke:#587069,stroke-width:2px,color:#26352F
+    classDef decision fill:#EDE2C8,stroke:#9A7438,stroke-width:2px,color:#26352F
+    classDef evidence fill:#DCE7DF,stroke:#35594A,stroke-width:2px,color:#26352F
+    classDef blocked fill:#F3E2DD,stroke:#785650,stroke-width:2px,color:#3F2E2B
+    classDef live fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
+
+    class Start neutral
+    class Gate decision
+    class Evidence evidence
+    class Degraded blocked
+    class Live live
 ```
 
 > 目前 committed `model_contract.json` 為 blocked，因此公開作品集停在 **Recorded evidence mode**；上圖的 `LIVE` 是程式中的受控能力路徑，不是已上線服務。
@@ -238,43 +169,32 @@ sequenceDiagram
 這張圖展開 frozen Board-level split、Grouped／Leaky Control paired training，以及共同 Board 08 final test 上的受控差值評測。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '18px'}}}%%
-flowchart TD
+%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+flowchart TB
     accTitle: PCB 板級防洩漏與成對實驗流程
     accDescr: HRIPCB 依 Board ID 凍結分割，Grouped 與 Leaky Control 在三個 seeds 下共用 Board 08 final test，評估 same-board exposure effect。
 
-    subgraph Stage1 ["階段一：資料分割與防洩漏策略 (Board Partition)"]
-        direction LR
-        Raw[("HRIPCB 原生資料集<br/>(10 款 PCB 模板板號)")] --> Strat["板級嚴格切分策略<br/>(Board-level Stratified)"] --> Sets[("凍結分割清單<br/>Test: Board 08 · Val/Cal: Board 01<br/>Grouped train: 04/05/06/07/09/10/11/12")]
-    end
+    Dataset["HRIPCB Dataset<br/>10 PCB boards"]
+    Split["Frozen Board Split<br/>Board 08 held out"]
+    Arms["Paired Arms<br/>Grouped · Leaky"]
+    Train["A100 Training<br/>Seeds 42 · 43 · 44"]
+    Test["Common Final Test<br/>Board 08"]
+    Effect["Leakage Effect<br/>+21.3 pp mAP50"]
 
-    subgraph Stage2 ["階段二：成對對照訓練 (Paired A100 Training)"]
-        direction LR
-        Sets --> Grouped["嚴格分組組 (Grouped)<br/>(513 張 · 絕不含 Board 08)"] & Leaky["洩漏對照組 (Leaky Control)<br/>(513 張 · 替換 30 張同板影像)"]
-        Grouped & Leaky --> A100["A100 GPU 凍結訓練<br/>(Seeds 42 / 43 / 44)"]
-    end
+    Dataset --> Split --> Arms --> Train --> Test --> Effect
 
-    subgraph Stage3 ["階段三：評測與成對統計驗證 (Statistical Evaluation)"]
-        direction LR
-        A100 --> Delta["成對差值評測<br/>Leaky - grouped: +21.3 pp<br/>F1 Delta 0.2546"] --> Gate[("Paired image-bootstrap 95% CI<br/>resampling unit: image<br/>不估計 between-board uncertainty")]
-    end
+    classDef source fill:#DCE7DF,stroke:#35594A,stroke-width:2px,color:#26352F
+    classDef process fill:#EDE2C8,stroke:#9A7438,stroke-width:2px,color:#26352F
+    classDef result fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
 
-    Stage1 --> Stage2 --> Stage3
-
-    classDef srcStyle fill:#e7f5ff,stroke:#1971c2,stroke-width:2px,color:#212529
-    classDef procStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#212529
-    classDef gateStyle fill:#fff9db,stroke:#f59f00,stroke-width:2px,color:#212529
-    classDef pubStyle fill:#e6fcf5,stroke:#0ca678,stroke-width:2px,color:#212529
-
-    class Raw,Sets srcStyle
-    class Strat,Grouped,Leaky,A100 procStyle
-    class Delta gateStyle
-    class Gate pubStyle
-
-    style Stage1 fill:#f8f9fa,stroke:#1971c2,stroke-width:2px,color:#1971c2,stroke-dasharray: 4 4
-    style Stage2 fill:#faf5ff,stroke:#7b1fa2,stroke-width:2px,color:#7b1fa2,stroke-dasharray: 4 4
-    style Stage3 fill:#f4fbf7,stroke:#0ca678,stroke-width:2px,color:#0ca678,stroke-dasharray: 4 4
+    class Dataset,Split source
+    class Arms,Train,Test process
+    class Effect result
 ```
+
+- **Frozen split**：Grouped train 513 張且排除 Board 08；Leaky Control 以 30 張同板 sibling images 進行對照。
+- **共同評測**：三個 seeds 共用 Board 08 final test；`Leaky - grouped: +21.3 pp`，paired F1 delta 為 `0.2546`。
+- **統計邊界**：bootstrap resampling unit 是 image，不估計 between-board uncertainty。
 
 </details>
 
@@ -284,45 +204,34 @@ flowchart TD
 這張圖展開 PyTorch→ONNX fidelity、TensorRT build、NVIDIA L4 calibration latency 與 strict per-box parity gate。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '18px'}}}%%
-flowchart TD
+%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+flowchart TB
     accTitle: ONNX fidelity 與 NVIDIA L4 多後端部署管線
     accDescr: PyTorch 模型匯出 ONNX 後進行 wrapper parity、L4 多後端 latency 與 PyTorch-reference strict per-box parity；failed gate 只發布 calibration evidence。
 
-    subgraph ExportStage ["階段一：模型匯出與保真度校驗 (Fidelity Gate)"]
-        direction LR
-        PyTorch[("PyTorch 權重<br/>(Grouped Seed 42)")] --> ONNX["ONNX export"] --> Parity["Same-ONNX wrapper parity<br/>(60/60；非 PyTorch reference)"]
-    end
+    Source["PyTorch Checkpoint<br/>Grouped Seed 42"]
+    ONNX["ONNX Export<br/>hash pinned"]
+    Fidelity["Aggregate Fidelity<br/>PASS"]
+    Benchmark["NVIDIA L4 Benchmark<br/>ORT · TensorRT"]
+    Parity["Strict Per-box Parity<br/>FAILED"]
+    Evidence["Release Evidence<br/>calibration only"]
 
-    subgraph EngineStage ["階段二：TensorRT 引擎建置與最佳化"]
-        direction LR
-        Parity --> TRT["TensorRT 引擎編譯<br/>(FP16)"] --> Engine[("Private engine<br/>(NVIDIA L4 stack-bound)")]
-    end
+    Source --> ONNX --> Fidelity --> Benchmark --> Parity --> Evidence
 
-    subgraph BenchStage ["階段三：L4 硬體延遲基準測試 (Benchmark)"]
-        direction LR
-        Parity --> ORT["ONNX Runtime CUDA FP32<br/>(p50: 20.28 ms · 49.32 FPS)"]
-        Engine --> TRTLatency["TensorRT FP16<br/>(p50: 51.12 ms · 19.56 FPS)"]
-        ORT & TRTLatency --> StrictParity["PyTorch-reference strict per-box parity<br/>(frozen gate failed)"]
-        StrictParity --> Out(["Calibration-only latency + fidelity + failed-gate evidence<br/>(not a production SLA)"])
-    end
+    classDef source fill:#DCE7DF,stroke:#35594A,stroke-width:2px,color:#26352F
+    classDef process fill:#EDE2C8,stroke:#9A7438,stroke-width:2px,color:#26352F
+    classDef pass fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
+    classDef blocked fill:#F3E2DD,stroke:#785650,stroke-width:2px,color:#3F2E2B
 
-    ExportStage --> EngineStage --> BenchStage
-
-    classDef srcStyle fill:#e7f5ff,stroke:#1971c2,stroke-width:2px,color:#212529
-    classDef procStyle fill:#fff9db,stroke:#f59f00,stroke-width:2px,color:#212529
-    classDef evalStyle fill:#e6fcf5,stroke:#0ca678,stroke-width:2px,color:#212529
-    classDef failStyle fill:#fff5f5,stroke:#c92a2a,stroke-width:2px,color:#212529
-
-    class PyTorch,ONNX,Parity srcStyle
-    class TRT,Engine procStyle
-    class ORT,TRTLatency,Out evalStyle
-    class StrictParity failStyle
-
-    style ExportStage fill:#f8f9fa,stroke:#1971c2,stroke-width:2px,color:#1971c2,stroke-dasharray: 4 4
-    style EngineStage fill:#fffcf0,stroke:#f59f00,stroke-width:2px,color:#f59f00,stroke-dasharray: 4 4
-    style BenchStage fill:#f4fbf7,stroke:#0ca678,stroke-width:2px,color:#0ca678,stroke-dasharray: 4 4
+    class Source,ONNX source
+    class Benchmark process
+    class Fidelity pass
+    class Parity,Evidence blocked
 ```
+
+- **Aggregate fidelity**：Same-ONNX wrapper parity 為 `60/60`，但這不是 PyTorch reference equivalence。
+- **L4 latency**：ONNX Runtime CUDA FP32 `p50: 20.28 ms · 49.32 FPS`；TensorRT FP16 p50 為 `51.12 ms`。
+- **發布邊界**：PyTorch-reference strict per-box parity gate failed，因此只發布 calibration-only evidence，不宣稱 production SLA。
 
 </details>
 
