@@ -1071,6 +1071,59 @@ def test_readme_presents_the_recorded_evidence_workstation() -> None:
     assert "不宣稱提供 hosted inference" in readme
 
 
+def test_readme_primary_diagrams_form_an_evidence_narrative() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    headings = (
+        "## 系統全貌與證據邊界",
+        "## Evidence-first 系統架構",
+        "## Fail-closed 工作站啟動時序",
+        "## Deep Dive：實驗與部署 Pipeline",
+    )
+
+    assert all(heading in readme for heading in headings)
+    assert [readme.index(heading) for heading in headings] == sorted(
+        readme.index(heading) for heading in headings
+    )
+    assert "sequenceDiagram" in readme
+    assert readme.count("```mermaid") == 5
+
+
+def test_readme_diagrams_are_accessible_and_github_native() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert readme.count("accTitle:") == 5
+    assert readme.count("accDescr:") == 5
+    assert "mermaid.live" not in readme
+    assert "kroki" not in readme.lower()
+    assert "plantuml" not in readme.lower()
+
+
+def test_readme_preserves_pipeline_deep_dives() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "<summary>展開：PCB 板級防洩漏與成對實驗流程</summary>" in readme
+    assert "<summary>展開：ONNX fidelity 與 NVIDIA L4 多後端部署管線</summary>" in readme
+    assert "Leaky - grouped: +21.3 pp" in readme
+    assert "p50: 20.28 ms · 49.32 FPS" in readme
+    assert "strict per-box parity" in readme
+
+
+def test_readme_context_diagram_keeps_public_and_private_assets_separate() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    context = readme.split("## 系統全貌與證據邊界", maxsplit=1)[1].split(
+        "## 30 秒證據索引", maxsplit=1
+    )[0]
+
+    for required in (
+        "Public Portfolio",
+        "Private Evidence Production",
+        "No hosted inference",
+        "No public model artifact",
+        "GitHub Release + Zenodo DOI",
+    ):
+        assert required in context
+
+
 def test_public_ui_screenshots_exist() -> None:
     from PIL import Image
 
