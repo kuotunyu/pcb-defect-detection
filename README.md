@@ -39,6 +39,58 @@ uv run --locked --no-editable --extra app python -m app.app
 
 本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLO26n** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與多後端部署驗證管線：在 frozen paired protocol 下，針對單一 held-out Board 08 的 30 張 final-test images，觀察到 same-board sibling exposure 對應 `21.3` 個百分點的 mAP50 差距。此結果限於固定 dataset 與 training recipe，不估計 between-board 或 production generalization。專案另提供 aggregate ONNX fidelity、strict per-box prediction parity，以及 NVIDIA L4 上 PyTorch、ONNX Runtime CUDA 與 TensorRT 的 calibration-only 部署證據；其中 aggregate fidelity 通過，但 strict per-box parity gate 未通過。
 
+## 系統全貌與證據邊界
+
+公開 repository 提供可閱讀、可核對的作品集與 committed evidence；受授權資料、模型 artifacts 與 GPU 執行環境維持在 private evidence-production boundary。兩者只透過 hash-bound reports 與版本化 metadata 連接。
+
+```mermaid
+%%{init: {'themeVariables': {'fontSize': '18px'}}}%%
+flowchart LR
+    accTitle: PCB 瑕疵偵測系統全貌與公開證據邊界
+    accDescr: GitHub 訪客透過 README 與人工複核工作站閱讀 committed evidence；受授權資料、GPU 訓練與私有模型 artifacts 不進入 public repository。
+
+    Visitor["GitHub 訪客／技術面試官"]
+
+    subgraph Public["Public Portfolio"]
+        direction TB
+        Readme["README<br/>UI screenshots · claims · limitations"]
+        Workstation["PCB 人工複核工作站<br/>Recorded evidence mode"]
+        Evidence["Committed evidence<br/>JSON · Markdown · hashes"]
+        Archive["GitHub Release + Zenodo DOI<br/>versioned source · metadata"]
+    end
+
+    subgraph Private["Private Evidence Production"]
+        direction TB
+        Media["HRIPCB licensed media"]
+        Compute["A100 paired training<br/>NVIDIA L4 benchmark"]
+        Artifacts["Private weights · ONNX<br/>TensorRT engine"]
+    end
+
+    Visitor -->|瀏覽與核對| Readme
+    Visitor -->|檢視複核介面| Workstation
+    Readme --> Evidence
+    Workstation --> Evidence
+    Evidence --> Archive
+    Media --> Compute --> Artifacts
+    Compute -.->|只 promotion 去識別化、hash-bound reports| Evidence
+    Artifacts -.->|No hosted inference · No public model artifact| Workstation
+
+    classDef actor fill:#F3F0E8,stroke:#35594A,stroke-width:2px,color:#26352F
+    classDef public fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
+    classDef evidence fill:#DCE7DF,stroke:#35594A,stroke-width:2px,color:#26352F
+    classDef private fill:#EDE2C8,stroke:#9A7438,stroke-width:2px,color:#26352F
+    classDef blocked fill:#F3E2DD,stroke:#785650,stroke-width:2px,color:#3F2E2B
+
+    class Visitor actor
+    class Readme,Workstation public
+    class Evidence,Archive evidence
+    class Media,Compute private
+    class Artifacts blocked
+
+    style Public fill:#F6F7F4,stroke:#35594A,stroke-width:2px,color:#26352F
+    style Private fill:#FBF7EE,stroke:#9A7438,stroke-width:2px,color:#26352F,stroke-dasharray:5 4
+```
+
 ## 30 秒證據索引
 
 | 招募者要核對的內容 | Committed evidence |
