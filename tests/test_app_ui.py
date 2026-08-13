@@ -44,8 +44,21 @@ def test_hero_support_and_kpis_use_horizontal_space_before_adding_height() -> No
     css = APP_CSS.lower()
 
     assert '<div class="pcb-hero-support">' in text
+    assert 'class="pcb-integrity-copy"' in text
     assert ".pcb-kpi dd { display: contents; }" in css
     assert "grid-column: 2" in css
+    kpi_value_rule = next(line for line in css.splitlines() if line.startswith(".pcb-kpi-value {"))
+    assert 'font-family: "ibm plex sans"' in kpi_value_rule
+    assert "font-variant-numeric: tabular-nums" in kpi_value_rule
+
+
+def test_navigation_and_hero_actions_use_comfortable_control_type() -> None:
+    css = APP_CSS.lower()
+    nav_rule = css.split(".pcb-nav-links a {", 1)[1].split("}", 1)[0]
+    button_rule = css.split(".pcb-button {", 1)[1].split("}", 1)[0]
+
+    assert "font-size: 18px" in nav_rule
+    assert "font-size: 17px" in button_rule
 
 
 def test_theme_forces_the_approved_light_canvas_in_dark_system_mode() -> None:
