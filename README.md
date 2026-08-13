@@ -181,6 +181,55 @@ flowchart LR
 
 ---
 
+## Fail-closed 工作站啟動時序
+
+工作站啟動時先驗證 committed evidence 與 release contract，不會先下載 floating model。任何 evidence、contract、hash 或 runtime 失敗都會隱藏 inference controls，並保留可說明的 Recorded evidence 或 Degraded state。
+
+```mermaid
+%%{init: {'themeVariables': {'fontSize': '17px', 'actorBkg': '#35594A', 'actorBorder': '#26352F', 'actorTextColor': '#FFFFFF', 'actorLineColor': '#8EA098', 'signalColor': '#35594A', 'signalTextColor': '#26352F', 'labelBoxBkgColor': '#F3E2DD', 'labelBoxBorderColor': '#785650', 'labelTextColor': '#26352F', 'loopTextColor': '#26352F', 'noteBkgColor': '#EDE2C8', 'noteBorderColor': '#9A7438', 'noteTextColor': '#26352F'}}}%%
+sequenceDiagram
+    accTitle: PCB 人工複核工作站的 fail-closed 啟動時序
+    accDescr: Gradio UI 先讀取 committed reports 與 model contract；只有 strict parity、contract、artifact hash 與 ONNX Runtime session 全部成功才顯示 live inference controls。
+    actor Visitor as GitHub 訪客
+    participant UI as Gradio UI
+    participant State as App State Builder
+    participant Evidence as Evidence Loader
+    participant Contract as Model Contract
+    participant ORT as ONNX Runtime
+
+    Visitor->>UI: 開啟工作站
+    UI->>State: create_demo()
+    State->>Contract: 讀取 app/model_contract.json
+    State->>Evidence: 載入 committed reports
+    Evidence-->>State: metrics + strict parity status
+
+    alt evidence 缺失或 schema mismatch
+        State-->>UI: DEGRADED · inference disabled
+    else contract status 不是 passed
+        State-->>UI: EVIDENCE · Recorded evidence mode
+        Note over UI,ORT: 不下載模型、不建立 ONNX session
+    else passed contract 與 failed strict parity 衝突
+        State-->>UI: DEGRADED · release evidence mismatch
+    else release evidence 一致
+        State->>Contract: 解析 immutable revision + ONNX SHA-256
+        Contract->>ORT: resolve model + verify hash + create session
+        alt artifact／hash／session failure
+            ORT-->>UI: DEGRADED · inference disabled
+        else runtime verified
+            ORT-->>UI: LIVE · 顯示 upload／confidence／執行偵測
+            opt 使用者執行人工複核
+                Visitor->>UI: 上傳 PCB image
+                UI->>ORT: preprocess → inference → postprocess
+                ORT-->>UI: candidates + confidence + latency
+            end
+        end
+    end
+```
+
+> 目前 committed `model_contract.json` 為 blocked，因此公開作品集停在 **Recorded evidence mode**；上圖的 `LIVE` 是程式中的受控能力路徑，不是已上線服務。
+
+---
+
 ## 系統架構與 Pipeline
 
 ### 1. PCB 板級防洩漏與成對實驗流程
