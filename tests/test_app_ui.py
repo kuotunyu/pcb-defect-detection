@@ -61,6 +61,22 @@ def test_navigation_and_hero_actions_use_comfortable_control_type() -> None:
     assert "font-size: 17px" in button_rule
 
 
+def test_hero_rhythm_and_blocked_gate_keep_readable_visual_hierarchy() -> None:
+    css = APP_CSS.lower()
+    hero_title_rule = css.split(".pcb-hero h1 {", 1)[1].split("}", 1)[0]
+    status_card_rule = css.split(".pcb-status-card {", 1)[1].split("}", 1)[0]
+    status_label_rule = css.split(".pcb-status-label {", 1)[1].split("}", 1)[0]
+    status_value_rule = css.split(".pcb-status-card strong {", 1)[1].split("}", 1)[0]
+    status_copy_rule = css.split(".pcb-status-card p {", 1)[1].split("}", 1)[0]
+
+    assert "line-height: 1.12" in hero_title_rule
+    assert "background: #563832" in status_card_rule
+    assert "color: #f4d6cc !important" in status_label_rule
+    assert "color: #fffaf7 !important" in status_value_rule
+    assert "font-size: 24px" in status_value_rule
+    assert "color: #fff1eb !important" in status_copy_rule
+
+
 def test_evidence_and_defect_identifiers_share_a_heading_row_with_their_names() -> None:
     text = _config_text()
     css = APP_CSS.lower()
