@@ -1268,6 +1268,8 @@ def test_release_python_and_ci_install_contract_are_consistent() -> None:
     assert (ROOT / ".python-version").read_text(encoding="utf-8").strip() == "3.11"
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "uv sync --locked --no-editable" in workflow
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in workflow
+    assert "astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9" in workflow
 
 
 def test_non_editable_install_cache_tracks_local_wheel_inputs() -> None:
