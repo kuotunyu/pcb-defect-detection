@@ -44,7 +44,7 @@ uv run --locked --no-editable --extra app python -m app.app
 公開 repository 提供可閱讀、可核對的作品集與 committed evidence；受授權資料、模型 artifacts 與 GPU 執行環境維持在 private evidence-production boundary。兩者只透過 hash-bound reports 與版本化 metadata 連接。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '24px'}}}%%
 flowchart TB
     accTitle: PCB 瑕疵偵測系統全貌與公開證據邊界
     accDescr: GitHub 訪客由公開作品集閱讀 committed evidence；受授權資料、GPU 工作與模型 artifacts 留在 private boundary，只發布 hash-bound reports。
@@ -52,15 +52,13 @@ flowchart TB
     Visitor(["GitHub 訪客／技術面試官"])
     Portfolio["Public Portfolio<br/>README · 複核工作站"]
     Evidence["Committed Evidence<br/>reports · hashes"]
-    Production["Private Evidence Production<br/>licensed data · GPU"]
-    Artifacts["Private Artifacts<br/>weights · ONNX · engine"]
+    Private["Private Evidence Production<br/>private data · GPU · artifacts"]
     Archive["GitHub Release + Zenodo DOI<br/>versioned archive"]
 
     Visitor -->|瀏覽與核對| Portfolio
     Portfolio --> Evidence --> Archive
-    Production --> Artifacts
-    Production -.->|hash-bound reports| Evidence
-    Artifacts -.->|No hosted inference<br/>No public model artifact| Portfolio
+    Private -.->|hash-bound reports| Evidence
+    Private -.->|No hosted inference<br/>No public model artifact| Portfolio
 
     classDef actor fill:#F3F0E8,stroke:#35594A,stroke-width:2px,color:#26352F
     classDef public fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
@@ -71,8 +69,7 @@ flowchart TB
     class Visitor actor
     class Portfolio public
     class Evidence,Archive evidence
-    class Production private
-    class Artifacts blocked
+    class Private private
 ```
 
 ## 30 秒證據索引
@@ -91,7 +88,7 @@ flowchart TB
 系統不是把 training、benchmark 與 UI 當成彼此無關的展示，而是讓每一層輸出下一層可驗證的 contract。failed gate 仍會成為 evidence，但不會被轉譯成已發布模型。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '24px'}}}%%
 flowchart TB
     accTitle: PCB 瑕疵偵測的 evidence-first 四層架構
     accDescr: Frozen data contract 依序驅動 paired evaluation、deployment gate 與 evidence presentation；失敗的 gate 只進入 Recorded evidence 或 Degraded mode。
@@ -128,7 +125,7 @@ flowchart TB
 工作站啟動時先驗證 committed evidence 與 release contract，不會先下載 floating model。任何 evidence、contract、hash 或 runtime 失敗都會隱藏 inference controls，並保留可說明的 Recorded evidence 或 Degraded state。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '24px'}}}%%
 flowchart TB
     accTitle: PCB 人工複核工作站的 fail-closed 啟動門控
     accDescr: 工作站先讀取 committed evidence 與 model contract；blocked contract 顯示 Recorded evidence，資料錯誤進入 Degraded，全部 release checks 通過才進入 Live。
@@ -143,6 +140,7 @@ flowchart TB
     Gate -->|blocked contract| Evidence
     Gate -->|missing · mismatch · failure| Degraded
     Gate -->|contract · hash · runtime passed| Live
+    Evidence ~~~ Degraded ~~~ Live
 
     classDef neutral fill:#F3F0E8,stroke:#587069,stroke-width:2px,color:#26352F
     classDef decision fill:#EDE2C8,stroke:#9A7438,stroke-width:2px,color:#26352F
@@ -169,7 +167,7 @@ flowchart TB
 這張圖展開 frozen Board-level split、Grouped／Leaky Control paired training，以及共同 Board 08 final test 上的受控差值評測。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '24px'}}}%%
 flowchart TB
     accTitle: PCB 板級防洩漏與成對實驗流程
     accDescr: HRIPCB 依 Board ID 凍結分割，Grouped 與 Leaky Control 在三個 seeds 下共用 Board 08 final test，評估 same-board exposure effect。
@@ -204,7 +202,7 @@ flowchart TB
 這張圖展開 PyTorch→ONNX fidelity、TensorRT build、NVIDIA L4 calibration latency 與 strict per-box parity gate。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '24px'}}}%%
 flowchart TB
     accTitle: ONNX fidelity 與 NVIDIA L4 多後端部署管線
     accDescr: PyTorch 模型匯出 ONNX 後進行 wrapper parity、L4 多後端 latency 與 PyTorch-reference strict per-box parity；failed gate 只發布 calibration evidence。
