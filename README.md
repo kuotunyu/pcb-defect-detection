@@ -50,15 +50,15 @@ flowchart TB
     accDescr: GitHub 訪客由公開作品集閱讀 committed evidence；受授權資料、GPU 工作與模型 artifacts 留在 private boundary，只發布 hash-bound reports。
 
     Visitor(["GitHub 訪客／技術面試官"])
-    Portfolio["Public Portfolio<br/>README · 複核工作站"]
-    Evidence["Committed Evidence<br/>reports · hashes"]
-    Private["Private Evidence Production<br/>private data · GPU · artifacts"]
-    Archive["GitHub Release + Zenodo DOI<br/>versioned archive"]
+    Portfolio["Public Portfolio — README · 複核工作站"]
+    Evidence["Committed Evidence — reports · hashes"]
+    Private["Private Evidence Production — private data · GPU · artifacts"]
+    Archive["GitHub Release + Zenodo DOI — versioned archive"]
 
     Visitor -->|瀏覽與核對| Portfolio
     Portfolio --> Evidence --> Archive
     Private -.->|hash-bound reports| Evidence
-    Private -.->|No hosted inference<br/>No public model artifact| Portfolio
+    Private -.->|No hosted inference · No public model artifact| Portfolio
 
     classDef actor fill:#F3F0E8,stroke:#35594A,stroke-width:2px,color:#26352F
     classDef public fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
@@ -93,10 +93,10 @@ flowchart TB
     accTitle: PCB 瑕疵偵測的 evidence-first 四層架構
     accDescr: Frozen data contract 依序驅動 paired evaluation、deployment gate 與 evidence presentation；失敗的 gate 只進入 Recorded evidence 或 Degraded mode。
 
-    Data["01 · Data Contract<br/>frozen split · SHA-256"]
-    Evaluation["02 · Paired Evaluation<br/>Grouped vs Leaky"]
-    Gate["03 · Deployment Gate<br/>fidelity · strict parity"]
-    Presentation["04 · Evidence Presentation<br/>Recorded · Degraded · Live"]
+    Data["01 · Data Contract — frozen split · SHA-256"]
+    Evaluation["02 · Paired Evaluation — Grouped vs Leaky"]
+    Gate["03 · Deployment Gate — fidelity · strict parity"]
+    Presentation["04 · Evidence Presentation — Recorded · Degraded · Live"]
 
     Data -->|固定資料邊界| Evaluation
     Evaluation -->|committed metrics| Gate
@@ -130,11 +130,11 @@ flowchart TB
     accTitle: PCB 人工複核工作站的 fail-closed 啟動門控
     accDescr: 工作站先讀取 committed evidence 與 model contract；blocked contract 顯示 Recorded evidence，資料錯誤進入 Degraded，全部 release checks 通過才進入 Live。
 
-    Start["啟動工作站<br/>讀取 evidence + contract"]
-    Gate{"Release checks<br/>結果為何？"}
-    Evidence["EVIDENCE<br/>Recorded evidence only"]
-    Degraded["DEGRADED<br/>inference disabled"]
-    Live["LIVE<br/>verified inference"]
+    Start["啟動工作站 — 讀取 evidence + contract"]
+    Gate{"Release checks 結果為何？"}
+    Evidence["EVIDENCE — Recorded only"]
+    Degraded["DEGRADED — inference disabled"]
+    Live["LIVE — verified inference"]
 
     Start --> Gate
     Gate -->|blocked contract| Evidence
@@ -172,12 +172,12 @@ flowchart TB
     accTitle: PCB 板級防洩漏與成對實驗流程
     accDescr: HRIPCB 依 Board ID 凍結分割，Grouped 與 Leaky Control 在三個 seeds 下共用 Board 08 final test，評估 same-board exposure effect。
 
-    Dataset["HRIPCB Dataset<br/>10 PCB boards"]
-    Split["Frozen Board Split<br/>Board 08 held out"]
-    Arms["Paired Arms<br/>Grouped · Leaky"]
-    Train["A100 Training<br/>Seeds 42 · 43 · 44"]
-    Test["Common Final Test<br/>Board 08"]
-    Effect["Leakage Effect<br/>+21.3 pp mAP50"]
+    Dataset["HRIPCB Dataset — 10 PCB boards"]
+    Split["Frozen Board Split — Board 08 held out"]
+    Arms["Paired Arms — Grouped · Leaky"]
+    Train["A100 Training — Seeds 42 · 43 · 44"]
+    Test["Common Final Test — Board 08"]
+    Effect["Leakage Effect — +21.3 pp mAP50"]
 
     Dataset --> Split --> Arms --> Train --> Test --> Effect
 
@@ -207,12 +207,12 @@ flowchart TB
     accTitle: ONNX fidelity 與 NVIDIA L4 多後端部署管線
     accDescr: PyTorch 模型匯出 ONNX 後進行 wrapper parity、L4 多後端 latency 與 PyTorch-reference strict per-box parity；failed gate 只發布 calibration evidence。
 
-    Source["PyTorch Checkpoint<br/>Grouped Seed 42"]
-    ONNX["ONNX Export<br/>hash pinned"]
-    Fidelity["Aggregate Fidelity<br/>PASS"]
-    Benchmark["NVIDIA L4 Benchmark<br/>ORT · TensorRT"]
-    Parity["Strict Per-box Parity<br/>FAILED"]
-    Evidence["Release Evidence<br/>calibration only"]
+    Source["PyTorch Checkpoint — Grouped Seed 42"]
+    ONNX["ONNX Export — hash pinned"]
+    Fidelity["Aggregate Fidelity — PASS"]
+    Benchmark["NVIDIA L4 Benchmark — ORT · TensorRT"]
+    Parity["Strict Per-box Parity — FAILED"]
+    Evidence["Release Evidence — calibration only"]
 
     Source --> ONNX --> Fidelity --> Benchmark --> Parity --> Evidence
 

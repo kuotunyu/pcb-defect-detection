@@ -1093,6 +1093,7 @@ def test_readme_diagrams_are_legible_at_default_github_width() -> None:
 
     assert readme.count("'fontSize': '24px'") == 5
     assert readme.count("flowchart TB") == 5
+    assert "<br/>" not in readme
     assert "## Fail-closed 工作站啟動時序" in readme
     assert "private data · GPU · artifacts" in readme
     assert "Evidence ~~~ Degraded ~~~ Live" in readme
