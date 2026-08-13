@@ -151,9 +151,9 @@ def _evidence_html(evidence: EvidenceSummary | None, state: AppState) -> str:
       <div class="pcb-shell">
         <div class="pcb-section-head"><div><h2 id="evidence-title">不是只展示漂亮的 bounding boxes</h2><p>每個數字都有 frozen protocol、hash-bound artifact 與 limitation；失敗的 gate 也完整保留。</p></div></div>
         <div class="pcb-evidence-grid">
-          <article class="pcb-card"><span class="pcb-evidence-number">01</span><h3>Board-level Split</h3><p>以 PCB Board ID 做資料切分，避免同板 sibling image 同時落入 train 與 test。</p><div class="pcb-evidence-result"><span>Protocol frozen · PASS</span><a href="{REPOSITORY_URL}/blob/main/reports/protocol/paired_split_manifest.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
-          <article class="pcb-card"><span class="pcb-evidence-number">02</span><h3>Paired Evaluation</h3><p>Grouped 與 leaky-control 共用 final test 與三組 seeds，量化 same-board exposure effect。</p><div class="pcb-evidence-result"><span>{leakage} · mAP50 {grouped}</span><a href="{REPOSITORY_URL}/blob/main/reports/paired_a100/final_metrics.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
-          <article class="{gate_class}"><span class="pcb-evidence-number">03</span><h3>Promotion Gate</h3><p>{gate_copy}</p><div class="pcb-evidence-result"><span>Strict parity · {parity}</span><a href="{REPOSITORY_URL}/blob/main/reports/backend_parity_l4.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
+          <article class="pcb-card"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">01</span><h3>Board-level Split</h3></div><p>以 PCB Board ID 做資料切分，避免同板 sibling image 同時落入 train 與 test。</p><div class="pcb-evidence-result"><span>Protocol frozen · PASS</span><a href="{REPOSITORY_URL}/blob/main/reports/protocol/paired_split_manifest.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
+          <article class="pcb-card"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">02</span><h3>Paired Evaluation</h3></div><p>Grouped 與 leaky-control 共用 final test 與三組 seeds，量化 same-board exposure effect。</p><div class="pcb-evidence-result"><span>{leakage} · mAP50 {grouped}</span><a href="{REPOSITORY_URL}/blob/main/reports/paired_a100/final_metrics.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
+          <article class="{gate_class}"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">03</span><h3>Promotion Gate</h3></div><p>{gate_copy}</p><div class="pcb-evidence-result"><span>Strict parity · {parity}</span><a href="{REPOSITORY_URL}/blob/main/reports/backend_parity_l4.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
         </div>
       </div>
     </section>
@@ -172,7 +172,7 @@ DEFECTS = (
 
 def _defects_html() -> str:
     cards = "".join(
-        f"<article class='pcb-defect'><span class='pcb-defect-code'>{code}</span><h3>{name}</h3><p>{description}</p></article>"
+        f"<article class='pcb-defect'><div class='pcb-defect-heading'><span class='pcb-defect-code'>{code}</span><h3>{name}</h3></div><p>{description}</p></article>"
         for code, name, description in DEFECTS
     )
     return f"""

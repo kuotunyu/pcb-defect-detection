@@ -61,6 +61,28 @@ def test_navigation_and_hero_actions_use_comfortable_control_type() -> None:
     assert "font-size: 17px" in button_rule
 
 
+def test_evidence_and_defect_identifiers_share_a_heading_row_with_their_names() -> None:
+    text = _config_text()
+    css = APP_CSS.lower()
+
+    assert text.count('class="pcb-evidence-heading"') == 3
+    assert text.count("pcb-defect-heading") == 6
+    assert "display: flex; align-items: baseline" in css
+
+    evidence_number_rule = next(
+        line for line in css.splitlines() if line.startswith(".pcb-evidence-number {")
+    )
+    defect_code_rule = next(
+        line for line in css.splitlines() if line.startswith(".pcb-defect-code {")
+    )
+    assert "17px" in evidence_number_rule
+    assert "16px" in defect_code_rule
+    assert ".pcb-defect h3 { margin: 0; color: var(--pcb-ink) !important;" in css
+    assert "@media (max-width: 580px)" in css
+    compact_defect_media = css.split("@media (max-width: 580px)", 1)[1].split("@media", 1)[0]
+    assert ".pcb-defect-grid { grid-template-columns: 1fr; }" in compact_defect_media
+
+
 def test_theme_forces_the_approved_light_canvas_in_dark_system_mode() -> None:
     css = APP_CSS.lower()
 
