@@ -12,7 +12,7 @@
 
 ![PCB 人工複核工作站](docs/assets/ui-workstation-desktop.png)
 
-新版 UI 將模型、評估與發布證據整理成一個可閱讀的 **PCB 人工複核工作站**：第一個畫面同時呈現產品用途、關鍵 metrics、model version 與 Promotion Gate。介面目前以 **Recorded evidence** 模式呈現 committed metrics 與介面示意，不宣稱提供 hosted inference。
+新版 UI 把模型、評估與發布狀態整合為 **PCB 人工複核工作站**。目前以 **Recorded evidence** 模式呈現 committed metrics 與介面示意，不宣稱提供 hosted inference。
 
 - **影像複核視角**：原圖／標註檢視並排，保留 confidence、latency 與複核摘要的產品結構。
 - **Evidence-first**：`+21.3 pp` leakage effect、`63.30%` grouped mAP50 與 `20.28 ms` L4 calibration latency 皆直接來自 committed reports。
@@ -24,7 +24,13 @@
 uv run --locked --no-editable --extra app python -m app.app
 ```
 
-> **Windows 路徑提醒**：Python 3.11 在 CP950 locale 下讀取 editable-install `.pth` 時，可能無法解析含中文字的 checkout path。建議將 repository clone 到純 ASCII 路徑，並沿用上方 `--no-editable` 啟動方式；CI 也使用 non-editable install。
+<details>
+<summary>Windows 中文路徑注意事項</summary>
+
+- Python 3.11 在 CP950 locale 下可能無法解析 editable-install `.pth` 的中文字路徑。
+- 建議 clone 到純 ASCII 路徑，並沿用 `--no-editable`；CI 也採 non-editable install。
+
+</details>
 
 目前啟動後會進入 Recorded evidence mode。未來只有在 `model_contract.json` 宣告 `passed`、artifact SHA-256 相符且 ONNX session 建立成功時，才會顯示上傳與 `執行偵測` 控制項。
 
@@ -37,14 +43,20 @@ uv run --locked --no-editable --extra app python -m app.app
 
 ---
 
-本專案針對印刷電路板 (PCB) 瑕疵檢測場景，建立基於 **YOLO26n** 之嚴格板級資料防洩漏 (Board-level Leakage) 評測基準與多後端部署驗證管線：在 frozen paired protocol 下，針對單一 held-out Board 08 的 30 張 final-test images，觀察到 same-board sibling exposure 對應 `21.3` 個百分點的 mAP50 差距。此結果限於固定 dataset 與 training recipe，不估計 between-board 或 production generalization。專案另提供 aggregate ONNX fidelity、strict per-box prediction parity，以及 NVIDIA L4 上 PyTorch、ONNX Runtime CUDA 與 TensorRT 的 calibration-only 部署證據；其中 aggregate fidelity 通過，但 strict per-box parity gate 未通過。
+## 三個核心結論
+
+| 結論 | Committed evidence |
+|---|---|
+| **防洩漏評測** | Grouped mAP50 `63.30%`；same-board sibling exposure 對應 `+21.3 pp` |
+| **部署速度** | NVIDIA L4 calibration 上，ONNX Runtime CUDA FP32 p50 `20.28 ms` |
+| **發布邊界** | Aggregate fidelity 通過；strict per-box parity failed，因此維持 Recorded evidence |
 
 ## 系統全貌與證據邊界
 
 公開 repository 提供可閱讀、可核對的作品集與 committed evidence；受授權資料、模型 artifacts 與 GPU 執行環境維持在 private evidence-production boundary。兩者只透過 hash-bound reports 與版本化 metadata 連接。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '22px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '21px'}}}%%
 flowchart TB
     accTitle: PCB 瑕疵偵測系統全貌與公開證據邊界
     accDescr: GitHub 訪客由公開作品集閱讀 committed evidence；受授權資料、GPU 工作與模型 artifacts 留在 private boundary，只發布 hash-bound reports。
@@ -85,10 +97,10 @@ flowchart TB
 
 ## Evidence-first 系統架構
 
-系統不是把 training、benchmark 與 UI 當成彼此無關的展示，而是讓每一層輸出下一層可驗證的 contract。failed gate 仍會成為 evidence，但不會被轉譯成已發布模型。
+每一層都輸出下一層可驗證的 contract。Failed gate 會被保留為 evidence，不會被包裝成已發布模型。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '22px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '21px'}}}%%
 flowchart TB
     accTitle: PCB 瑕疵偵測的 evidence-first 四層架構
     accDescr: Frozen data contract 依序驅動 paired evaluation、deployment gate 與 evidence presentation；失敗的 gate 只進入 Recorded evidence 或 Degraded mode。
@@ -113,19 +125,23 @@ flowchart TB
     class Presentation verified
 ```
 
-1. **Board-level Stratified Partition**：依 PCB Board ID 嚴格隔離 Train／Test，避免同款 sibling images 跨 split 造成虛高表現。
-2. **Paired Protocol & A100 Benchmarking**：Grouped 與 Leaky Control 共用單一 Board 08 的 30 張 final-test images；Seeds 42／43／44 下觀察到 **+21.3 pp** mAP50 差距。
-3. **Hash-pinned ONNX Fidelity Gate**：aggregate fidelity 通過；`60/60` **Same-ONNX wrapper parity** 比較同一 ONNX artifact 的兩條執行路徑，**非 PyTorch reference**，不代表 PyTorch→ONNX per-box equivalence。
-4. **NVIDIA L4 multi-backend benchmark**：60 張 calibration images 上，ONNX Runtime CUDA FP32 p50 為 **20.28 ms**；TensorRT FP16 通過 aggregate fidelity，但匯出後端未通過 frozen strict per-box parity gate。
+| Stage | 核心證據 |
+|---|---|
+| **01 · Data Contract** | Board ID 隔離 Train／Test，避免 sibling images 跨 split |
+| **02 · Paired Evaluation** | 三個 seeds 共用 Board 08 final test，差距 `+21.3 pp` mAP50 |
+| **03 · Deployment Gate** | Aggregate fidelity 通過；frozen strict per-box parity failed |
+| **04 · Evidence Presentation** | 依 contract 顯示 Recorded、Degraded 或 Live 狀態 |
+
+> `60/60` **Same-ONNX wrapper parity** 比較同一 ONNX artifact 的兩條執行路徑，**非 PyTorch reference**。
 
 ---
 
 ## Fail-closed 工作站啟動時序
 
-工作站啟動時先驗證 committed evidence 與 release contract，不會先下載 floating model。任何 evidence、contract、hash 或 runtime 失敗都會隱藏 inference controls，並保留可說明的 Recorded evidence 或 Degraded state。
+工作站先驗證 committed evidence 與 release contract。任何 evidence、hash 或 runtime 失敗都會隱藏 inference controls，並顯示 Recorded evidence 或 Degraded state。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '22px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '21px'}}}%%
 flowchart TB
     accTitle: PCB 人工複核工作站的 fail-closed 啟動門控
     accDescr: 工作站先讀取 committed evidence 與 model contract；blocked contract 顯示 Recorded evidence，資料錯誤進入 Degraded，全部 release checks 通過才進入 Live。
@@ -167,7 +183,7 @@ flowchart TB
 這張圖展開 frozen Board-level split、Grouped／Leaky Control paired training，以及共同 Board 08 final test 上的受控差值評測。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '22px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '21px'}}}%%
 flowchart TB
     accTitle: PCB 板級防洩漏與成對實驗流程
     accDescr: HRIPCB 依 Board ID 凍結分割，Grouped 與 Leaky Control 在三個 seeds 下共用 Board 08 final test，評估 same-board exposure effect。
@@ -202,7 +218,7 @@ flowchart TB
 這張圖展開 PyTorch→ONNX fidelity、TensorRT build、NVIDIA L4 calibration latency 與 strict per-box parity gate。
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '22px'}}}%%
+%%{init: {'themeVariables': {'fontSize': '21px'}}}%%
 flowchart TB
     accTitle: ONNX fidelity 與 NVIDIA L4 多後端部署管線
     accDescr: PyTorch 模型匯出 ONNX 後進行 wrapper parity、L4 多後端 latency 與 PyTorch-reference strict per-box parity；failed gate 只發布 calibration evidence。
@@ -264,25 +280,23 @@ flowchart TB
 | 嚴格分組組 (Grouped) | 63.30% ± 14.91% | 28.82% ± 6.54% | 單一 held-out Board 08 結果；不代表跨板母體或產線泛化 |
 | 洩漏對照組 (Leaky Control) | 84.56% ± 3.75% | 40.08% ± 2.52% | same-board sibling exposure 對照組；在 frozen protocol 下高 +21.3 pp |
 
-- **成對 F1 差值 (Paired F1 Delta)**：`0.2546`，paired image-bootstrap 95% 信賴區間為 `[0.2102, 0.3005]`。Resampling unit 是 image，不是 board；此區間不估計 between-board uncertainty。
-- **機器可核對原值**（取自 `reports/paired_a100/final_metrics.json`，上表百分比即由此換算）：
-  grouped mAP50 `0.6330 ± 0.1491`、leaky control mAP50 `0.8456 ± 0.0375`，差距 `21.3` 個百分點。
+**判讀：** 在 frozen protocol 下，Leaky Control 比 Grouped 高 `+21.3 pp` mAP50。
 
-> **What this proves**：在這個 frozen dataset 與 training recipe 下，same-board sibling exposure 與單一 Board 08 final test 上的受控表現差異相對應。
->
-> **What this does not prove**：此結果不建立跨 board 母體、新產品、factory-line 或 production generalization。
+<details>
+<summary>展開：成對實驗的統計與原始數值</summary>
+
+- **Paired F1 Delta**：`0.2546`；paired image-bootstrap 95% CI `[0.2102, 0.3005]`。
+- **原值**：grouped mAP50 `0.6330 ± 0.1491`；leaky control `0.8456 ± 0.0375`。
+- **統計邊界**：Resampling unit 是 image，不是 board；不估計 between-board uncertainty。
+- **適用邊界**：僅代表 frozen dataset、training recipe 與單一 Board 08 的 30 張 images，不建立 production generalization。
+
+</details>
 
 ### 2. NVIDIA L4 多後端推論延遲評測
 
-> **這是由 private package 衍生的 public metadata、calibration-only 證據，不是 production 效能宣稱。**
-> 量測只在 60 張校準 (calibration) 影像上進行，跑在單一私有 L4 session；
-> 本 repo **不發佈** TensorRT engine、不發佈 public model，也沒有任何 public checkpoint
-> 對應這組數字。它記錄描述性 latency 與 aggregate calibration fidelity；strict per-box
-> parity gate 未通過，因此不宣稱三個 backend 的 prediction sets 等價，也**不能**用來
-> 推論產線 (production) 上的實際吞吐或良率。
+> **Calibration-only evidence**：來自單一 private NVIDIA L4 session，不是 production SLA；repository 不發佈 TensorRT engine、public model 或 public checkpoint。
 
-在 60 張校準影像、batch 1、30 次 warmup、4 cycles（每個後端 240 次記錄）下，以
-interleaved rotating backend order 實測：
+測試條件：60 張 calibration images、batch 1、30 次 warmup、4 cycles、interleaved backend order。
 
 | Backend | Precision | p50 (ms) | p95 (ms) | FPS from p50 |
 |---|---|---:|---:|---:|
@@ -290,15 +304,17 @@ interleaved rotating backend order 實測：
 | ONNX Runtime CUDA | FP32 | 20.28 | 20.87 | 49.32 |
 | TensorRT | FP16 | 51.12 | 52.25 | 19.56 |
 
-**ONNX Runtime CUDA FP32 是本次最快後端**。TensorRT FP16 相對 source checkpoint 的 mAP50-95 差值為 `-0.014537137094089408`，通過 `|Δ| < 0.02` 的 aggregate calibration fidelity gate。
+**ONNX Runtime CUDA FP32 是本次最快後端**；aggregate fidelity 通過，但 strict per-box prediction-parity gate failed。
 
-- **機器可核對原值**（取自 `reports/benchmark_l4.json`，上表為其四捨五入）：
-  TensorRT p50 `51.12191199998506` ms、p95 `52.25180029992771` ms；完整 720 筆 timing
-  observations 位於 `reports/benchmark_l4_raw.json`。
-- **strict per-box prediction-parity gate failed**：PyTorch reference 有 95 個 detections；
-  ONNX Runtime CUDA 配對 57 個、漏配 reference/candidate 為 38/5，TensorRT 配對 56 個、
-  漏配為 39/5。兩者皆有 40/60 images 未過 gate；完整 pseudonymized evidence 位於
-  `reports/backend_parity_l4.json`。門檻在執行前已凍結，沒有事後放寬。
+<details>
+<summary>展開：L4 raw values 與 strict parity 細節</summary>
+
+- **Aggregate fidelity**：TensorRT FP16 相對 source checkpoint 的 mAP50-95 差值為 `-0.014537137094089408`，通過 `|Δ| < 0.02`。
+- **Raw timings**：TensorRT p50 `51.12191199998506` ms、p95 `52.25180029992771` ms；720 筆 observations 位於 `reports/benchmark_l4_raw.json`。
+- **Strict parity**：PyTorch reference 有 95 個 detections；ORT 配對 57 個、漏配 38/5，TensorRT 配對 56 個、漏配 39/5。
+- **Gate 結果**：兩個 backend 都有 40/60 images 未通過；門檻在執行前已凍結。完整 evidence 見 `reports/backend_parity_l4.json`。
+
+</details>
 
 ---
 
@@ -350,10 +366,10 @@ uv run --locked --no-editable --extra train --group eval \
   python -m pcb_defect.experiment --help
 ```
 
-完整、可續跑且帶有 input/hash gates 的流程已封裝於
-[`notebooks/paired_experiment_a100.ipynb`](notebooks/paired_experiment_a100.ipynb) 與
-[`notebooks/deployment_benchmark_l4.ipynb`](notebooks/deployment_benchmark_l4.ipynb)。Notebook
-需要使用者明確提供 dataset 與 workspace 路徑；README 不提供會誤啟動訓練的裸命令。
+- [A100 paired experiment notebook](notebooks/paired_experiment_a100.ipynb)：可續跑，含 input/hash gates。
+- [L4 deployment benchmark notebook](notebooks/deployment_benchmark_l4.ipynb)：需明確提供 dataset 與 workspace 路徑。
+
+README 只提供安全的 CLI 檢查入口，不提供會誤啟動訓練的裸命令。
 
 ---
 

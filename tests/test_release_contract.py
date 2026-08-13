@@ -1091,7 +1091,7 @@ def test_readme_primary_diagrams_form_an_evidence_narrative() -> None:
 def test_readme_diagrams_are_legible_at_default_github_width() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert readme.count("'fontSize': '22px'") == 5
+    assert readme.count("'fontSize': '21px'") == 5
     assert readme.count("flowchart TB") == 5
     assert "<br/>" not in readme
     assert "## Fail-closed 工作站啟動時序" in readme
@@ -1099,6 +1099,15 @@ def test_readme_diagrams_are_legible_at_default_github_width() -> None:
     assert "Evidence ~~~ Degraded ~~~ Live" in readme
     for state in ("EVIDENCE", "DEGRADED", "LIVE"):
         assert state in readme
+
+
+def test_readme_uses_layered_disclosure_for_dense_evidence() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "## 三個核心結論" in readme
+    assert "| Stage | 核心證據 |" in readme
+    assert "<summary>展開：成對實驗的統計與原始數值</summary>" in readme
+    assert "<summary>展開：L4 raw values 與 strict parity 細節</summary>" in readme
 
 
 def test_readme_diagrams_are_accessible_and_github_native() -> None:
