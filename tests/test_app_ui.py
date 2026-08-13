@@ -25,9 +25,9 @@ def test_theme_keeps_primary_copy_readable_and_honors_reduced_motion() -> None:
 
     assert "--pcb-pine: #3f5d4d" in css
     assert "font-size: 18px !important" in css
-    assert "font-size: clamp(38px, 3.4vw, 50px)" in css
+    assert "font-size: clamp(36px, 3vw, 46px)" in css
     assert ".pcb-lead { max-width: 680px;" in css
-    assert "font-size: 19px" in css
+    assert "font-size: 20px" in css
     assert "prefers-reduced-motion" in css
 
 
@@ -37,6 +37,15 @@ def test_tablet_layout_uses_available_width_before_switching_to_single_column() 
     assert ".pcb-shell { width: calc(100% - 24px); }" in css
     assert "width: min(100% - 24px, 620px)" not in css
     assert "@media (max-width: 519px)" in css
+
+
+def test_hero_support_and_kpis_use_horizontal_space_before_adding_height() -> None:
+    text = _config_text()
+    css = APP_CSS.lower()
+
+    assert '<div class="pcb-hero-support">' in text
+    assert ".pcb-kpi dd { display: contents; }" in css
+    assert "grid-column: 2" in css
 
 
 def test_theme_forces_the_approved_light_canvas_in_dark_system_mode() -> None:
