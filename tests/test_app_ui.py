@@ -77,25 +77,38 @@ def test_hero_rhythm_and_blocked_gate_keep_readable_visual_hierarchy() -> None:
     assert "color: #fff1eb !important" in status_copy_rule
 
 
-def test_evidence_and_defect_identifiers_share_a_heading_row_with_their_names() -> None:
+def test_evidence_and_defect_headings_use_matching_type_at_opposite_corners() -> None:
     text = _config_text()
     css = APP_CSS.lower()
 
     assert text.count('class="pcb-evidence-heading"') == 3
     assert text.count("pcb-defect-heading") == 6
-    assert "display: flex; align-items: baseline" in css
 
-    evidence_number_rule = next(
-        line for line in css.splitlines() if line.startswith(".pcb-evidence-number {")
+    selectors = (
+        ".pcb-evidence-heading",
+        ".pcb-defect-heading",
+        ".pcb-evidence-number",
+        ".pcb-card h3",
+        ".pcb-defect-code",
+        ".pcb-defect h3",
     )
-    defect_code_rule = next(
-        line for line in css.splitlines() if line.startswith(".pcb-defect-code {")
-    )
-    assert "17px" in evidence_number_rule
-    assert "16px" in defect_code_rule
-    assert ".pcb-defect h3 { margin: 0; color: var(--pcb-ink) !important;" in css
-    assert "@media (max-width: 580px)" in css
-    compact_defect_media = css.split("@media (max-width: 580px)", 1)[1].split("@media", 1)[0]
+    rules = {selector: css.split(f"{selector} {{", 1)[1].split("}", 1)[0] for selector in selectors}
+
+    for selector in (".pcb-evidence-heading", ".pcb-defect-heading"):
+        assert "align-items: flex-start" in rules[selector]
+        assert "justify-content: space-between" in rules[selector]
+        assert "flex-wrap: nowrap" in rules[selector]
+        assert "width: 100%" in rules[selector]
+
+    matching_type = 'font: 700 21px/1.25 "noto sans tc", "microsoft jhenghei", sans-serif'
+    for selector in (".pcb-evidence-number", ".pcb-card h3", ".pcb-defect-code", ".pcb-defect h3"):
+        assert matching_type in rules[selector]
+        assert "white-space: nowrap" in rules[selector]
+
+    assert "text-align: right" in rules[".pcb-card h3"]
+    assert "text-align: right" in rules[".pcb-defect h3"]
+    assert "@media (max-width: 640px)" in css
+    compact_defect_media = css.split("@media (max-width: 640px)", 1)[1].split("@media", 1)[0]
     assert ".pcb-defect-grid { grid-template-columns: 1fr; }" in compact_defect_media
 
 

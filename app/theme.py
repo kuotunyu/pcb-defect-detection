@@ -341,9 +341,9 @@ a, button { touch-action: manipulation; -webkit-tap-highlight-color: rgba(63, 93
   background: transparent;
 }
 .pcb-card + .pcb-card { border-left: 1px solid var(--pcb-line); }
-.pcb-evidence-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 8px; }
-.pcb-evidence-number { flex: 0 0 auto; color: #4d6b59; font: 700 17px/1 "IBM Plex Mono", monospace; }
-.pcb-card h3 { margin: 0; color: var(--pcb-ink); font-size: 21px; line-height: 1.25; }
+.pcb-evidence-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: nowrap; width: 100%; gap: 16px; margin-bottom: 8px; }
+.pcb-evidence-number { flex: 0 0 auto; color: #4d6b59; font: 700 21px/1.25 "Noto Sans TC", "Microsoft JhengHei", sans-serif; white-space: nowrap; }
+.pcb-card h3 { margin: 0; color: var(--pcb-ink); font: 700 21px/1.25 "Noto Sans TC", "Microsoft JhengHei", sans-serif; text-align: right; white-space: nowrap; }
 .pcb-card p { margin: 0; color: var(--pcb-muted); font-size: 18px; line-height: 1.55; }
 .pcb-evidence-result { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e6e9e6; color: var(--pcb-pine); font-size: 17px; font-weight: 750; }
 .pcb-card-blocked .pcb-evidence-number { color: #82584f; }
@@ -354,9 +354,9 @@ a, button { touch-action: manipulation; -webkit-tap-highlight-color: rgba(63, 93
 .pcb-defect { min-width: 0; min-height: 120px; padding: 14px 18px; border-right: 1px solid var(--pcb-line); border-bottom: 1px solid var(--pcb-line); background: transparent; }
 .pcb-defect:nth-child(3n) { border-right: 0; }
 .pcb-defect:nth-last-child(-n + 3) { border-bottom: 0; }
-.pcb-defect-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 6px; }
-.pcb-defect-code { flex: 0 0 auto; color: var(--pcb-pine); font: 700 16px/1.2 "IBM Plex Mono", monospace; }
-.pcb-defect h3 { margin: 0; color: var(--pcb-ink) !important; font-size: 21px; line-height: 1.25; }
+.pcb-defect-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: nowrap; width: 100%; gap: 16px; margin-bottom: 6px; }
+.pcb-defect-code { flex: 0 0 auto; color: var(--pcb-pine); font: 700 21px/1.25 "Noto Sans TC", "Microsoft JhengHei", sans-serif; white-space: nowrap; }
+.pcb-defect h3 { margin: 0; color: var(--pcb-ink) !important; font: 700 21px/1.25 "Noto Sans TC", "Microsoft JhengHei", sans-serif; text-align: right; white-space: nowrap; }
 .pcb-defect p { margin: 0; color: var(--pcb-muted); font-size: 18px; line-height: 1.5; }
 
 .pcb-project-panel {
@@ -427,7 +427,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
   #live-workstation { width: calc(100% - 24px); margin-top: -20px !important; padding: 9px !important; }
 }
 
-@media (max-width: 580px) {
+@media (max-width: 640px) {
   .pcb-defect-grid { grid-template-columns: 1fr; }
   .pcb-defect, .pcb-defect:nth-child(2n), .pcb-defect:nth-child(3n), .pcb-defect:nth-last-child(-n + 2), .pcb-defect:nth-last-child(-n + 3) { border-right: 0; border-bottom: 1px solid var(--pcb-line); }
   .pcb-defect:last-child { border-bottom: 0; }
