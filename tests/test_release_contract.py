@@ -1084,8 +1084,18 @@ def test_readme_primary_diagrams_form_an_evidence_narrative() -> None:
     assert [readme.index(heading) for heading in headings] == sorted(
         readme.index(heading) for heading in headings
     )
-    assert "sequenceDiagram" in readme
+    assert "sequenceDiagram" not in readme
     assert readme.count("```mermaid") == 5
+
+
+def test_readme_diagrams_are_legible_at_default_github_width() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert readme.count("'fontSize': '20px'") == 5
+    assert readme.count("flowchart TB") == 5
+    assert "## Fail-closed 工作站啟動時序" in readme
+    for state in ("EVIDENCE", "DEGRADED", "LIVE"):
+        assert state in readme
 
 
 def test_readme_diagrams_are_accessible_and_github_native() -> None:
