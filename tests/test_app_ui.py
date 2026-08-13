@@ -24,8 +24,19 @@ def test_theme_keeps_primary_copy_readable_and_honors_reduced_motion() -> None:
     css = APP_CSS.lower()
 
     assert "--pcb-pine: #3f5d4d" in css
-    assert "font-size: 17px" in css
+    assert "font-size: 18px !important" in css
+    assert "font-size: clamp(38px, 3.4vw, 50px)" in css
+    assert ".pcb-lead { max-width: 680px;" in css
+    assert "font-size: 19px" in css
     assert "prefers-reduced-motion" in css
+
+
+def test_tablet_layout_uses_available_width_before_switching_to_single_column() -> None:
+    css = APP_CSS.lower()
+
+    assert ".pcb-shell { width: calc(100% - 24px); }" in css
+    assert "width: min(100% - 24px, 620px)" not in css
+    assert "@media (max-width: 519px)" in css
 
 
 def test_theme_forces_the_approved_light_canvas_in_dark_system_mode() -> None:
@@ -43,7 +54,7 @@ def test_evidence_mode_renders_the_complete_portfolio_without_live_action() -> N
     text = _config_text()
 
     assert "PCB Defect Intelligence" in text
-    assert "Deployment Gate，" in text
+    assert "Deployment Gate" in text
     assert "介面示意 · 非模型輸出" in text
     assert "Aggregate fidelity 已通過" in text
     assert "this metadata-only portfolio release candidate intentionally" not in text
@@ -67,11 +78,13 @@ def test_preview_images_reserve_space_and_use_intentional_loading_priority() -> 
     assert 'loading="lazy"' in text
 
 
-def test_hero_title_uses_intentional_editorial_line_breaks() -> None:
+def test_hero_title_uses_punctuation_free_editorial_line_breaks() -> None:
     text = _config_text()
 
-    for line in ("從資料切分到", "Deployment Gate，", "完整呈現 PCB", "瑕疵偵測工程。"):
+    for line in ("從資料切分到", "Deployment Gate", "完整呈現 PCB", "瑕疵偵測工程"):
         assert f'<span class="pcb-title-line">{line}</span>' in text
+    assert "Deployment Gate，" not in text
+    assert "瑕疵偵測工程。" not in text
 
 
 def test_portfolio_sections_have_stable_browser_targets() -> None:
