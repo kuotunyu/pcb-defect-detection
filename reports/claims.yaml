@@ -87,7 +87,7 @@ claims:
 
   hosted_demo:
     status: out_of_scope
-    statement: Hosted inference is intentionally excluded from this metadata-only portfolio release candidate.
+    statement: Hosted inference is intentionally excluded from this published metadata-only portfolio release.
     evidence:
       - app/model_contract.json
     limitations:

@@ -900,7 +900,7 @@ def test_release_checklist_marks_returned_a100_and_private_l4_evidence_complete(
     assert "reports/benchmark_l4_raw.json" in checklist
     assert "reports/backend_parity_l4.json" in checklist
     assert "strict per-box prediction-parity gate failed" in checklist
-    assert "metadata-only portfolio release candidate" in checklist
+    assert "published metadata-only portfolio release" in checklist
     assert (
         "- [x] Official GitHub namespace is independently verified as "
         "`kuotunyu/pcb-defect-detection`." in checklist
@@ -1001,7 +1001,7 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "Aggregate fidelity gate passed" in contract["reason"]
     assert "strict L4 backend prediction-parity gate failed" in contract["reason"]
     assert "Deployment gate passed" not in contract["reason"]
-    assert "metadata-only portfolio release candidate" in contract["reason"]
+    assert "published metadata-only portfolio release" in contract["reason"]
     assert contract["reason"] in app_readme
     app_metadata = yaml.safe_load(app_readme.split("---", 2)[1])
     assert app_metadata["license"] == "agpl-3.0"
@@ -1033,10 +1033,10 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "A Zenodo deposit remains a separate external action" not in checklist
     assert "Owner-authorized push, tag, GitHub Release" not in checklist
     assert "Official push/review is completed" not in checklist
-    assert "metadata-only portfolio release candidate" in model_card
+    assert "published metadata-only portfolio release" in model_card
     assert "identity review" not in model_card
     assert claims["hosted_demo"]["status"] == "out_of_scope"
-    assert "metadata-only portfolio release candidate" in claims["hosted_demo"]["statement"]
+    assert "published metadata-only portfolio release" in claims["hosted_demo"]["statement"]
     assert "out of scope" in claims["hosted_demo"]["limitations"][0]
     assert "legacy_split_sensitivity" not in claims
     for document in (readme, limitations, model_card, checklist, paired_readme):
@@ -1046,7 +1046,19 @@ def test_public_metadata_matches_authoritative_release_state() -> None:
     assert "No public checkpoint, ONNX export, model-Hub" in model_card
     assert "revision, or hosted demo is claimed" in model_card
     assert "External publication, a public checkpoint" not in model_card
-    assert "Current release candidate has clean single-author reachable history" in limitations
+    assert "Current published release has clean single-author reachable history" in limitations
+    assert "public release tree" in license_boundary
+    publication_documents = (
+        app_readme,
+        checklist,
+        model_card,
+        limitations,
+        license_boundary,
+        claims["hosted_demo"]["statement"],
+        contract["reason"],
+    )
+    for document in publication_documents:
+        assert "release candidate" not in document.lower()
     assert "future L4 benchmark" not in limitations
     assert "Git history contains legacy identity" not in limitations
 

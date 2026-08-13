@@ -34,7 +34,7 @@ The PCB preview is original synthetic artwork labeled `介面示意 · 非模型
 
 ## Deployment status
 
-Aggregate fidelity gate passed, but the strict L4 backend prediction-parity gate failed; this metadata-only portfolio release candidate intentionally provides no public ONNX artifact, hosted model revision, or inference endpoint.
+Aggregate fidelity gate passed, but the strict L4 backend prediction-parity gate failed; this published metadata-only portfolio release intentionally provides no public ONNX artifact, hosted model revision, or inference endpoint.
 
 This optional Space scaffold remains fail-closed and does not use a floating model revision. It can
 serve a model only if a future, separately reviewed release supplies the exact ONNX SHA-256, source

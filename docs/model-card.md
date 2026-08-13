@@ -2,7 +2,7 @@
 
 ## Status
 
-Evaluation candidate documented in a metadata-only portfolio release candidate. Aggregate export
+Evaluation candidate documented in a published metadata-only portfolio release. Aggregate export
 fidelity passed, but the later strict per-box PyTorch-reference backend parity gate failed. Model
 binaries and hosted inference are intentionally excluded.
 
@@ -104,7 +104,7 @@ defect classes.
 - Interleaved wrapper switching may influence cache state; between-session uncertainty is not
   estimated. The TensorRT engine is non-portable and untracked.
 - No production AOI acceptance, escape-rate SLA, calibration-drift, or safety claim is made.
-- This candidate tree contains source and metadata evidence only. The v0.1.0 source-and-metadata
+- This public release tree contains source and metadata evidence only. The v0.1.0 source-and-metadata
   evidence is published on GitHub and Zenodo. No public checkpoint, ONNX export, model-Hub
   revision, or hosted demo is claimed.
 
@@ -115,7 +115,7 @@ The numerical limitations are recorded with the results in
 
 The repository distributes neither the selected checkpoint nor its ONNX export. Aggregate
 fidelity passage does not override strict parity failure and does not establish redistribution
-rights. The metadata-only portfolio release candidate records both passing and failing gates;
+rights. The published metadata-only portfolio release records both passing and failing gates;
 public model artifacts and hosted inference remain intentionally out of scope. See
 [`result_package_receipt.json`](../reports/paired_a100/result_package_receipt.json) and
 [`docs/license-boundary.md`](license-boundary.md).
