@@ -1091,7 +1091,7 @@ def test_readme_primary_diagrams_form_an_evidence_narrative() -> None:
 def test_readme_diagrams_are_legible_at_default_github_width() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert readme.count("'fontSize': '24px'") == 5
+    assert readme.count("'fontSize': '22px'") == 5
     assert readme.count("flowchart TB") == 5
     assert "<br/>" not in readme
     assert "## Fail-closed 工作站啟動時序" in readme

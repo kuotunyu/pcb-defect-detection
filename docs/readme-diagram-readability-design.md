@@ -15,7 +15,7 @@ GitHub 會將 Mermaid 產生的 SVG 等比例縮進 README 欄寬。現有圖解
 - 主圖優先採用 `flowchart TB` 或緊湊的兩欄布局，避免橫跨四個以上主要視覺欄位。
 - 每張主圖最多呈現 7 個核心節點；節點只保留辨識所需的短標題。
 - 每個節點最多兩行，每行以約 24 個可見字元為上限；數值、限制與例外改放在圖下的 prose。
-- Mermaid `themeVariables.fontSize` 使用 24 px；高對比色與 `accTitle`／`accDescr` 繼續保留。
+- Mermaid `themeVariables.fontSize` 使用 22 px；在 GitHub 預設顯示中兼顧辨識度與正文比例，高對比色與 `accTitle`／`accDescr` 繼續保留。
 - 主圖必須讓讀者在 GitHub README、瀏覽器 100% 縮放下，不按 Mermaid zoom controls 也能讀出主要節點與箭頭。
 
 ### 圖解調整
@@ -27,7 +27,7 @@ GitHub 會將 Mermaid 產生的 SVG 等比例縮進 README 欄寬。現有圖解
 
 ## 驗證
 
-- Release-contract tests 驗證主圖節點數、方向、24 px 字級、可及性描述及禁止重新加入 `sequenceDiagram`。
+- Release-contract tests 驗證主圖節點數、方向、22 px 字級、可及性描述及禁止重新加入 `sequenceDiagram`。
 - Mermaid CLI 必須能解析並渲染所有圖解。
 - 在與 GitHub README 相近的 980–1100 px 內容寬度產生視覺預覽，確認文字不需放大即可辨識。
 - 執行完整 pytest 與 Ruff，確認文件 contract 不影響其他專案行為。
