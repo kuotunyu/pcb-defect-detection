@@ -32,9 +32,9 @@ def _header_html() -> str:
     <a class="pcb-skip-link" href="#main-content">跳至主要內容</a>
     <div class="pcb-nav-wrap">
       <nav class="pcb-nav pcb-shell" aria-label="主要導覽">
-        <a class="pcb-brand" href="#hero">
-          <span class="pcb-brand-mark">PCB</span>
-          <span class="pcb-brand-copy"><strong>PCB Defect Intelligence</strong><span>Evidence-driven inspection portfolio</span></span>
+        <a class="pcb-brand" href="#hero" aria-label="PCB Defect Intelligence 首頁">
+          <span class="pcb-brand-mark" aria-hidden="true">PCB</span>
+          <span class="pcb-brand-copy" translate="no"><strong>PCB Defect Intelligence</strong><span>Evidence-driven inspection portfolio</span></span>
         </a>
         <div class="pcb-nav-links">
           <a href="#workstation">工作站</a><a href="#evidence">模型證據</a><a href="#defect-taxonomy">瑕疵類別</a>
@@ -55,7 +55,7 @@ def _hero_html(state: AppState) -> str:
           <p class="pcb-lead">以 YOLO26n 建構六類裸板瑕疵偵測，透過 Board-level protocol 揭露資料洩漏造成的效能膨脹，並用 committed evidence 驗證模型發布邊界。</p>
           <div class="pcb-hero-support">
             <div class="pcb-actions"><a class="pcb-button pcb-button-primary" href="#workstation">查看複核工作站</a><a class="pcb-button" href="#evidence">瀏覽工程證據</a></div>
-            <div class="pcb-integrity"><span class="pcb-integrity-icon">●</span><span class="pcb-integrity-copy"><strong>{integrity}</strong><span class="pcb-integrity-detail">不下載 floating model · 未通過 gate 的 artifact 不開放 public inference</span></span></div>
+            <div class="pcb-integrity"><span class="pcb-integrity-icon" aria-hidden="true">●</span><span class="pcb-integrity-copy"><strong>{integrity}</strong><span class="pcb-integrity-detail">不下載 floating model · 未通過 gate 的 artifact 不開放 public inference</span></span></div>
           </div>
         </div>
         <div class="pcb-preview-frame"><img src="{_preview_data_uri()}" alt="PCB 人工複核工作站介面示意，非模型輸出" width="1200" height="720" fetchpriority="high" decoding="async"></div>
@@ -151,9 +151,9 @@ def _evidence_html(evidence: EvidenceSummary | None, state: AppState) -> str:
       <div class="pcb-shell">
         <div class="pcb-section-head"><div><h2 id="evidence-title">不是只展示漂亮的 bounding boxes</h2><p>每個數字都有 frozen protocol、hash-bound artifact 與 limitation；失敗的 gate 也完整保留。</p></div></div>
         <div class="pcb-evidence-grid">
-          <article class="pcb-card"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">01</span><h3>Board-level Split</h3></div><p>以 PCB Board ID 做資料切分，避免同板 sibling image 同時落入 train 與 test。</p><div class="pcb-evidence-result"><span>Protocol frozen · PASS</span><a href="{REPOSITORY_URL}/blob/main/reports/protocol/paired_split_manifest.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
-          <article class="pcb-card"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">02</span><h3>Paired Evaluation</h3></div><p>Grouped 與 leaky-control 共用 final test 與三組 seeds，量化 same-board exposure effect。</p><div class="pcb-evidence-result"><span>{leakage} · mAP50 {grouped}</span><a href="{REPOSITORY_URL}/blob/main/reports/paired_a100/final_metrics.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
-          <article class="{gate_class}"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">03</span><h3>Promotion Gate</h3></div><p>{gate_copy}</p><div class="pcb-evidence-result"><span>Strict parity · {parity}</span><a href="{REPOSITORY_URL}/blob/main/reports/backend_parity_l4.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
+          <article class="pcb-card"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">01</span><h3 translate="no">Board-level Split</h3></div><p>以 PCB Board ID 做資料切分，避免同板 sibling image 同時落入 train 與 test。</p><div class="pcb-evidence-result"><span>Protocol frozen · PASS</span><a href="{REPOSITORY_URL}/blob/main/reports/protocol/paired_split_manifest.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
+          <article class="pcb-card"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">02</span><h3 translate="no">Paired Evaluation</h3></div><p>Grouped 與 leaky-control 共用 final test 與三組 seeds，量化 same-board exposure effect。</p><div class="pcb-evidence-result"><span>{leakage} · mAP50 {grouped}</span><a href="{REPOSITORY_URL}/blob/main/reports/paired_a100/final_metrics.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
+          <article class="{gate_class}"><div class="pcb-evidence-heading"><span class="pcb-evidence-number">03</span><h3 translate="no">Promotion Gate</h3></div><p>{gate_copy}</p><div class="pcb-evidence-result"><span>Strict parity · {parity}</span><a href="{REPOSITORY_URL}/blob/main/reports/backend_parity_l4.json" target="_blank" rel="noopener noreferrer">Evidence ↗</a></div></article>
         </div>
       </div>
     </section>
@@ -172,7 +172,7 @@ DEFECTS = (
 
 def _defects_html() -> str:
     cards = "".join(
-        f"<article class='pcb-defect'><div class='pcb-defect-heading'><span class='pcb-defect-code'>{code}</span><h3>{name}</h3></div><p>{description}</p></article>"
+        f'<article class="pcb-defect"><div class="pcb-defect-heading"><span class="pcb-defect-code" translate="no">{code}</span><h3>{name}</h3></div><p>{description}</p></article>'
         for code, name, description in DEFECTS
     )
     return f"""

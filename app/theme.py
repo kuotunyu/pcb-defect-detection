@@ -283,6 +283,7 @@ a, button { touch-action: manipulation; -webkit-tap-highlight-color: rgba(63, 93
 .pcb-contract-detail { margin-top: 12px !important; padding-top: 11px; border-top: 1px solid rgba(240, 223, 218, 0.24); font-size: 15px !important; overflow-wrap: anywhere; }
 .pcb-contract-detail span { display: block; margin-bottom: 4px; color: #e6cbc2 !important; font-weight: 700; }
 .pcb-honesty-note { margin: 0; padding: 12px 14px; border-left: 1px solid var(--pcb-sage); color: #50665a; background: #edf3ee; font-size: 17px; }
+.pcb-honesty-note strong { color: var(--pcb-pine-deep) !important; }
 .pcb-live-provenance {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -438,6 +439,10 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
   .pcb-kpi-grid, .pcb-review-panel { grid-template-columns: 1fr; }
   .pcb-kpi + .pcb-kpi, .pcb-kpi:nth-child(odd) { border-left: 0; }
   .pcb-kpi:nth-child(n + 2) { border-top: 1px solid var(--pcb-line); }
+}
+
+@media (max-width: 420px) {
+  .pcb-brand-copy { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

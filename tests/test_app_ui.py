@@ -152,6 +152,25 @@ def test_document_metadata_prefers_zh_tw_and_announces_async_results() -> None:
     assert 'setAttribute("aria-live", "polite")' in javascript
 
 
+def test_release_polish_preserves_readability_semantics_and_narrow_navigation() -> None:
+    text = _config_text()
+    css = APP_CSS.lower()
+    assert ".pcb-honesty-note strong {" in css
+    assert "@media (max-width: 420px)" in css
+    honesty_title_rule = css.split(".pcb-honesty-note strong {", 1)[1].split("}", 1)[0]
+    narrow_nav_rule = css.split("@media (max-width: 420px)", 1)[1].split("@media", 1)[0]
+
+    assert "color: var(--pcb-pine-deep) !important" in honesty_title_rule
+    assert (
+        'class="pcb-brand" href="#hero" aria-label="pcb defect intelligence 首頁"' in text.lower()
+    )
+    assert 'class="pcb-brand-mark" aria-hidden="true"' in text
+    assert 'class="pcb-integrity-icon" aria-hidden="true"' in text
+    assert text.count('class="pcb-defect-code" translate="no"') == 6
+    assert text.count('<h3 translate="no">') == 3
+    assert ".pcb-brand-copy { display: none; }" in narrow_nav_rule
+
+
 def test_preview_images_reserve_space_and_use_intentional_loading_priority() -> None:
     text = _config_text()
 
