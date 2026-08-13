@@ -230,13 +230,19 @@ sequenceDiagram
 
 ---
 
-## 系統架構與 Pipeline
+## Deep Dive：實驗與部署 Pipeline
 
-### 1. PCB 板級防洩漏與成對實驗流程
+<details>
+<summary>展開：PCB 板級防洩漏與成對實驗流程</summary>
+
+這張圖展開 frozen Board-level split、Grouped／Leaky Control paired training，以及共同 Board 08 final test 上的受控差值評測。
 
 ```mermaid
 %%{init: {'themeVariables': {'fontSize': '18px'}}}%%
 flowchart TD
+    accTitle: PCB 板級防洩漏與成對實驗流程
+    accDescr: HRIPCB 依 Board ID 凍結分割，Grouped 與 Leaky Control 在三個 seeds 下共用 Board 08 final test，評估 same-board exposure effect。
+
     subgraph Stage1 ["階段一：資料分割與防洩漏策略 (Board Partition)"]
         direction LR
         Raw[("HRIPCB 原生資料集<br/>(10 款 PCB 模板板號)")] --> Strat["板級嚴格切分策略<br/>(Board-level Stratified)"] --> Sets[("凍結分割清單<br/>Test: Board 08 · Val/Cal: Board 01<br/>Grouped train: 04/05/06/07/09/10/11/12")]
@@ -270,11 +276,19 @@ flowchart TD
     style Stage3 fill:#f4fbf7,stroke:#0ca678,stroke-width:2px,color:#0ca678,stroke-dasharray: 4 4
 ```
 
-### 2. ONNX fidelity 與 L4 多後端部署管線
+</details>
+
+<details>
+<summary>展開：ONNX fidelity 與 NVIDIA L4 多後端部署管線</summary>
+
+這張圖展開 PyTorch→ONNX fidelity、TensorRT build、NVIDIA L4 calibration latency 與 strict per-box parity gate。
 
 ```mermaid
 %%{init: {'themeVariables': {'fontSize': '18px'}}}%%
 flowchart TD
+    accTitle: ONNX fidelity 與 NVIDIA L4 多後端部署管線
+    accDescr: PyTorch 模型匯出 ONNX 後進行 wrapper parity、L4 多後端 latency 與 PyTorch-reference strict per-box parity；failed gate 只發布 calibration evidence。
+
     subgraph ExportStage ["階段一：模型匯出與保真度校驗 (Fidelity Gate)"]
         direction LR
         PyTorch[("PyTorch 權重<br/>(Grouped Seed 42)")] --> ONNX["ONNX export"] --> Parity["Same-ONNX wrapper parity<br/>(60/60；非 PyTorch reference)"]
@@ -309,6 +323,8 @@ flowchart TD
     style EngineStage fill:#fffcf0,stroke:#f59f00,stroke-width:2px,color:#f59f00,stroke-dasharray: 4 4
     style BenchStage fill:#f4fbf7,stroke:#0ca678,stroke-width:2px,color:#0ca678,stroke-dasharray: 4 4
 ```
+
+</details>
 
 ---
 
