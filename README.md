@@ -102,16 +102,82 @@ flowchart LR
 
 ---
 
-## 系統設計與關鍵特性
+## Evidence-first 系統架構
 
-1. **嚴格板級防洩漏分割 (Board-level Stratified Partition)**：
-   針對 HRIPCB 資料集按 PCB 實體模板板號 (Board ID) 進行嚴格物理隔離，杜絕同款板號跨入 Train/Test 所造成之特徵過度擬合與性能虛高。
-2. **成對對照實驗架構 (Paired Protocol & A100 Benchmarking)**：
-   固定相同的 30 張最終測試影像（單一 Board 08），對比「嚴格分組組 (Grouped)」與「洩漏對照組 (Leaky Control)」，在 3 個獨立種子 (Seeds 42/43/44) 下觀察到 **21.3 個百分點**的 mAP50 差距。
-3. **ONNX 算子對齊與保真度門控 (Fidelity Gate)**：
-   Hash-pinned PyTorch→ONNX aggregate fidelity gate 通過；既有 `60/60` standalone gate 比較的是同一 ONNX artifact 的兩條執行路徑，不代表 PyTorch→ONNX per-box equivalence。
-4. **NVIDIA L4 多後端部署評測**：
-   在 60 張 calibration images 上比較 PyTorch FP32、ONNX Runtime CUDA FP32 與 TensorRT FP16；本次 ONNX Runtime CUDA 是最快後端（p50 **20.28 ms** / **49.32 FPS**）。TensorRT FP16 通過 aggregate fidelity gate（|ΔmAP50-95| < 0.02），但兩個匯出後端都未通過預先凍結的 strict per-box parity gate。
+系統不是把 training、benchmark 與 UI 當成彼此無關的展示，而是讓每一層輸出下一層可驗證的 contract。failed gate 仍會成為 evidence，但不會被轉譯成已發布模型。
+
+```mermaid
+%%{init: {'themeVariables': {'fontSize': '18px'}}}%%
+flowchart LR
+    accTitle: PCB 瑕疵偵測的 evidence-first 四層架構
+    accDescr: 凍結資料 contract 驅動成對實驗與部署驗證，產生 committed evidence；failed strict parity 只能進入 Recorded evidence 或 Degraded mode。
+
+    subgraph Data["01 · Data Contract"]
+        direction TB
+        Config["paired_protocol.yaml"]
+        Split["Board-level split manifest"]
+        Hash["Dataset／manifest<br/>SHA-256"]
+        Config --> Split --> Hash
+    end
+
+    subgraph Experiment["02 · Experiment & Evaluation"]
+        direction TB
+        Paired["Grouped vs Leaky Control"]
+        A100["A100<br/>Seeds 42／43／44"]
+        Final["Common Board 08<br/>final test"]
+        Paired --> A100 --> Final
+    end
+
+    subgraph Validation["03 · Deployment Validation"]
+        direction TB
+        Export["PyTorch → ONNX"]
+        Aggregate["Aggregate fidelity<br/>PASS"]
+        L4["NVIDIA L4<br/>calibration latency"]
+        Strict["Strict per-box parity<br/>FAILED"]
+        Export --> Aggregate --> L4 --> Strict
+    end
+
+    subgraph Presentation["04 · Evidence Presentation"]
+        direction TB
+        Reports["Committed reports<br/>JSON · Markdown"]
+        State["build_app_state()"]
+        EvidenceMode["EVIDENCE<br/>Recorded evidence"]
+        Degraded["DEGRADED<br/>inference disabled"]
+        Live["LIVE candidate<br/>guarded path"]
+        Reports --> State
+        Contract["Passed model contract<br/>+ artifact SHA-256"] --> State
+        State -->|blocked contract| EvidenceMode
+        State -->|mismatch／error| Degraded
+        State -->|all release checks pass| Live
+    end
+
+    Hash --> Paired
+    Final --> Export
+    Strict --> Reports
+    Strict -.->|FAILED · Recorded evidence only| EvidenceMode
+
+    classDef contract fill:#DCE7DF,stroke:#35594A,stroke-width:2px,color:#26352F
+    classDef process fill:#EDE2C8,stroke:#9A7438,stroke-width:2px,color:#26352F
+    classDef verified fill:#35594A,stroke:#26352F,stroke-width:2px,color:#FFFFFF
+    classDef blocked fill:#F3E2DD,stroke:#785650,stroke-width:2px,color:#3F2E2B
+    classDef neutral fill:#F3F0E8,stroke:#587069,stroke-width:2px,color:#26352F
+
+    class Config,Split,Hash contract
+    class Paired,A100,Final,Export,L4 process
+    class Aggregate,Reports,Live verified
+    class Strict,EvidenceMode,Degraded blocked
+    class State,Contract neutral
+
+    style Data fill:#F6F7F4,stroke:#35594A,stroke-width:2px,color:#26352F
+    style Experiment fill:#FBF7EE,stroke:#9A7438,stroke-width:2px,color:#26352F
+    style Validation fill:#FBF5F3,stroke:#785650,stroke-width:2px,color:#3F2E2B
+    style Presentation fill:#F6F7F4,stroke:#35594A,stroke-width:2px,color:#26352F
+```
+
+1. **Board-level Stratified Partition**：依 PCB Board ID 嚴格隔離 Train／Test，避免同款 sibling images 跨 split 造成虛高表現。
+2. **Paired Protocol & A100 Benchmarking**：Grouped 與 Leaky Control 共用單一 Board 08 的 30 張 final-test images；Seeds 42／43／44 下觀察到 **+21.3 pp** mAP50 差距。
+3. **Hash-pinned ONNX Fidelity Gate**：aggregate fidelity 通過；`60/60` **Same-ONNX wrapper parity** 比較同一 ONNX artifact 的兩條執行路徑，**非 PyTorch reference**，不代表 PyTorch→ONNX per-box equivalence。
+4. **NVIDIA L4 multi-backend benchmark**：60 張 calibration images 上，ONNX Runtime CUDA FP32 p50 為 **20.28 ms**；TensorRT FP16 通過 aggregate fidelity，但匯出後端未通過 frozen strict per-box parity gate。
 
 ---
 
