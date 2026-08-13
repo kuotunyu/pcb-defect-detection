@@ -2,10 +2,15 @@
 
 ## Publication status
 
-The current tree is the `v0.2.0 release candidate` for the finalized responsive portfolio UI. It
-does not reuse the `v0.1.0` version DOI. A deterministic `v0.2.0` research package will be built
-from the exact release commit, attached to the GitHub Release, and recorded here with its new
-Zenodo version DOI only after the immutable external records exist.
+The [v0.2.0 GitHub Release](https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.2.0)
+and Zenodo version record
+[`10.5281/zenodo.21912370`](https://doi.org/10.5281/zenodo.21912370) publish the same deterministic
+archive built from source commit
+`7fc1777d306584fc1f3ffe0c05989296370fe6df`: 1,699,878 bytes with SHA-256
+`89d82a6ab8737193f8c59614d2a04c68f07b02fca3bc7d3ee7178c56ff882f29`. The all-versions DOI
+remains [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496). This version adds the
+final responsive PCB review-workstation presentation without changing the scientific claims,
+failed strict parity gate, or redistribution boundary.
 
 ### Immutable v0.1.0 record
 
@@ -46,7 +51,7 @@ uv run python -m pcb_defect.research_package \
 
 The command refuses a dirty tracked worktree, refuses secret-shaped tracked paths, writes a
 deterministic ZIP plus `.sha256` sidecar, and verifies every member against the embedded manifest
-before returning success. The new archive must be generated from the exact `v0.2.0` release commit.
+before returning success. The published archive was generated from the exact `v0.2.0` release commit.
 The historical archive generated from tagged commit
 `56c086206eab9be1a9c6a4e36410fd13ed42f5ec` remains attached to the `v0.1.0` GitHub Release and
 deposited on Zenodo. Running this command from any other commit produces a different archive; do
@@ -55,11 +60,12 @@ repository.
 
 ## Citation and deposit metadata
 
-- `CITATION.cff` defines the single software author, current software version, release date, and
-  GitHub source URL. A version DOI is added only after the corresponding Zenodo record exists.
+- `CITATION.cff` defines the single software author, current software version, release date,
+  version DOI, and GitHub source URL.
 - `.zenodo.json` defines the title, keywords, access mode, license, and redistribution note.
 - `docs/license-boundary.md` remains authoritative for third-party data and model artifacts.
 
-Use the version DOI when citing v0.1.0 and the all-versions DOI when referring to the evolving
-software record. Every new version must receive its own Zenodo version DOI; do not reuse the
-v0.1.0 DOI or add a public-model URL unless the corresponding artifact has actually been published.
+Use `10.5281/zenodo.21912370` when citing v0.2.0, `10.5281/zenodo.21877497` when citing v0.1.0,
+and the all-versions DOI when referring to the evolving software record. Every new version must
+receive its own Zenodo version DOI; do not reuse an earlier version DOI or add a public-model URL
+unless the corresponding artifact has actually been published.

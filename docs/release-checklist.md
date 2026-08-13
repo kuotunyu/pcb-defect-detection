@@ -60,10 +60,14 @@ hosted endpoint have been published. External source-release facts are recorded 
   immutable `v0.1.0` DOI as historical evidence rather than reusing it for the new version.
 - [x] The scientific claims and redistribution boundary are unchanged: no dataset media, weights,
   exports, engines, or hosted inference are added.
-- [ ] The annotated `v0.2.0` tag and GitHub Release resolve to the final release commit and publish
-  the verified deterministic research package plus checksum sidecar.
-- [ ] A new Zenodo version record preserves concept DOI `10.5281/zenodo.21877496`; its version DOI,
-  archive byte count, and SHA-256 are recorded after publication.
+- [x] The annotated `v0.2.0` tag resolves to
+  `7fc1777d306584fc1f3ffe0c05989296370fe6df`; the corresponding
+  [GitHub Release](https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.2.0)
+  publishes the deterministic research package and checksum sidecar (1,699,878 bytes; SHA-256
+  `89d82a6ab8737193f8c59614d2a04c68f07b02fca3bc7d3ee7178c56ff882f29`).
+- [x] Zenodo version DOI [`10.5281/zenodo.21912370`](https://doi.org/10.5281/zenodo.21912370)
+  preserves concept DOI [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496)
+  and publishes the same 1,699,878-byte archive with the verified SHA-256 above.
 
 ## Intentional non-goals
 
