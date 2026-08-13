@@ -2,6 +2,13 @@
 
 ## Publication status
 
+The current tree is the `v0.2.0 release candidate` for the finalized responsive portfolio UI. It
+does not reuse the `v0.1.0` version DOI. A deterministic `v0.2.0` research package will be built
+from the exact release commit, attached to the GitHub Release, and recorded here with its new
+Zenodo version DOI only after the immutable external records exist.
+
+### Immutable v0.1.0 record
+
 The [v0.1.0 GitHub Release](https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.1.0)
 and Zenodo version record
 [`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497) publish the same deterministic
@@ -34,22 +41,25 @@ From a clean clone at the exact release-candidate commit:
 uv sync --locked --no-editable
 uv run python -m pcb_defect.research_package \
   --repo . \
-  --output dist/pcb-defect-detection-research.zip
+  --output dist/pcb-defect-detection-v0.2.0-research-package.zip
 ```
 
 The command refuses a dirty tracked worktree, refuses secret-shaped tracked paths, writes a
 deterministic ZIP plus `.sha256` sidecar, and verifies every member against the embedded manifest
-before returning success. The verified archive generated from tagged commit
-`56c086206eab9be1a9c6a4e36410fd13ed42f5ec` is attached to the `v0.1.0` GitHub Release and
+before returning success. The new archive must be generated from the exact `v0.2.0` release commit.
+The historical archive generated from tagged commit
+`56c086206eab9be1a9c6a4e36410fd13ed42f5ec` remains attached to the `v0.1.0` GitHub Release and
 deposited on Zenodo. Running this command from any other commit produces a different archive; do
-not present that result as the `v0.1.0` asset or commit it back into this repository.
+not present that result as the `v0.1.0` asset, the `v0.2.0` asset, or commit it back into this
+repository.
 
 ## Citation and deposit metadata
 
-- `CITATION.cff` defines the single software author, v0.1.0 DOI, release date, and GitHub source URL.
+- `CITATION.cff` defines the single software author, current software version, release date, and
+  GitHub source URL. A version DOI is added only after the corresponding Zenodo record exists.
 - `.zenodo.json` defines the title, keywords, access mode, license, and redistribution note.
 - `docs/license-boundary.md` remains authoritative for third-party data and model artifacts.
 
 Use the version DOI when citing v0.1.0 and the all-versions DOI when referring to the evolving
-software record. Future versions must receive their own Zenodo version DOI; do not reuse the
+software record. Every new version must receive its own Zenodo version DOI; do not reuse the
 v0.1.0 DOI or add a public-model URL unless the corresponding artifact has actually been published.

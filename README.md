@@ -1,7 +1,7 @@
 # pcb-defect-detection
 
 [![CI](https://github.com/kuotunyu/pcb-defect-detection/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/pcb-defect-detection/actions/workflows/ci.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21877497.svg)](https://doi.org/10.5281/zenodo.21877497)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21877496.svg)](https://doi.org/10.5281/zenodo.21877496)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4%2B-EE4C2C?logo=pytorch&logoColor=white)
 ![Ultralytics YOLO26n](https://img.shields.io/badge/YOLO26n-Object%20Detection-blue?logo=ultralytics&logoColor=white)
@@ -23,6 +23,8 @@
 ```powershell
 uv run --locked --no-editable --extra app python -m app.app
 ```
+
+> **Windows 路徑提醒**：Python 3.11 在 CP950 locale 下讀取 editable-install `.pth` 時，可能無法解析含中文字的 checkout path。建議將 repository clone 到純 ASCII 路徑，並沿用上方 `--no-editable` 啟動方式；CI 也使用 non-editable install。
 
 目前啟動後會進入 Recorded evidence mode。未來只有在 `model_contract.json` 宣告 `passed`、artifact SHA-256 相符且 ONNX session 建立成功時，才會顯示上傳與 `執行偵測` 控制項。
 
@@ -281,12 +283,15 @@ uv run --locked --no-editable --extra train --group eval \
 
 ## 引用
 
-本專案的 v0.1.0 source-and-metadata research package 已由 Zenodo 永久典藏：
+目前軟體版本為 **v0.2.0**。Zenodo 的全版本 DOI 會永遠指向最新典藏版本：
 
-- 版本 DOI：[`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497)
 - 全版本 DOI：[`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496)
 
-引用本次釋出時，請使用版本 DOI：
+既有 **v0.1.0** source-and-metadata research package 仍以不可變版本 DOI 保存：
+
+- 版本 DOI：[`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497)
+
+`v0.2.0` 的版本 DOI 只會在新 Zenodo record 完成後回填；不以 `v0.1.0` DOI 代稱新版本。引用歷史 `v0.1.0` 時請使用：
 
 > kuotunyu. (2026). *PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence* (Version 0.1.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21877497
 

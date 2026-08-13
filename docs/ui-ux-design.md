@@ -45,22 +45,23 @@
 ### 3.1 Header
 
 - 品牌：`PCB Defect Intelligence`
-- 導覽：`工作站`、`模型證據`、`瑕疵類別`、`關於專案`
+- 導覽：`工作站`、`模型證據`、`瑕疵類別`
 - GitHub repository 外部連結
-- 桌機保持單列；手機折疊成精簡選單。
+- 桌機保持單列；手機只保留品牌標誌與 GitHub CTA，避免狹窄選單擠壓內容。
 
 ### 3.2 Hero
 
 主標：
 
-> 從資料切分到 Deployment Gate，完整呈現 PCB 瑕疵偵測工程。
+> 從資料切分到 Deployment Gate
+> 完整呈現 PCB 瑕疵偵測工程
 
 副標需交代：YOLO26n、六類裸板瑕疵、Board-level protocol、資料洩漏效應與 evidence-driven release boundary。
 
 Hero 右側顯示工作站視覺預覽。第一屏同時具備：
 
-- 原始影像／偵測結果並排的產品形象。
-- 缺陷摘要與 model version。
+- 原始影像／標註結果並排的產品形象。
+- Model family、supported classes 與 public inference 狀態。
 - Promotion Gate 狀態。
 - 明確模式標籤，避免把介面示意誤認成 live inference。
 
@@ -79,11 +80,11 @@ CTA 僅保留兩個：`查看複核工作站`、`瀏覽工程證據`。
 
 ### 3.4 人工複核工作站
 
-桌機採雙欄：
+桌機採主視覺與狀態摘要雙欄：
 
-- 左欄：原始影像。
-- 右欄：偵測／標註結果。
-- 下方：缺陷摘要、confidence、座標、model version、latency、mode 與 Promotion Gate。
+- 左欄：原始影像／標註結果並排的 synthetic interface illustration。
+- 右欄：Promotion Gate、Mode、Model family、Supported classes 與 Public inference。
+- 所有 illustration 都標示為非模型輸出，不呈現虛構 confidence 或座標。
 
 手機改為單欄依序呈現，不等比例縮小桌機版。
 
@@ -114,7 +115,7 @@ CTA 僅保留兩個：`查看複核工作站`、`瀏覽工程證據`。
 
 ### 3.7 Footer／Repository CTA
 
-用一個低層級區塊收尾，連結 Repository、Model Card、Data Card、Research Package 與 License Boundary。不保留 Gradio 預設 footer 作為主要視覺元素。
+用一個低層級區塊收尾，連結 Repository、Model Card 與 Research Package；Data Card 與 License Boundary 由 Research Package 繼續導覽。不保留 Gradio 預設 footer 作為主要視覺元素。
 
 ## 4. 視覺系統
 
@@ -235,8 +236,8 @@ HRIPCB 圖片與 annotations 的上游授權尚未確認，因此：
 
 UI 完成後產出：
 
-- `docs/assets/ui-workstation-desktop.png`：README 主視覺，建議 1440×900 或相同比例。
-- `docs/assets/ui-workstation-mobile.png`：響應式設計證據。
+- `docs/assets/ui-workstation-desktop.png`：README 主視覺，固定 1440×900。
+- `docs/assets/ui-workstation-mobile.png`：響應式設計證據，固定 390×844。
 
 README 頂部順序調整為：
 

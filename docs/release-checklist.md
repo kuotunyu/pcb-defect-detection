@@ -50,6 +50,21 @@ hosted endpoint have been published. External source-release facts are recorded 
   and all-versions DOI [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496) resolve
   to the same 1,505,971-byte archive recorded above.
 
+## v0.2.0 portfolio release preparation
+
+- [x] Final desktop and mobile workstation screenshots are captured from the running app at
+  exactly 1440×900 and 390×844 and are embedded in the README.
+- [x] The responsive UI preserves the recorded-evidence mode, readable typography, keyboard
+  semantics, and visible `BLOCKED` Promotion Gate.
+- [x] Software, citation, and Zenodo ingestion metadata identify version `0.2.0` and preserve the
+  immutable `v0.1.0` DOI as historical evidence rather than reusing it for the new version.
+- [x] The scientific claims and redistribution boundary are unchanged: no dataset media, weights,
+  exports, engines, or hosted inference are added.
+- [ ] The annotated `v0.2.0` tag and GitHub Release resolve to the final release commit and publish
+  the verified deterministic research package plus checksum sidecar.
+- [ ] A new Zenodo version record preserves concept DOI `10.5281/zenodo.21877496`; its version DOI,
+  archive byte count, and SHA-256 are recorded after publication.
+
 ## Intentional non-goals
 
 - Dataset, fine-tuned weights, ONNX exports, and TensorRT engines are not redistributed.

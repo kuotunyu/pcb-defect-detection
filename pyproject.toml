@@ -1,6 +1,6 @@
 [project]
 name = "pcb-defect"
-version = "0.1.0"
+version = "0.2.0"
 description = "PCB bare-board defect detection with Ultralytics YOLO26 (HRIPCB) - AOI portfolio project"
 readme = "README.md"
 requires-python = ">=3.11"

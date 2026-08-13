@@ -5,7 +5,7 @@
       "name": "kuotunyu"
     }
   ],
-  "description": "Source code and metadata-only evidence for a board-aware PCB defect-detection study of same-board exposure, reproducible evaluation contracts, and calibration-only deployment validation.",
+  "description": "Source code, a responsive PCB review-workstation interface, and metadata-only evidence for a board-aware PCB defect-detection study of same-board exposure, reproducible evaluation contracts, and calibration-only deployment validation.",
   "keywords": [
     "computer vision",
     "industrial AI",
@@ -25,5 +25,5 @@
   ],
   "title": "PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence",
   "upload_type": "software",
-  "version": "0.1.0"
+  "version": "0.2.0"
 }
