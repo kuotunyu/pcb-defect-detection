@@ -1,0 +1,145 @@
+{
+  "artifacts": {
+    "engine_committable": false,
+    "onnx_sha256": "b62590a14e2e88a414eb06389058d13d69ff1ea3998232996877088951fe3bb8",
+    "source_checkpoint_sha256": "44646b130b8b42282b752f77659cabfc1c484dc3aaa9a2dc8f710da8468f511a",
+    "tensorrt_engine_sha256": "5c8274e6629419736a8b7aaa770b8665dbdd97db2e9cf8046b31757b283cf840"
+  },
+  "evidence_visibility": "public_metadata_from_private_unreleased_package",
+  "fidelity": {
+    "absolute_delta_threshold": 0.02,
+    "onnx_map50_95": 0.1084447068676515,
+    "passed": true,
+    "source_map50_95": 0.12125399555038195,
+    "split": "calibration",
+    "tensorrt_fp16_map50_95": 0.10711279775211151,
+    "tensorrt_minus_source": -0.014141197798270444
+  },
+  "hardware": {
+    "cudnn": 91002,
+    "driver": "580.82.07",
+    "gpu": "NVIDIA L4",
+    "tensorrt": "10.13.3.9",
+    "torch_cuda": "12.6"
+  },
+  "limitations": [
+    "One L4 session does not estimate between-session, machine, driver, or thermal variance.",
+    "The benchmark uses calibration images only and is not a final-test or production-SLA measurement.",
+    "TensorRT engine bytes remain private, hardware-stack-bound, and non-portable."
+  ],
+  "package": {
+    "bytes": 23921329,
+    "filename": "paired-results-l4-9e3a1ed5827a-runner-2abe78fe2b54.zip",
+    "sha256": "8e22c52f9a6a184353631509aba011bfd23e319fb67f00d3f17a6a8d6b28ed61"
+  },
+  "prediction_parity": {
+    "candidate_backends": [
+      "onnxruntime_cuda_fp32",
+      "tensorrt_fp16"
+    ],
+    "comparisons": {
+      "onnxruntime_cuda_fp32": {
+        "candidate_detections": 62,
+        "images_both_empty": 24,
+        "images_with_reference_detections": 36,
+        "matched_detections": 62,
+        "max_conf_delta": 0.0012852251529693604,
+        "min_iou": 0.9989099779610657,
+        "n_failed_images": 0,
+        "n_images": 60,
+        "passed": true,
+        "reference_detections": 62,
+        "unmatched_candidate_detections": 0,
+        "unmatched_reference_detections": 0
+      },
+      "tensorrt_fp16": {
+        "candidate_detections": 61,
+        "images_both_empty": 24,
+        "images_with_reference_detections": 36,
+        "matched_detections": 61,
+        "max_conf_delta": 0.007691502571105957,
+        "min_iou": 0.9585281265862317,
+        "n_failed_images": 1,
+        "n_images": 60,
+        "passed": false,
+        "reference_detections": 62,
+        "unmatched_candidate_detections": 0,
+        "unmatched_reference_detections": 1
+      }
+    },
+    "config_sha256": "ef05243a3691e418852d6ba6f4425b2f38aa6e7745a36023d89ceda7bff60d11",
+    "n_images": 60,
+    "passed": false,
+    "reference_backend": "pytorch_fp32",
+    "required_images": 60,
+    "schema_version": "1.0",
+    "split": "calibration",
+    "thresholds": {
+      "allowed_max_conf_delta": 0.15,
+      "confidence": 0.25,
+      "match_iou": 0.5,
+      "required_min_iou": 0.9
+    }
+  },
+  "protocol": {
+    "batch": 1,
+    "confidence": 0.25,
+    "cycles": 4,
+    "image_content_sha256": "3c10cb60e7f41e197df2ee918c40d81ff10499e67f3edfa47737b7255054f819",
+    "image_list_sha256": "5c9a5b277081a1f170345cd06bf5223dfc8332c1f86acb0e96e9ad6af1e7b8e5",
+    "images": 60,
+    "scope": "predecoded PIL image; preprocess + inference + postprocess; CUDA synchronized",
+    "sessions": 1,
+    "split": "calibration",
+    "timing_schedule": "interleaved-rotating-backend-order",
+    "warmup": 30
+  },
+  "provenance": {
+    "dataset_sha256": "8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4",
+    "deployment_gate_sha256": "466bf152a30e7efe1768542a71647e8982d18df253b2b170aaa2a13d087c1803",
+    "experiment_git_sha": "9e3a1ed5827ac3759cbb15632f041e3e5c183b51",
+    "manifest_sha256": "5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5",
+    "runner_git_sha": "2abe78fe2b54fb8015dbcc97ca37ecf0f7a6a5a5"
+  },
+  "raw_report_sha256": "2b0473ef17daec2dd99a27061c2940a7384b8f8aea07857729649915eddfa167",
+  "runtime": {
+    "onnxruntime_providers": [
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ]
+  },
+  "schema_version": "2.0",
+  "status": "complete",
+  "timings": {
+    "onnxruntime_cuda_fp32": {
+      "fps_from_p50": 49.544256013566184,
+      "max_ms": 22.222419999934573,
+      "mean_ms": 20.221899662496412,
+      "min_ms": 19.51443100006145,
+      "n_runs": 240,
+      "p50_ms": 20.1839745000143,
+      "p95_ms": 20.822142999963944,
+      "std_ms": 0.35809289344429635
+    },
+    "pytorch_fp32": {
+      "fps_from_p50": 16.382760660130586,
+      "max_ms": 80.65444699991531,
+      "mean_ms": 61.341780795844635,
+      "min_ms": 59.6091710001474,
+      "n_runs": 240,
+      "p50_ms": 61.03977350005607,
+      "p95_ms": 63.331417949893876,
+      "std_ms": 2.017326584263651
+    },
+    "tensorrt_fp16": {
+      "fps_from_p50": 19.74631202079161,
+      "max_ms": 62.4162780000006,
+      "mean_ms": 50.87315350833895,
+      "min_ms": 49.44117700006245,
+      "n_runs": 240,
+      "p50_ms": 50.64236800001254,
+      "p95_ms": 52.65300454998396,
+      "std_ms": 1.147111874142175
+    }
+  }
+}
