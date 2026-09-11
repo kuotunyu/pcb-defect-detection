@@ -276,3 +276,22 @@ def test_handoff_cli_prints_the_created_directory(
     assert main(["handoff", "--repo", str(repo), "--output-root", str(tmp_path / "out")]) == 0
 
     assert "lobo_handoff_dir=" in capsys.readouterr().out
+
+
+def test_preregistration_lists_every_fold_with_its_frozen_manifest_hash() -> None:
+    registry = load_registry(ROOT)
+    document = (ROOT / "docs" / "lobo-preregistration.md").read_text(encoding="utf-8")
+    table = document.split("<!-- FOLD_TABLE_START -->", 1)[1].split("<!-- FOLD_TABLE_END -->", 1)[0]
+
+    for fold in registry["folds"]:
+        assert f"| {fold['board']} | `{fold['config']}` | `{fold['manifest_sha256']}` |" in table
+        expected_status = "pending Colab run" if fold["run"] else "published (reused)"
+        assert f"`{fold['evidence']}/` | {expected_status} |" in table
+    assert table.count("\n| ") == len(registry["folds"]) + 1  # header row plus one row per fold
+    for phrase in (
+        "resampling the six boards with replacement (10,000 draws, seed 20260803)",
+        "every one of six held-out boards",
+        "the direction of the exposure effect varies across held-out boards",
+        "No seed is added",
+    ):
+        assert phrase in document

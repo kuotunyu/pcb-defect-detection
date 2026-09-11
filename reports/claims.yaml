@@ -92,6 +92,21 @@ claims:
       - Thresholds were frozen before the first session and were not changed; the runner correction was made after the first session failed and changes only the PyTorch reference input geometry.
       - The TensorRT FP16 sub-threshold score of the single missing detection is not recorded; the threshold-crossing explanation is an inference from its observed FP16 deviation range.
 
+  multi_board_leakage_effect:
+    status: pending_colab
+    statement: >-
+      A leave-one-board-out replication of the paired protocol is pre-registered: six held-out
+      boards (05, 07, 08, 09, 11, 12) under one eligibility rule, the same recipe, seeds, and
+      evaluator, with the per-board leaky-minus-grouped mAP50 delta as the primary endpoint.
+      Board 08 reuses its published evidence; the other five folds have not been run yet.
+    evidence:
+      - docs/lobo-preregistration.md
+      - configs/lobo/folds.yaml
+    limitations:
+      - No multi-board result exists yet; nothing beyond the single-board finding is claimed.
+      - Boards 01, 04, 06, and 10 are never held out, so the design covers the 60-image boards only.
+      - With six boards the board-level bootstrap interval will be approximate.
+
   hosted_demo:
     status: out_of_scope
     statement: Hosted inference is intentionally excluded from this published metadata-only portfolio release.

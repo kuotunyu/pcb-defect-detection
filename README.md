@@ -392,6 +392,7 @@ README 只提供安全的 CLI 檢查入口，不提供會誤啟動訓練的裸�
 | `reports/protocol/` | 凍結分割 Manifest 與配對哈希驗證紀錄 |
 | `reports/benchmark_l4.md` | Verified NVIDIA L4 latency、aggregate fidelity 與 failed strict parity 摘要 |
 | `tools/animations/` | README 解說動畫的 Manim 原始碼與算圖說明；不進鎖定依賴與 CI |
+| `configs/lobo/` · `docs/lobo-preregistration.md` | 多板複驗（leave-one-board-out）的 fold 註冊表與預登記分析；Colab 結果尚未產生 |
 
 ---
 
