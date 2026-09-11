@@ -19,6 +19,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import random
+import statistics
+import zipfile
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 from pathlib import Path
@@ -39,6 +42,7 @@ from pcb_defect.paired_protocol import (
     ProtocolSample,
     build_paired_protocol,
 )
+from pcb_defect.result_package import PackageError, verify_verifiable_zip
 
 REGISTRY_RELATIVE = Path("configs/lobo/folds.yaml")
 PARENT_CONFIG_RELATIVE = Path("configs/paired_protocol.yaml")
@@ -334,6 +338,350 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------------------------------
+# promote
+# --------------------------------------------------------------------------------------------
+
+PUBLIC_MEMBERS = (
+    "inputs/input_lock.json",
+    "gates/gate_report.json",
+    "final/deployment_selection.json",
+    "final/final_metrics.json",
+    "final/finalization_record.json",
+)
+DEPLOYMENT_GATE_MEMBER = "deployment/deployment_gate.json"
+FOLD_MANIFEST_MEMBER = "runs/grouped/seed42/inputs/paired_split_manifest.json"
+EMBEDDED_MANIFEST_MEMBER = "package_manifest.json"
+FORBIDDEN_TOKENS = ("/content/", "/root/", "MyDrive", "C:\\")
+PREREGISTRATION_RELATIVE = Path("docs/lobo-preregistration.md")
+SUMMARY_RELATIVE = FOLD_EVIDENCE_DIR / "summary.json"
+SUMMARY_README_RELATIVE = FOLD_EVIDENCE_DIR / "README.md"
+
+
+def promote_paired_package(
+    package: Path, *, board: str, expected_manifest_sha256: str, output: Path
+) -> dict[str, Any]:
+    """Verify a returned A100 package for one fold and write its path-free public evidence."""
+    package = package.resolve()
+    output = output.resolve()
+    if output.exists() and any(output.iterdir()):
+        raise LoboError(f"refusing to write into a non-empty evidence directory: {output}")
+    try:
+        manifest = verify_verifiable_zip(package)
+    except PackageError as exc:
+        raise LoboError(f"returned package failed verification: {exc}") from exc
+    rows = {row["path"]: row for row in manifest["files"]}
+    outputs: dict[str, bytes] = {}
+    with zipfile.ZipFile(package) as archive:
+
+        def member(name: str) -> bytes:
+            if name not in rows:
+                raise LoboError(f"returned package lacks the member {name}")
+            return archive.read(name)
+
+        fold_manifest = _member_json(member(FOLD_MANIFEST_MEMBER), FOLD_MANIFEST_MEMBER)
+        held_out = fold_manifest.get("board_roles", {}).get("final_test_and_exposure")
+        if held_out != board:
+            raise LoboError(f"package holds out board {held_out!r}, expected {board!r}")
+        if fold_manifest.get("manifest_sha256") != expected_manifest_sha256:
+            raise LoboError("package protocol manifest hash differs from the fold registry")
+        lock = _member_json(member("inputs/input_lock.json"), "inputs/input_lock.json")
+        if lock.get("manifest_sha256") != expected_manifest_sha256:
+            raise LoboError("package input lock manifest hash differs from the fold registry")
+        metrics = _member_json(member("final/final_metrics.json"), "final/final_metrics.json")
+        if metrics.get("final_test_board") != board:
+            raise LoboError("package final metrics were evaluated on a different board")
+        if metrics.get("manifest_sha256") != expected_manifest_sha256:
+            raise LoboError("package final metrics manifest hash differs from the fold registry")
+        if metrics.get("git_sha") != lock.get("git_sha"):
+            raise LoboError("package final metrics and input lock disagree on the source commit")
+        for name in PUBLIC_MEMBERS:
+            outputs[Path(name).name] = member(name)
+        gate = _member_json(member(DEPLOYMENT_GATE_MEMBER), DEPLOYMENT_GATE_MEMBER)
+        public_gate = {key: value for key, value in gate.items() if key != "command"}
+        public_gate["_provenance"] = {
+            "source_entry": DEPLOYMENT_GATE_MEMBER,
+            "source_bytes": rows[DEPLOYMENT_GATE_MEMBER]["bytes"],
+            "source_sha256": rows[DEPLOYMENT_GATE_MEMBER]["sha256"],
+            "removed_fields": ["command"],
+        }
+        outputs["deployment_gate.public.json"] = _json_bytes(public_gate)
+        embedded = archive.read(EMBEDDED_MANIFEST_MEMBER)
+        outputs[EMBEDDED_MANIFEST_MEMBER] = embedded
+    receipt = {
+        "schema_version": "1.0",
+        "package": {
+            "name": package.name,
+            "bytes": package.stat().st_size,
+            "sha256": manifest["package_sha256"],
+            "sidecar": package.name + ".sha256",
+        },
+        "source_git_sha": lock["git_sha"],
+        "held_out_board": board,
+        "manifest_sha256": expected_manifest_sha256,
+        "package_manifest": {
+            "path": EMBEDDED_MANIFEST_MEMBER,
+            "sha256": hashlib.sha256(embedded).hexdigest(),
+            "verified_entries": len(rows),
+            "failed_entries": 0,
+        },
+        "verification": {"sidecar_match": True, "internal_manifest_passed": True},
+    }
+    outputs["result_package_receipt.json"] = _json_bytes(receipt)
+    for name, payload in outputs.items():
+        text = payload.decode("utf-8")
+        for token in FORBIDDEN_TOKENS:
+            if token in text:
+                raise LoboError(f"public evidence {name} would contain a private path token")
+    output.mkdir(parents=True, exist_ok=True)
+    for name, payload in outputs.items():
+        with (output / name).open("xb") as handle:
+            handle.write(payload)
+    return receipt
+
+
+def _member_json(payload: bytes, name: str) -> dict[str, Any]:
+    try:
+        value = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise LoboError(f"package member {name} is not valid JSON") from exc
+    if not isinstance(value, dict):
+        raise LoboError(f"package member {name} must be a JSON object")
+    return value
+
+
+def _json_bytes(document: dict[str, Any]) -> bytes:
+    return (json.dumps(document, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+# --------------------------------------------------------------------------------------------
+# aggregate (pre-registered endpoints)
+# --------------------------------------------------------------------------------------------
+
+PRIMARY_ENDPOINT = (
+    "per held-out board, the three-seed mean final-test mAP50 of the leaky-control arm minus "
+    "that of the grouped arm; reported per board, as mean and sample standard deviation across "
+    "boards, and with a percentile bootstrap over boards"
+)
+SECONDARY_ENDPOINTS = [
+    "the same delta on mAP50-95",
+    "per-board grouped mAP50 (board difficulty spread)",
+    "the number of boards with a positive mAP50 delta",
+    "per-board paired image-bootstrap F1 deltas from final_evaluation",
+]
+WORDING_RULE = {
+    "all_positive": (
+        "same-board sibling exposure increased final-test mAP50 on every held-out board"
+    ),
+    "direction_varies": "the direction of the exposure effect varies across held-out boards",
+    "incomplete": "the multi-board replication is incomplete; no cross-board claim is made",
+}
+SUMMARY_LIMITATIONS = [
+    "Boards 01, 04, 06, and 10 are never held out; the estimate covers the 60-image boards only.",
+    "With six boards the board-level bootstrap interval is approximate.",
+    "Each fold is one frozen 30-image final test on one board; seeds capture training noise only.",
+]
+
+
+def _quantile(sorted_values: list[float], probability: float) -> float:
+    position = (len(sorted_values) - 1) * probability
+    lower = int(position)
+    upper = min(lower + 1, len(sorted_values) - 1)
+    weight = position - lower
+    return sorted_values[lower] * (1 - weight) + sorted_values[upper] * weight
+
+
+def delta_statistics(deltas: list[float], *, resamples: int, seed: int) -> dict[str, Any]:
+    """Descriptive statistics and a percentile board bootstrap for one endpoint."""
+    if not deltas:
+        return {"n_boards": 0}
+    rng = random.Random(seed)
+    n = len(deltas)
+    means = sorted(sum(deltas[rng.randrange(n)] for _ in range(n)) / n for _ in range(resamples))
+    return {
+        "n_boards": n,
+        "mean": statistics.fmean(deltas),
+        "sample_std": statistics.stdev(deltas) if n > 1 else None,
+        "min": min(deltas),
+        "max": max(deltas),
+        "n_positive": sum(delta > 0 for delta in deltas),
+        "board_bootstrap": {
+            "unit": "held-out board",
+            "n_resamples": resamples,
+            "seed": seed,
+            "ci95_low": _quantile(means, 0.025),
+            "ci95_high": _quantile(means, 0.975),
+        },
+    }
+
+
+def aggregate_folds(
+    repo: Path,
+    *,
+    incomplete: dict[str, str] | None = None,
+    resamples: int = 10_000,
+    seed: int = 20_260_803,
+) -> dict[str, Any]:
+    """Compute the pre-registered endpoints from every fold's promoted final metrics."""
+    repo = repo.resolve()
+    registry = load_registry(repo)
+    incomplete = dict(incomplete or {})
+    prereg_path = repo / PREREGISTRATION_RELATIVE
+    if not prereg_path.is_file():
+        raise LoboError("the pre-registration document is missing; it must exist before analysis")
+    rows: list[dict[str, Any]] = []
+    missing: list[str] = []
+    for fold in registry["folds"]:
+        board = fold["board"]
+        if board in incomplete:
+            rows.append({"board": board, "status": "incomplete", "reason": incomplete[board]})
+            continue
+        metrics_path = repo / fold["evidence"] / "final_metrics.json"
+        if not metrics_path.is_file():
+            missing.append(board)
+            continue
+        metrics = _read_json(metrics_path)
+        if metrics.get("final_test_board") != board:
+            raise LoboError(f"fold {board} final metrics were evaluated on a different board")
+        if metrics.get("manifest_sha256") != fold["manifest_sha256"]:
+            raise LoboError(f"fold {board} final metrics manifest hash differs from the registry")
+        rows.append(_fold_row(board, fold["evidence"], metrics))
+    if missing:
+        raise LoboError(
+            f"missing final metrics for boards {missing}; promote their packages or mark them "
+            "--incomplete with a reason"
+        )
+    complete = [row for row in rows if row["status"] == "complete"]
+    status = "complete" if len(complete) == len(rows) else "incomplete"
+    deltas_50 = [row["delta_map50"] for row in complete]
+    if status != "complete":
+        wording = "incomplete"
+    elif all(delta > 0 for delta in deltas_50):
+        wording = "all_positive"
+    else:
+        wording = "direction_varies"
+    return {
+        "schema_version": "1.0",
+        "status": status,
+        "unit": "held-out board",
+        "registry": REGISTRY_RELATIVE.as_posix(),
+        "parent_board": registry["parent_board"],
+        "preregistration": {
+            "path": PREREGISTRATION_RELATIVE.as_posix(),
+            "sha256": hashlib.sha256(prereg_path.read_bytes()).hexdigest(),
+        },
+        "endpoints": {"primary": PRIMARY_ENDPOINT, "secondary": SECONDARY_ENDPOINTS},
+        "n_boards_total": len(rows),
+        "n_boards_complete": len(complete),
+        "boards": rows,
+        "statistics": {
+            "delta_map50": delta_statistics(deltas_50, resamples=resamples, seed=seed),
+            "delta_map50_95": delta_statistics(
+                [row["delta_map50_95"] for row in complete], resamples=resamples, seed=seed
+            ),
+            "grouped_map50": delta_statistics(
+                [row["grouped_map50"]["mean"] for row in complete], resamples=resamples, seed=seed
+            ),
+        },
+        "wording_rule": WORDING_RULE,
+        "wording": wording,
+        "limitations": SUMMARY_LIMITATIONS,
+    }
+
+
+def _fold_row(board: str, evidence: str, metrics: dict[str, Any]) -> dict[str, Any]:
+    try:
+        by_arm = metrics["aggregate"]["by_arm"]
+        grouped, leaky = by_arm["grouped"], by_arm["leaky_control"]
+        f1 = metrics["aggregate"]["paired_bootstrap"]["leaky_minus_grouped_f1"]
+        return {
+            "board": board,
+            "status": "complete",
+            "evidence": evidence,
+            "n_seeds": grouped["map50"]["n_seeds"],
+            "grouped_map50": {"mean": grouped["map50"]["mean"], "std": grouped["map50"]["std"]},
+            "leaky_map50": {"mean": leaky["map50"]["mean"], "std": leaky["map50"]["std"]},
+            "delta_map50": leaky["map50"]["mean"] - grouped["map50"]["mean"],
+            "grouped_map50_95": {
+                "mean": grouped["map50_95"]["mean"],
+                "std": grouped["map50_95"]["std"],
+            },
+            "leaky_map50_95": {"mean": leaky["map50_95"]["mean"], "std": leaky["map50_95"]["std"]},
+            "delta_map50_95": leaky["map50_95"]["mean"] - grouped["map50_95"]["mean"],
+            "f1_delta_image_bootstrap": {
+                "mean_delta": f1["mean_delta"],
+                "ci95_low": f1["ci95_low"],
+                "ci95_high": f1["ci95_high"],
+            },
+        }
+    except (KeyError, TypeError) as exc:
+        raise LoboError(f"fold {board} final metrics lack the aggregate fields") from exc
+
+
+def write_lobo_summary(repo: Path, summary: dict[str, Any]) -> tuple[Path, Path]:
+    """Write the machine-readable summary and a Markdown table beside it."""
+    repo = repo.resolve()
+    summary_path = repo / SUMMARY_RELATIVE
+    readme_path = repo / SUMMARY_README_RELATIVE
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_bytes(_json_bytes(summary))
+    readme_path.write_text(_summary_markdown(summary), encoding="utf-8", newline="\n")
+    return summary_path, readme_path
+
+
+def _summary_markdown(summary: dict[str, Any]) -> str:
+    lines = [
+        "# Multi-board replication of the paired leakage experiment",
+        "",
+        f"Status: **{summary['status']}** · unit: held-out board · "
+        f"{summary['n_boards_complete']}/{summary['n_boards_total']} boards complete.",
+        "",
+        f"Pre-registered analysis: `{summary['preregistration']['path']}` "
+        f"(SHA-256 `{summary['preregistration']['sha256']}`).",
+        "",
+        "| Board | Grouped mAP50 | Leaky control mAP50 | Δ mAP50 (pp) | Δ mAP50-95 (pp) "
+        "| Evidence |",
+        "|---|---:|---:|---:|---:|---|",
+    ]
+    for row in summary["boards"]:
+        if row["status"] != "complete":
+            lines.append(f"| {row['board']} | incomplete | | | | {row['reason']} |")
+            continue
+        lines.append(
+            f"| {row['board']} "
+            f"| {row['grouped_map50']['mean']:.4f} ± {row['grouped_map50']['std']:.4f} "
+            f"| {row['leaky_map50']['mean']:.4f} ± {row['leaky_map50']['std']:.4f} "
+            f"| {row['delta_map50'] * 100:+.1f} "
+            f"| {row['delta_map50_95'] * 100:+.1f} "
+            f"| `{row['evidence']}/` |"
+        )
+    stats = summary["statistics"]["delta_map50"]
+    if stats.get("n_boards"):
+        std = stats["sample_std"]
+        std_text = f"{std * 100:.1f}" if std is not None else "n/a"
+        lines += [
+            "",
+            f"Δ mAP50 across boards: mean {stats['mean'] * 100:+.1f} pp, sample SD {std_text} pp, "
+            f"range {stats['min'] * 100:+.1f} to {stats['max'] * 100:+.1f} pp, "
+            f"{stats['n_positive']}/{stats['n_boards']} boards positive; "
+            f"board bootstrap 95% interval {stats['board_bootstrap']['ci95_low'] * 100:+.1f} to "
+            f"{stats['board_bootstrap']['ci95_high'] * 100:+.1f} pp "
+            f"({stats['board_bootstrap']['n_resamples']} resamples, approximate for n = "
+            f"{stats['n_boards']}).",
+        ]
+    lines += [
+        "",
+        f"Pre-registered wording outcome: **{summary['wording']}** — "
+        f"{summary['wording_rule'][summary['wording']]}.",
+        "",
+        "Limitations:",
+        "",
+        *[f"- {item}" for item in summary["limitations"]],
+        "",
+    ]
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------------------------
 
@@ -347,10 +695,59 @@ def main(argv: list[str] | None = None) -> int:
     folds.add_argument("--dataset", type=Path, default=None)
     folds.add_argument("--write", action="store_true", help="write fold files (requires --dataset)")
 
+    promote = subparsers.add_parser("promote", help="promote a returned A100 package")
+    promote.add_argument("--repo", type=Path, default=Path.cwd())
+    promote.add_argument("--package", type=Path, required=True)
+    promote.add_argument("--board", required=True)
+    promote.add_argument("--output", type=Path, default=None)
+
+    aggregate = subparsers.add_parser("aggregate", help="compute the pre-registered endpoints")
+    aggregate.add_argument("--repo", type=Path, default=Path.cwd())
+    aggregate.add_argument(
+        "--incomplete",
+        action="append",
+        default=[],
+        metavar="BOARD=REASON",
+        help="report a fold as incomplete with the given reason",
+    )
+
     args = parser.parse_args(argv)
     if args.command == "folds":
         return _folds_command(args.repo, args.dataset, args.write)
+    if args.command == "promote":
+        return _promote_command(args.repo, args.package, args.board, args.output)
+    if args.command == "aggregate":
+        return _aggregate_command(args.repo, args.incomplete)
     raise AssertionError(f"unknown command: {args.command}")
+
+
+def _promote_command(repo: Path, package: Path, board: str, output: Path | None) -> int:
+    registry = load_registry(repo)
+    fold = next((fold for fold in registry["folds"] if fold["board"] == board), None)
+    if fold is None:
+        raise SystemExit(f"board {board} is not in the fold registry")
+    destination = repo.resolve() / fold["evidence"] if output is None else output
+    receipt = promote_paired_package(
+        package,
+        board=board,
+        expected_manifest_sha256=fold["manifest_sha256"],
+        output=destination,
+    )
+    print(f"promoted board {board}: {destination} ({receipt['package']['sha256']})")
+    return 0
+
+
+def _aggregate_command(repo: Path, incomplete_arguments: list[str]) -> int:
+    incomplete: dict[str, str] = {}
+    for argument in incomplete_arguments:
+        board, separator, reason = argument.partition("=")
+        if not separator or not board or not reason:
+            raise SystemExit(f"--incomplete expects BOARD=REASON, got {argument!r}")
+        incomplete[board] = reason
+    summary = aggregate_folds(repo, incomplete=incomplete)
+    summary_path, readme_path = write_lobo_summary(repo, summary)
+    print(f"summary written: {summary_path} and {readme_path} (status={summary['status']})")
+    return 0
 
 
 def _folds_command(repo: Path, dataset: Path | None, write: bool) -> int:
