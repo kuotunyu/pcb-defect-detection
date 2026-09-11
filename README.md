@@ -313,6 +313,7 @@ flowchart TB
 - **Raw timings**：TensorRT p50 `51.12191199998506` ms、p95 `52.25180029992771` ms；720 筆 observations 位於 `reports/benchmark_l4_raw.json`。
 - **Strict parity**：PyTorch reference 有 95 個 detections；ORT 配對 57 個、漏配 38/5，TensorRT 配對 56 個、漏配 39/5。
 - **Gate 結果**：兩個 backend 都有 40/60 images 未通過；門檻在執行前已凍結。完整 evidence 見 `reports/backend_parity_l4.json`。
+- **根因診斷（2026-09-11）**：失敗主因是 runner 讓 PyTorch reference 走 352×640 矩形 letterbox，而兩個匯出後端固定在 640×640；ORT 與 TRT 彼此的差異比它們與 reference 的差異小一個數量級。runner 已修正，但 gate 尚未重跑，上述結果維持原紀錄。見 `reports/diagnostics/backend_parity_root_cause_2026-09-11.md`。
 
 </details>
 

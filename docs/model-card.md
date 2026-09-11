@@ -86,6 +86,14 @@ See [`benchmark_l4.json`](../reports/benchmark_l4.json),
 [`benchmark_l4_raw.json`](../reports/benchmark_l4_raw.json), and
 [`backend_parity_l4.json`](../reports/backend_parity_l4.json).
 
+A later root-cause diagnosis, recorded in
+[`backend_parity_root_cause_2026-09-11.md`](../reports/diagnostics/backend_parity_root_cause_2026-09-11.md), attributes this
+failure to the L4 runner rather than to the exports: Ultralytics `predict()` letterboxed the
+PyTorch reference to a rectangular 352x640 input while both exported backends ran at the
+frozen 640x640 input, and the two exported backends agree with each other an order of
+magnitude more closely than either agrees with that reference. The runner is corrected, but
+the gate has not been re-run, so the failed result above stands as recorded.
+
 ## Intended use
 
 Research and portfolio review of board-aware split design, controlled leakage measurement,

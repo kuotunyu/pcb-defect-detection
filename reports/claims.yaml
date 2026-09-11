@@ -84,6 +84,7 @@ claims:
       - This result blocks any claim that the three backend prediction sets are equivalent.
       - It is a calibration-only diagnostic from one L4 session, not final-test accuracy evidence.
       - Thresholds were frozen before the run and were not relaxed after observing the failure.
+      - A 2026-09-11 diagnosis (reports/diagnostics/backend_parity_root_cause_2026-09-11.md) attributes the failure to the runner feeding the PyTorch reference a rectangular 352x640 letterbox while both exports run at 640x640; the runner is corrected, but this gate has not been re-run, so the failed status stands.
 
   hosted_demo:
     status: out_of_scope
