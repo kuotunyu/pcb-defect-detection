@@ -1,0 +1,54 @@
+schema_version: '1.0'
+parent_config: configs/paired_protocol.yaml
+parent_board: '08'
+parent_manifest_sha256: 5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5
+dataset_sha256: 8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4
+validation_board: '01'
+legacy_excluded:
+- '04'
+eligibility: every board with exactly final_per_class + exposure_per_class images in every class, excluding
+  the validation board and the legacy-excluded board
+excluded:
+  '01': validation and calibration board
+  '04': legacy-excluded board (selection.legacy_test_board_excluded)
+  '06': class short has 11 images; protocol requires exactly 10
+  '10': class missing_hole has 5 images; class mouse_bite has 5 images; class open_circuit has 6 images;
+    class short has 5 images; class spur has 5 images; class spurious_copper has 6 images; protocol requires
+    exactly 10
+folds:
+- board: '05'
+  config: configs/lobo/board05.yaml
+  artifacts: reports/protocol/lobo/board05
+  evidence: reports/lobo/board05
+  manifest_sha256: d0ccb65f61ad9173126594d00617a7993f5d6f25fe50c6689ad75a38040e5e08
+  run: true
+- board: '07'
+  config: configs/lobo/board07.yaml
+  artifacts: reports/protocol/lobo/board07
+  evidence: reports/lobo/board07
+  manifest_sha256: 89ff93656fb7b9231872caecca8a3454602982be77c329954e53f79cd189d41d
+  run: true
+- board: '08'
+  config: configs/paired_protocol.yaml
+  artifacts: reports/protocol
+  evidence: reports/paired_a100
+  manifest_sha256: 5996d595f5ce17fabd24e631ce580bbf9932a845f9898078267df8c2522892e5
+  run: false
+- board: '09'
+  config: configs/lobo/board09.yaml
+  artifacts: reports/protocol/lobo/board09
+  evidence: reports/lobo/board09
+  manifest_sha256: a498503bf75d80a678373e5c4809318a8ce214773c51ea3afc0ce9ad1c7c94ad
+  run: true
+- board: '11'
+  config: configs/lobo/board11.yaml
+  artifacts: reports/protocol/lobo/board11
+  evidence: reports/lobo/board11
+  manifest_sha256: 3e983c3ed85f5956c97185aefc33603eb7b362f152685211dac7fd26f42ce3b6
+  run: true
+- board: '12'
+  config: configs/lobo/board12.yaml
+  artifacts: reports/protocol/lobo/board12
+  evidence: reports/lobo/board12
+  manifest_sha256: 64b112051f60cf96227de28e7628be9e95e40431303714646f5ddeac03dd99e2
+  run: true

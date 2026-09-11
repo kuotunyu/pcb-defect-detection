@@ -1,0 +1,22 @@
+protocol_version: paired-board-sensitivity-v1
+lobo:
+  parent_config: configs/paired_protocol.yaml
+  held_out_board: '09'
+  eligibility: every board with exactly final_per_class + exposure_per_class images in every class, excluding
+    the validation board and the legacy-excluded board
+protocol:
+  final_board: '09'
+  validation_board: '01'
+  final_per_class: 5
+  exposure_per_class: 5
+  validation_per_class: 10
+  calibration_per_class: 10
+  protocol_seed: 42
+  expected_boards: 10
+  training_seeds:
+  - 42
+  - 43
+  - 44
+frozen_hashes:
+  dataset_sha256: 8e5f0c880af67019bfc7ab5b08a4e63cc33726c97b5a77a41ebb27ddb3709ed4
+  manifest_sha256: a498503bf75d80a678373e5c4809318a8ce214773c51ea3afc0ce9ad1c7c94ad
