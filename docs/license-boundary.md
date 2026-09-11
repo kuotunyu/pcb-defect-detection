@@ -9,6 +9,7 @@
 | Fine-tuned checkpoints | Distribution blocked until dataset and upstream model obligations are resolved |
 | ONNX export | Aggregate fidelity passed, but strict backend prediction parity failed; distribution remains blocked until redistribution rights and an official immutable publication are resolved |
 | TensorRT engine | Ephemeral, hardware-specific artifact; never commit or publish as portable evidence |
+| README explainer animation | `docs/assets/leakage-explainer.gif` is a synthetic Manim render from `tools/animations/`; it draws abstract shapes and committed aggregate numbers only and contains no dataset pixels |
 
 The six raw demo images, GIF, prediction grid, and SAHI pixel comparison are excluded from official
 `main` because the dataset license is unresolved. They remain only in the unrelated private

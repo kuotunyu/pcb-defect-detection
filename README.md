@@ -274,6 +274,10 @@ flowchart TB
 
 ### 1. 成對板級洩漏實驗結果 (A100 GPU, 3 Seeds)
 
+![Paired board-leakage experiment 動畫解說](docs/assets/leakage-explainer.gif)
+
+> 42 秒動畫：兩組共用同一份 Board 08 final test，唯一差別是 train 是否換入 30 張 Board 08 siblings。純合成圖形，不含任何 dataset 影像；原始碼與算圖步驟在 [`tools/animations/README.md`](tools/animations/README.md)。
+
 在相同的單一 Board 08（30 張 final-test images）上，三種子平均評測結果呈現以下受控差異：
 
 | 實驗組別 (Experiment Arm) | mAP50 (%) | mAP50-95 (%) | 證據邊界 |
@@ -387,6 +391,7 @@ README 只提供安全的 CLI 檢查入口，不提供會誤啟動訓練的裸�
 | `src/pcb_defect/final_evaluation.py` | 單次一擊 (One-shot) 最終測試集評測 |
 | `reports/protocol/` | 凍結分割 Manifest 與配對哈希驗證紀錄 |
 | `reports/benchmark_l4.md` | Verified NVIDIA L4 latency、aggregate fidelity 與 failed strict parity 摘要 |
+| `tools/animations/` | README 解說動畫的 Manim 原始碼與算圖說明；不進鎖定依賴與 CI |
 
 ---
 

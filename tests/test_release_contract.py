@@ -1293,11 +1293,14 @@ def test_candidate_tree_contains_no_dataset_or_model_binaries() -> None:
     tracked = subprocess.run(
         ["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True
     ).stdout.splitlines()
+    # The README explainer GIF is a synthetic Manim render (tools/animations/); it contains no
+    # dataset pixels and its source is tracked, so it is the one allowed .gif.
     pixel_files = {
         path
         for path in tracked
         if Path(path).suffix.lower() in {".jpg", ".jpeg", ".gif"}
         and not path.startswith("tests/fixtures/")
+        and path != "docs/assets/leakage-explainer.gif"
     }
     model_or_package_files = {
         path

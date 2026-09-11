@@ -41,3 +41,7 @@ INTERVIEW_PREP.md
 interview_prep.md
 docs/superpowers/
 reports/release_audit.local.json
+
+# animation render outputs (regenerate via tools/animations/README.md)
+tools/animations/media/
+tools/animations/out/
