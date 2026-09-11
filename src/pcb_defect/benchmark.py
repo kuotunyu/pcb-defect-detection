@@ -153,8 +153,20 @@ def summarize_latencies(latencies_ms: list[float]) -> dict[str, float | int]:
     }
 
 
+# Ultralytics ``predict()`` defaults to ``rect=True``; for ``.pt`` models that letterboxes each
+# image to the minimal stride-aligned rectangle (1x3x352x640 for the 3034x1586 calibration
+# images) while the frozen ONNX/TensorRT exports and the standalone runtime are fixed at
+# 1x3x640x640. Every Ultralytics-driven backend is therefore pinned to the export input contract
+# so the parity gate and timings compare the same model on the same input tensor.
+ULTRALYTICS_INPUT_CONTRACT: dict[str, Any] = {"imgsz": 640, "rect": False}
+
+
+def _ultralytics_predict(model: Any, image: object, confidence: float) -> Any:
+    return model.predict(image, conf=confidence, verbose=False, **ULTRALYTICS_INPUT_CONTRACT)
+
+
 def _ultralytics_boxes(model: Any, image: object, confidence: float) -> list[Box]:
-    results = model.predict(image, conf=confidence, verbose=False)
+    results = _ultralytics_predict(model, image, confidence)
     if not results:
         return []
     if not isinstance(results, list) or len(results) != 1:
@@ -298,14 +310,14 @@ def benchmark(
         raise BenchmarkError(f"ONNX Runtime did not activate CUDAExecutionProvider: {providers}")
 
     backends = {
-        "pytorch_fp32": lambda image: pt_model.predict(
-            image, conf=parity_config.thresholds.confidence, verbose=False
+        "pytorch_fp32": lambda image: _ultralytics_predict(
+            pt_model, image, parity_config.thresholds.confidence
         ),
         "onnxruntime_cuda_fp32": lambda image: ort_model.predict(
             image, conf=parity_config.thresholds.confidence
         ),
-        "tensorrt_fp16": lambda image: trt_model.predict(
-            image, conf=parity_config.thresholds.confidence, verbose=False
+        "tensorrt_fp16": lambda image: _ultralytics_predict(
+            trt_model, image, parity_config.thresholds.confidence
         ),
     }
     timings = _time_backends_interleaved(

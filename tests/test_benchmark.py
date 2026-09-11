@@ -537,6 +537,66 @@ def test_benchmark_report_records_runner_and_parent_provenance(
     assert report["protocol"]["sessions"] == 1
 
 
+def test_ultralytics_boxes_pins_predict_to_the_export_input_contract() -> None:
+    from pcb_defect.benchmark import _ultralytics_boxes
+
+    calls: list[dict[str, object]] = []
+
+    class RecordingModel:
+        def predict(self, image: object, **kwargs: object) -> list[object]:
+            calls.append({"image": image, **kwargs})
+            return []
+
+    assert _ultralytics_boxes(RecordingModel(), "image", 0.25) == []
+    # Ultralytics predict() defaults to rect=True, which feeds .pt models a minimal-rectangle
+    # letterbox (1x3x352x640 for the calibration images) instead of the frozen 1x3x640x640
+    # export input. The reference must be pinned to the export contract explicitly.
+    assert calls == [
+        {"image": "image", "conf": 0.25, "verbose": False, "imgsz": 640, "rect": False}
+    ]
+
+
+def test_benchmark_pins_every_ultralytics_inference_to_the_export_input_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import pcb_defect.benchmark as benchmark_module
+
+    repo, workspace, dataset_root, identity, _ = _fake_l4_benchmark(tmp_path, monkeypatch)
+    ultralytics_calls: list[dict[str, object]] = []
+    standalone_calls: list[dict[str, object]] = []
+
+    class RecordingYolo(_FakeModel):
+        def predict(self, _: object, **kwargs: object) -> list[object]:
+            ultralytics_calls.append(kwargs)
+            return []
+
+    class RecordingStandalone(_FakeModel):
+        def predict(self, _: object, **kwargs: object) -> list[object]:
+            standalone_calls.append(kwargs)
+            return []
+
+    gpu = benchmark_module._GpuRuntime(
+        SimpleNamespace(cuda=_FakeCuda([])), RecordingYolo, RecordingStandalone, "10.0"
+    )
+    monkeypatch.setattr(benchmark_module, "_load_gpu_runtime", lambda: gpu)
+
+    benchmark(repo, workspace, dataset_root, identity, warmup=30, cycles=4)
+
+    # PyTorch and TensorRT each run 30 warmup + 4 timed cycles over one image, plus one parity
+    # prediction; every one of those calls must carry the frozen 640x640 input contract.
+    assert len(ultralytics_calls) == 2 * (30 + 4) + 2
+    assert all(
+        call["conf"] == 0.25
+        and call["verbose"] is False
+        and call["imgsz"] == 640
+        and call["rect"] is False
+        for call in ultralytics_calls
+    )
+    # The standalone ONNX Runtime path is already fixed at 640x640 and accepts only ``conf``.
+    assert standalone_calls
+    assert all(set(call) == {"conf"} and call["conf"] == 0.25 for call in standalone_calls)
+
+
 def test_cli_requires_all_immutable_expectations(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
 
