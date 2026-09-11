@@ -86,13 +86,19 @@ See [`benchmark_l4.json`](../reports/benchmark_l4.json),
 [`benchmark_l4_raw.json`](../reports/benchmark_l4_raw.json), and
 [`backend_parity_l4.json`](../reports/backend_parity_l4.json).
 
-A later root-cause diagnosis, recorded in
-[`backend_parity_root_cause_2026-09-11.md`](../reports/diagnostics/backend_parity_root_cause_2026-09-11.md), attributes this
-failure to the L4 runner rather than to the exports: Ultralytics `predict()` letterboxed the
-PyTorch reference to a rectangular 352x640 input while both exported backends ran at the
-frozen 640x640 input, and the two exported backends agree with each other an order of
-magnitude more closely than either agrees with that reference. The runner is corrected, but
-the gate has not been re-run, so the failed result above stands as recorded.
+A later root-cause diagnosis,
+[`backend_parity_root_cause_2026-09-11.md`](../reports/diagnostics/backend_parity_root_cause_2026-09-11.md),
+traced this failure to the L4 runner rather than to the exports: Ultralytics `predict()`
+letterboxed the PyTorch reference to a rectangular 352x640 input while both exported backends ran
+at the frozen 640x640 input. After the runner was pinned to 640x640, a corrected L4 re-run with the
+same checkpoint, ONNX, calibration images, and thresholds
+([`reports/l4_rerun_2abe78fe2b54/`](../reports/l4_rerun_2abe78fe2b54/README.md)) recorded ONNX
+Runtime CUDA FP32 matching all 62 PyTorch detections on 60/60 images (minimum IoU
+`0.9989099779610657`, maximum confidence delta `0.0012852251529693604`). TensorRT FP16 matched 61
+of 62 and failed on 1/60 images: the unmatched reference detection sat less than `0.002` above the
+`0.25` confidence threshold. The frozen gate requires both candidates to pass, so it failed again,
+and backend prediction equivalence is still not claimed for the pair of backends. The runner
+correction was made after the first session failed; thresholds and the evaluator were not changed.
 
 ## Intended use
 

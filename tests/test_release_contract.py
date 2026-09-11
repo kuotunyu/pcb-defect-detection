@@ -678,6 +678,9 @@ def test_promoted_l4_evidence_is_hash_bound_complete_and_reports_failed_parity()
     assert claims["backend_prediction_parity"]["evidence"] == [
         "reports/backend_parity_l4.json",
         "reports/benchmark_l4.json",
+        "reports/l4_rerun_2abe78fe2b54/backend_parity_l4.json",
+        "reports/l4_rerun_2abe78fe2b54/benchmark_l4.json",
+        "reports/diagnostics/backend_parity_root_cause_2026-09-11.md",
     ]
     assert l4["schema_version"] == "2.0"
     assert l4["status"] == "complete"
@@ -761,6 +764,107 @@ def test_promoted_l4_evidence_is_hash_bound_complete_and_reports_failed_parity()
         "not a production SLA",
         "non-portable",
         "No public model",
+    ):
+        assert boundary in summary
+
+
+def test_corrected_l4_rerun_evidence_is_hash_bound_and_records_per_backend_parity() -> None:
+    rerun_dir = ROOT / "reports" / "l4_rerun_2abe78fe2b54"
+    first = _read_json(ROOT / "reports" / "benchmark_l4.json")
+    first_parity = _read_json(ROOT / "reports" / "backend_parity_l4.json")
+    l4 = _read_json(rerun_dir / "benchmark_l4.json")
+    raw = _read_json(rerun_dir / "benchmark_l4_raw.json")
+    parity = _read_json(rerun_dir / "backend_parity_l4.json")
+    summary = (rerun_dir / "README.md").read_text(encoding="utf-8")
+
+    assert l4["schema_version"] == "2.0"
+    assert l4["status"] == "complete"
+    assert l4["evidence_visibility"] == "public_metadata_from_private_unreleased_package"
+    assert l4["package"] == {
+        "bytes": 23_921_329,
+        "filename": "paired-results-l4-9e3a1ed5827a-runner-2abe78fe2b54.zip",
+        "sha256": "8e22c52f9a6a184353631509aba011bfd23e319fb67f00d3f17a6a8d6b28ed61",
+    }
+    assert l4["raw_report_sha256"] == (
+        "2b0473ef17daec2dd99a27061c2940a7384b8f8aea07857729649915eddfa167"
+    )
+    # Only the runner differs from the first session; every parent identity is unchanged.
+    assert l4["provenance"] == {
+        **first["provenance"],
+        "runner_git_sha": "2abe78fe2b54fb8015dbcc97ca37ecf0f7a6a5a5",
+    }
+    assert l4["protocol"] == first["protocol"]
+    assert l4["hardware"] == first["hardware"]
+    assert l4["runtime"] == first["runtime"]
+    for identity in ("source_checkpoint_sha256", "onnx_sha256", "engine_committable"):
+        assert l4["artifacts"][identity] == first["artifacts"][identity]
+    assert l4["artifacts"]["tensorrt_engine_sha256"] == (
+        "5c8274e6629419736a8b7aaa770b8665dbdd97db2e9cf8046b31757b283cf840"
+    )
+    assert l4["fidelity"]["passed"] is True
+    assert l4["fidelity"]["tensorrt_minus_source"] == -0.014141197798270444
+    assert l4["timings"]["onnxruntime_cuda_fp32"]["p50_ms"] == 20.1839745000143
+    assert l4["timings"]["pytorch_fp32"]["p50_ms"] == 61.03977350005607
+    assert l4["timings"]["tensorrt_fp16"]["p50_ms"] == 50.64236800001254
+
+    assert raw["package"] == l4["package"]
+    assert raw["provenance"] == l4["provenance"]
+    assert raw["raw_report_sha256"] == l4["raw_report_sha256"]
+    for timing in raw["timings"].values():
+        assert timing["n_runs"] == 240
+        assert len(timing["raw_ms"]) == 240
+
+    assert parity["package"] == l4["package"]
+    assert parity["provenance"] == l4["provenance"]
+    assert parity["raw_report_sha256"] == l4["raw_report_sha256"]
+    assert parity["thresholds"] == first_parity["thresholds"]
+    assert parity["config_sha256"] == first_parity["config_sha256"]
+    assert parity["passed"] is False
+    expected = {
+        "onnxruntime_cuda_fp32": (
+            62,
+            62,
+            62,
+            0,
+            0,
+            0,
+            0.9989099779610657,
+            0.0012852251529693604,
+            True,
+        ),
+        "tensorrt_fp16": (62, 61, 61, 1, 0, 1, 0.9585281265862317, 0.007691502571105957, False),
+    }
+    for backend, values in expected.items():
+        comparison = parity["comparisons"][backend]
+        observed = (
+            comparison["reference_detections"],
+            comparison["candidate_detections"],
+            comparison["matched_detections"],
+            comparison["unmatched_reference_detections"],
+            comparison["unmatched_candidate_detections"],
+            comparison["n_failed_images"],
+            comparison["min_iou"],
+            comparison["max_conf_delta"],
+            comparison["passed"],
+        )
+        assert observed == values
+        assert list(comparison["per_image"]) == [f"image_{index:03d}" for index in range(1, 61)]
+    tensorrt_images = parity["comparisons"]["tensorrt_fp16"]["per_image"]
+    assert [image for image, row in tensorrt_images.items() if not row["passed"]] == ["image_028"]
+    assert tensorrt_images["image_028"]["unmatched_reference_class_ids"] == [1]
+    serialized_parity = json.dumps(parity, sort_keys=True)
+    assert "/content/" not in serialized_parity
+    assert "xyxy" not in serialized_parity
+
+    for boundary in (
+        "public, path-free metadata",
+        "unreleased result package",
+        "calibration-only",
+        "The overall gate **failed**",
+        "not a production SLA",
+        "non-portable",
+        "No public model",
+        "an inference rather than a measurement",
     ):
         assert boundary in summary
 

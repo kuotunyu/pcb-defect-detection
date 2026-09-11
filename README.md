@@ -49,7 +49,7 @@ uv run --locked --no-editable --extra app python -m app.app
 |---|---|
 | **防洩漏評測** | Grouped mAP50 `63.30%`；same-board sibling exposure 對應 `+21.3 pp` |
 | **部署速度** | NVIDIA L4 calibration 上，ONNX Runtime CUDA FP32 p50 `20.28 ms` |
-| **發布邊界** | Aggregate fidelity 通過；strict per-box parity failed，因此維持 Recorded evidence |
+| **發布邊界** | Aggregate fidelity 通過；strict per-box parity failed，因此維持 Recorded evidence。修正後重跑：ORT 60/60 通過，TensorRT FP16 1/60 未通過 |
 
 ## 系統全貌與證據邊界
 
@@ -92,6 +92,7 @@ flowchart TB
 | Frozen split、board policy 與 dataset fingerprint | [`reports/protocol/paired_split_manifest.json`](reports/protocol/paired_split_manifest.json) |
 | Hash-pinned ONNX fidelity 與 standalone parity gate | [`reports/paired_a100/deployment_gate.public.json`](reports/paired_a100/deployment_gate.public.json) |
 | NVIDIA L4 latency、raw timings、fidelity 與 strict parity | [`reports/benchmark_l4.json`](reports/benchmark_l4.json) · [`reports/benchmark_l4_raw.json`](reports/benchmark_l4_raw.json) · [`reports/backend_parity_l4.json`](reports/backend_parity_l4.json) · [`reports/benchmark_l4.md`](reports/benchmark_l4.md) |
+| Strict parity 失敗的根因診斷與修正後 L4 重跑 | [`reports/diagnostics/backend_parity_root_cause_2026-09-11.md`](reports/diagnostics/backend_parity_root_cause_2026-09-11.md) · [`reports/l4_rerun_2abe78fe2b54/`](reports/l4_rerun_2abe78fe2b54/README.md) |
 
 ---
 
@@ -129,7 +130,7 @@ flowchart TB
 |---|---|
 | **01 · Data Contract** | Board ID 隔離 Train／Test，避免 sibling images 跨 split |
 | **02 · Paired Evaluation** | 三個 seeds 共用 Board 08 final test，差距 `+21.3 pp` mAP50 |
-| **03 · Deployment Gate** | Aggregate fidelity 通過；frozen strict per-box parity failed |
+| **03 · Deployment Gate** | Aggregate fidelity 通過；frozen strict per-box parity failed。修正 runner 後重跑，ORT 通過、TensorRT FP16 差 1 個門檻邊緣的框 |
 | **04 · Evidence Presentation** | 依 contract 顯示 Recorded、Degraded 或 Live 狀態 |
 
 > `60/60` **Same-ONNX wrapper parity** 比較同一 ONNX artifact 的兩條執行路徑，**非 PyTorch reference**。
@@ -313,7 +314,8 @@ flowchart TB
 - **Raw timings**：TensorRT p50 `51.12191199998506` ms、p95 `52.25180029992771` ms；720 筆 observations 位於 `reports/benchmark_l4_raw.json`。
 - **Strict parity**：PyTorch reference 有 95 個 detections；ORT 配對 57 個、漏配 38/5，TensorRT 配對 56 個、漏配 39/5。
 - **Gate 結果**：兩個 backend 都有 40/60 images 未通過；門檻在執行前已凍結。完整 evidence 見 `reports/backend_parity_l4.json`。
-- **根因診斷（2026-09-11）**：失敗主因是 runner 讓 PyTorch reference 走 352×640 矩形 letterbox，而兩個匯出後端固定在 640×640；ORT 與 TRT 彼此的差異比它們與 reference 的差異小一個數量級。runner 已修正，但 gate 尚未重跑，上述結果維持原紀錄。見 `reports/diagnostics/backend_parity_root_cause_2026-09-11.md`。
+- **根因診斷（2026-09-11）**：失敗來自 runner 讓 PyTorch reference 走 352×640 矩形 letterbox，而兩個匯出後端固定在 640×640。用同一顆 checkpoint 只切換輸入幾何，就能在本機重現 39/60 的失敗。見 `reports/diagnostics/backend_parity_root_cause_2026-09-11.md`。
+- **修正後重跑**：runner 固定為 640×640 後，同一顆 checkpoint、同一組 calibration images 與門檻重跑。ORT CUDA FP32 在 60/60 張圖配對全部 62 個框，min IoU `0.9989`、max Δconf `0.0013`。TensorRT FP16 配對 61/62，1/60 張圖未通過，漏掉的框信心只比 `0.25` 門檻高不到 `0.002`。Gate 要求兩個後端都通過，因此仍為 failed。見 `reports/l4_rerun_2abe78fe2b54/`。
 
 </details>
 

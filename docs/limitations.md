@@ -7,9 +7,11 @@
   stack; they are not final-test timings, a portable-engine claim, or a production SLA.
 - Aggregate calibration fidelity passed, but strict PyTorch-reference per-box prediction parity
   failed for both ONNX Runtime CUDA FP32 and TensorRT FP16. Backend equivalence is not claimed.
-  A 2026-09-11 diagnosis attributes the failure to a reference-side input-geometry mismatch in
-  the runner (352x640 rectangular letterbox versus the exports' 640x640); the runner is corrected
-  but the gate has not been re-run. See `reports/diagnostics/backend_parity_root_cause_2026-09-11.md`.
+  A 2026-09-11 diagnosis traced that failure to a reference-side input-geometry mismatch in the
+  runner (352x640 rectangular letterbox versus the exports' 640x640). In the corrected re-run,
+  ONNX Runtime CUDA FP32 passed 60/60 images and TensorRT FP16 failed 1/60 on a detection at the
+  confidence threshold, so the frozen gate still failed. See
+  `reports/diagnostics/backend_parity_root_cause_2026-09-11.md` and `reports/l4_rerun_2abe78fe2b54/`.
 - L4 timings come from one session. The interleaved wrapper schedule reduces fixed-order bias but
   does not estimate between-session, machine, driver, cache, or thermal variance.
 - A code license does not establish rights to the dataset, base weights, derived weights, or images.

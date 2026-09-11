@@ -71,20 +71,26 @@ claims:
       - Timings are calibration-only on the recorded NVIDIA L4 stack and are not a final-test, hosted-demo, or production-SLA claim.
       - One session with interleaved backend execution provides descriptive timing statistics only and does not estimate between-session variance.
       - TensorRT engines are not portable artifacts, and distribution/licensing approval remains unresolved.
+      - The first session measured PyTorch FP32 on a 352x640 rectangular letterbox; the corrected re-run in reports/l4_rerun_2abe78fe2b54/ measured all three backends at 640x640, and PyTorch p50 changed by less than 0.2 ms.
 
   backend_prediction_parity:
     status: failed_gate
     statement: >-
-      The frozen strict per-box PyTorch-reference parity gate failed for both ONNX Runtime CUDA
-      FP32 and TensorRT FP16 on the 60-image calibration split, despite aggregate fidelity passing.
+      The frozen strict per-box PyTorch-reference parity gate failed in both L4 sessions on the
+      60-image calibration split. The first session's 40/60 failures for both backends came from a
+      runner input-geometry defect; in the corrected re-run ONNX Runtime CUDA FP32 passed 60/60
+      images, while TensorRT FP16 failed 1/60 on a detection at the confidence threshold.
     evidence:
       - reports/backend_parity_l4.json
       - reports/benchmark_l4.json
+      - reports/l4_rerun_2abe78fe2b54/backend_parity_l4.json
+      - reports/l4_rerun_2abe78fe2b54/benchmark_l4.json
+      - reports/diagnostics/backend_parity_root_cause_2026-09-11.md
     limitations:
-      - This result blocks any claim that the three backend prediction sets are equivalent.
-      - It is a calibration-only diagnostic from one L4 session, not final-test accuracy evidence.
-      - Thresholds were frozen before the run and were not relaxed after observing the failure.
-      - A 2026-09-11 diagnosis (reports/diagnostics/backend_parity_root_cause_2026-09-11.md) attributes the failure to the runner feeding the PyTorch reference a rectangular 352x640 letterbox while both exports run at 640x640; the runner is corrected, but this gate has not been re-run, so the failed status stands.
+      - The gate requires both candidates to pass, so no claim is made that the three backend prediction sets are equivalent.
+      - Both sessions are calibration-only diagnostics on one L4 stack, not final-test accuracy evidence.
+      - Thresholds were frozen before the first session and were not changed; the runner correction was made after the first session failed and changes only the PyTorch reference input geometry.
+      - The TensorRT FP16 sub-threshold score of the single missing detection is not recorded; the threshold-crossing explanation is an inference from its observed FP16 deviation range.
 
   hosted_demo:
     status: out_of_scope
