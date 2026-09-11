@@ -100,6 +100,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--device", default="0")
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument(
+        "--purpose",
+        required=True,
+        help="Free-text label recorded in the output, e.g. which checkpoint/ONNX pair was used.",
+    )
     args = parser.parse_args(argv)
 
     import torch
@@ -192,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
 
     result = {
         "schema_version": "diagnostic-1.0",
-        "purpose": "mechanism check only; local prototype model, not the L4 checkpoint",
+        "purpose": args.purpose,
         "environment": {
             "ultralytics": ultralytics.__version__,
             "torch": torch.__version__,
