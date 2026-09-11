@@ -31,6 +31,53 @@ from ONNX export loss, ONNX Runtime, TensorRT, or FP16 precision.
   that sits at the confidence threshold. The frozen gate therefore still fails, now for a
   narrow and explained reason.
 
+The two sessions differ in exactly one place, the tensor handed to the PyTorch reference:
+
+```mermaid
+flowchart TB
+    accTitle: Input geometry behind the two L4 strict parity sessions
+    accDescr: The first session letterboxed the PyTorch reference to 352 by 640 while both exports ran at 640 by 640, so the frozen gate compared different input tensors and failed 40 of 60 images. After pinning the reference to 640 by 640, ONNX Runtime matched every detection and TensorRT FP16 missed one threshold-edge detection.
+
+    IMG["60 calibration images · 3034×1586"]
+
+    subgraph S1["First session · runner fe9005d7"]
+        direction LR
+        REF1["PyTorch reference<br/>predict() default rect=True<br/>input 1×3×352×640"]
+        EXP1["ONNX Runtime CUDA FP32 · TensorRT FP16<br/>fixed export input 1×3×640×640"]
+        GATE1{"Frozen per-box gate<br/>IoU ≥ 0.9 · Δconf ≤ 0.15<br/>0 unmatched"}
+        RES1["95 vs 62 detections<br/>40/60 images failed, both backends"]
+        REF1 --> GATE1
+        EXP1 --> GATE1
+        GATE1 --> RES1
+    end
+
+    CAUSE["Root cause: reference and exports<br/>received different input tensors"]
+
+    subgraph S2["Corrected re-run · runner 2abe78fe2b54"]
+        direction LR
+        REF2["PyTorch reference<br/>imgsz=640, rect=False<br/>input 1×3×640×640"]
+        EXP2["Same exports<br/>fixed input 1×3×640×640"]
+        GATE2{"Same gate, same thresholds"}
+        RES2["ORT: 62/62 matched, 60/60 passed<br/>TensorRT FP16: 61/62, 1/60 failed<br/>one box 0.002 above the 0.25 threshold"]
+        REF2 --> GATE2
+        EXP2 --> GATE2
+        GATE2 --> RES2
+    end
+
+    IMG --> S1
+    S1 --> CAUSE
+    CAUSE --> S2
+
+    classDef neutral fill:#F3F0E8,stroke:#587069,stroke-width:2px,color:#26352F
+    classDef decision fill:#EDE2C8,stroke:#9A7438,stroke-width:2px,color:#26352F
+    classDef mismatch fill:#F3E2DD,stroke:#785650,stroke-width:2px,color:#3F2E2B
+    classDef fixed fill:#DCE7DF,stroke:#35594A,stroke-width:2px,color:#26352F
+    class IMG,EXP1,EXP2 neutral
+    class GATE1,GATE2 decision
+    class REF1,RES1,CAUSE mismatch
+    class REF2,RES2 fixed
+```
+
 ## Corrected L4 re-run (runner `2abe78fe2b54`)
 
 Same checkpoint, ONNX, calibration images, thresholds, evaluator, and L4 software stack as the
