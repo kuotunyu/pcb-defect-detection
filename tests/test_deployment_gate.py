@@ -123,3 +123,30 @@ def test_deployment_module_forces_ultralytics_environment(
 
     assert os.environ["YOLO_AUTOINSTALL"] == "false"
     assert os.environ["ULTRALYTICS_SKIP_REQUIREMENTS_CHECKS"] == "1"
+
+
+def test_deployment_cli_forwards_the_protocol_config(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from pcb_defect import deployment
+
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(
+        deployment,
+        "export_and_gate",
+        lambda *args, **kwargs: captured.update(args=args, kwargs=kwargs),
+    )
+    base = [
+        "--repo",
+        str(tmp_path),
+        "--dataset",
+        str(tmp_path / "d"),
+        "--workspace",
+        str(tmp_path / "w"),
+    ]
+
+    assert deployment.main(base) == 0
+    assert captured["kwargs"] == {"protocol_config": None}
+
+    assert deployment.main([*base, "--protocol-config", str(tmp_path / "fold.yaml")]) == 0
+    assert captured["kwargs"] == {"protocol_config": tmp_path / "fold.yaml"}

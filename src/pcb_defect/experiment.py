@@ -166,7 +166,14 @@ def main(argv: list[str] | None = None) -> int:
         _assert_gpu(args.required_gpu)
     else:
         _assert_gpu("A100")
-    context = _prepare_context(args.repo, args.dataset, args.workspace, args.base_model)
+    context = _prepare_context(
+        args.repo,
+        args.dataset,
+        args.workspace,
+        args.base_model,
+        protocol_config=args.protocol_config,
+        protocol_artifacts=args.protocol_artifacts,
+    )
     if args.command == "preflight":
         _print_preflight(context)
         return 0
@@ -187,13 +194,59 @@ def _add_common_paths(
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     if needs_dataset:
         parser.add_argument("--dataset", type=Path, required=True)
+        parser.add_argument(
+            "--protocol-config",
+            type=Path,
+            default=None,
+            help="protocol YAML (default: configs/paired_protocol.yaml)",
+        )
+        parser.add_argument(
+            "--protocol-artifacts",
+            type=Path,
+            default=None,
+            help="directory holding the committed manifest (default: reports/protocol)",
+        )
     parser.add_argument("--workspace", type=Path, required=True)
     if needs_base:
         parser.add_argument("--base-model", type=Path, required=True)
 
 
+def resolve_protocol_paths(
+    repo: Path, protocol_config: Path | None, protocol_artifacts: Path | None
+) -> tuple[Path, Path]:
+    """Return the protocol config and its committed manifest, defaulting to the parent protocol."""
+    config_path = (
+        repo / "configs" / "paired_protocol.yaml"
+        if protocol_config is None
+        else protocol_config.resolve()
+    )
+    artifacts = (
+        repo / "reports" / "protocol"
+        if protocol_artifacts is None
+        else protocol_artifacts.resolve()
+    )
+    return config_path, artifacts / "paired_split_manifest.json"
+
+
+def _verify_manifest_artifact(manifest_path: Path, expected_manifest_sha256: str) -> None:
+    """Fail closed unless the committed manifest artifact is the frozen protocol being run."""
+    try:
+        recorded = json.loads(manifest_path.read_text(encoding="utf-8")).get("manifest_sha256")
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, AttributeError) as exc:
+        raise ExperimentError(
+            f"protocol manifest artifact is missing or malformed: {manifest_path}"
+        ) from exc
+    if recorded != expected_manifest_sha256:
+        raise ExperimentError("protocol manifest artifact does not match the frozen protocol")
+
+
 def _prepare_context(
-    repo: Path, dataset: Path, workspace: Path, base_model: Path
+    repo: Path,
+    dataset: Path,
+    workspace: Path,
+    base_model: Path,
+    protocol_config: Path | None = None,
+    protocol_artifacts: Path | None = None,
 ) -> dict[str, Any]:
     repo = repo.resolve()
     workspace = workspace.resolve()
@@ -206,11 +259,15 @@ def _prepare_context(
     base_contract = _load_base_model_contract(base_contract_path)
     if train_config["model"] != base_contract["filename"]:
         raise ExperimentError("training config model does not match the base-model contract")
-    spec = _load_spec(repo / "configs" / "paired_protocol.yaml")
+    protocol_config_path, manifest_path = resolve_protocol_paths(
+        repo, protocol_config, protocol_artifacts
+    )
+    spec = _load_spec(protocol_config_path)
     protocol = build_paired_protocol(
         discover_converted_samples(dataset), PairedProtocolConfig(**spec["protocol"])
     )
     _verify_frozen_hashes(protocol, spec)
+    _verify_manifest_artifact(manifest_path, protocol.manifest_sha256)
     runtime = workspace / "runtime_data"
     render_runtime_datasets(dataset, protocol, runtime)
     if not base_model.is_file():
@@ -231,6 +288,8 @@ def _prepare_context(
         "workspace": workspace,
         "base_model": base_model.resolve(),
         "protocol": protocol,
+        "protocol_config_path": protocol_config_path,
+        "manifest_path": manifest_path,
         "train_config": train_config,
         "train_config_path": train_config_path,
         "base_contract": base_contract,
@@ -428,7 +487,7 @@ def _initial_record(context: dict[str, Any], arm: str, seed: int, run_dir: Path)
     manifest_copy = inputs / "paired_split_manifest.json"
     shutil.copy2(context["train_config_path"], config_copy)
     shutil.copy2(context["base_contract_path"], base_contract_copy)
-    shutil.copy2(context["repo"] / "reports" / "protocol" / manifest_copy.name, manifest_copy)
+    shutil.copy2(context["manifest_path"], manifest_copy)
     now = _utc_now()
     return {
         "schema_version": "1.0",

@@ -197,3 +197,88 @@ def test_complete_run_is_skipped_only_when_lock_and_artifact_hashes_match(tmp_pa
 
     checkpoint.write_bytes(b"tampered")
     assert not run_is_complete(run_dir, lock)
+
+
+def test_resolve_protocol_paths_defaults_to_the_parent_protocol(tmp_path: Path) -> None:
+    from pcb_defect.experiment import resolve_protocol_paths
+
+    repo = tmp_path / "repo"
+
+    config, manifest = resolve_protocol_paths(repo, None, None)
+
+    assert config == repo / "configs" / "paired_protocol.yaml"
+    assert manifest == repo / "reports" / "protocol" / "paired_split_manifest.json"
+
+    fold_config = tmp_path / "configs" / "lobo" / "board05.yaml"
+    fold_artifacts = tmp_path / "reports" / "protocol" / "lobo" / "board05"
+    config, manifest = resolve_protocol_paths(repo, fold_config, fold_artifacts)
+
+    assert config == fold_config.resolve()
+    assert manifest == fold_artifacts.resolve() / "paired_split_manifest.json"
+
+
+def test_verify_manifest_artifact_fails_closed_on_hash_mismatch(tmp_path: Path) -> None:
+    from pcb_defect.experiment import _verify_manifest_artifact
+
+    manifest = tmp_path / "paired_split_manifest.json"
+    manifest.write_text(json.dumps({"manifest_sha256": "e" * 64}), encoding="utf-8")
+
+    _verify_manifest_artifact(manifest, "e" * 64)
+    with pytest.raises(ExperimentError, match="does not match the frozen protocol"):
+        _verify_manifest_artifact(manifest, "f" * 64)
+    with pytest.raises(ExperimentError, match="missing or malformed"):
+        _verify_manifest_artifact(tmp_path / "absent.json", "e" * 64)
+
+
+@pytest.mark.parametrize("with_flags", [True, False])
+def test_cli_forwards_protocol_paths_to_the_context(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, with_flags: bool
+) -> None:
+    from pcb_defect import experiment
+
+    captured: dict[str, object] = {}
+
+    def prepare(*args: object, **kwargs: object) -> dict[str, object]:
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+        return {"protocol": SimpleNamespace(config=SimpleNamespace(training_seeds=(42,)))}
+
+    monkeypatch.setattr(experiment, "_assert_gpu", lambda *_: None)
+    monkeypatch.setattr(experiment, "_prepare_context", prepare)
+    monkeypatch.setattr(experiment, "_print_preflight", lambda _: None)
+    argv = [
+        "preflight",
+        "--repo",
+        str(tmp_path),
+        "--dataset",
+        str(tmp_path / "dataset"),
+        "--workspace",
+        str(tmp_path / "workspace"),
+        "--base-model",
+        str(tmp_path / "base.pt"),
+    ]
+    if with_flags:
+        argv += [
+            "--protocol-config",
+            str(tmp_path / "board05.yaml"),
+            "--protocol-artifacts",
+            str(tmp_path / "artifacts"),
+        ]
+
+    assert experiment.main(argv) == 0
+
+    expected = (
+        {
+            "protocol_config": tmp_path / "board05.yaml",
+            "protocol_artifacts": tmp_path / "artifacts",
+        }
+        if with_flags
+        else {"protocol_config": None, "protocol_artifacts": None}
+    )
+    assert captured["kwargs"] == expected
+    assert captured["args"] == (
+        tmp_path,
+        tmp_path / "dataset",
+        tmp_path / "workspace",
+        tmp_path / "base.pt",
+    )

@@ -87,8 +87,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
+    parser.add_argument(
+        "--protocol-config",
+        type=Path,
+        default=None,
+        help="protocol YAML (default: configs/paired_protocol.yaml)",
+    )
     args = parser.parse_args(argv)
-    export_and_gate(args.repo.resolve(), args.dataset.resolve(), args.workspace.resolve())
+    export_and_gate(
+        args.repo.resolve(),
+        args.dataset.resolve(),
+        args.workspace.resolve(),
+        protocol_config=args.protocol_config,
+    )
     return 0
 
 
@@ -108,7 +119,9 @@ def _write_calibration_yaml(calibration_yaml: Path, calibration_list: Path) -> N
     )
 
 
-def export_and_gate(repo: Path, dataset: Path, workspace: Path) -> None:
+def export_and_gate(
+    repo: Path, dataset: Path, workspace: Path, protocol_config: Path | None = None
+) -> None:
     started_at_utc = _utc_now()
     deployment_dir = workspace / "deployment"
     report_path = deployment_dir / "deployment_gate.json"
@@ -133,7 +146,12 @@ def export_and_gate(repo: Path, dataset: Path, workspace: Path) -> None:
     if deployment_dir.exists():
         raise DeploymentError(f"partial deployment directory exists: {deployment_dir}")
 
-    spec = _load_spec(repo / "configs" / "paired_protocol.yaml")
+    protocol_config_path = (
+        repo / "configs" / "paired_protocol.yaml"
+        if protocol_config is None
+        else protocol_config.resolve()
+    )
+    spec = _load_spec(protocol_config_path)
     protocol = build_paired_protocol(
         discover_converted_samples(dataset), PairedProtocolConfig(**spec["protocol"])
     )

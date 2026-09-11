@@ -71,3 +71,35 @@ def test_final_completion_requires_untampered_metrics_bytes(tmp_path: Path) -> N
 
     metrics.write_text('{"status": "tampered"}\n', encoding="utf-8")
     assert not final_evaluation_is_complete(final_dir)
+
+
+def test_final_evaluation_cli_forwards_the_protocol_config(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from pcb_defect import final_evaluation
+
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(
+        final_evaluation,
+        "finalize",
+        lambda *args, **kwargs: captured.update(args=args, kwargs=kwargs),
+    )
+    base = [
+        "--repo",
+        str(tmp_path),
+        "--dataset",
+        str(tmp_path / "d"),
+        "--workspace",
+        str(tmp_path / "w"),
+    ]
+
+    assert final_evaluation.main(base) == 0
+    assert captured["kwargs"] == {"protocol_config": None}
+
+    assert final_evaluation.main([*base, "--protocol-config", str(tmp_path / "fold.yaml")]) == 0
+    assert captured["kwargs"] == {"protocol_config": tmp_path / "fold.yaml"}
+    assert captured["args"] == (
+        tmp_path.resolve(),
+        (tmp_path / "d").resolve(),
+        (tmp_path / "w").resolve(),
+    )

@@ -100,12 +100,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
+    parser.add_argument(
+        "--protocol-config",
+        type=Path,
+        default=None,
+        help="protocol YAML (default: configs/paired_protocol.yaml)",
+    )
     args = parser.parse_args(argv)
-    finalize(args.repo.resolve(), args.dataset.resolve(), args.workspace.resolve())
+    finalize(
+        args.repo.resolve(),
+        args.dataset.resolve(),
+        args.workspace.resolve(),
+        protocol_config=args.protocol_config,
+    )
     return 0
 
 
-def finalize(repo: Path, dataset: Path, workspace: Path) -> None:
+def finalize(
+    repo: Path, dataset: Path, workspace: Path, protocol_config: Path | None = None
+) -> None:
     final_dir = workspace / "final"
     completed = final_dir / "finalization_record.json"
     if completed.is_file():
@@ -118,7 +131,12 @@ def finalize(repo: Path, dataset: Path, workspace: Path) -> None:
     git_sha, git_dirty = _git_provenance(repo)
     if git_dirty or git_sha != lock.git_sha:
         raise FinalEvaluationError("Git state no longer matches the pre-training input lock")
-    protocol_spec = _load_spec(repo / "configs" / "paired_protocol.yaml")
+    protocol_config_path = (
+        repo / "configs" / "paired_protocol.yaml"
+        if protocol_config is None
+        else protocol_config.resolve()
+    )
+    protocol_spec = _load_spec(protocol_config_path)
     protocol = build_paired_protocol(
         discover_converted_samples(dataset), PairedProtocolConfig(**protocol_spec["protocol"])
     )
