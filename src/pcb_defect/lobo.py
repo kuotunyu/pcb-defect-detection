@@ -19,8 +19,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import random
+import shutil
 import statistics
+import subprocess
+import tempfile
 import zipfile
 from collections import Counter, defaultdict
 from collections.abc import Iterable
@@ -34,6 +38,13 @@ from pcb_defect.data_prep.paired import (
     _load_spec,
     discover_converted_samples,
     write_protocol_artifacts,
+)
+from pcb_defect.handoff import (
+    HandoffError,
+    _remove_readonly,
+    create_clean_bundle,
+    project_handoff_metadata,
+    render_notebook,
 )
 from pcb_defect.paired_protocol import (
     PROTOCOL_VERSION,
@@ -682,6 +693,139 @@ def _summary_markdown(summary: dict[str, Any]) -> str:
 
 
 # --------------------------------------------------------------------------------------------
+# handoff
+# --------------------------------------------------------------------------------------------
+
+NOTEBOOK_NAME = "lobo_experiment_a100.ipynb"
+HANDOFF_FILES = frozenset({NOTEBOOK_NAME, "handoff_manifest.json", "pcb-defect-source.bundle"})
+DRIVE_HANDOFF_ROOT = "/content/drive/MyDrive/pcb-defect-paired/handoff-lobo"
+
+
+def create_lobo_handoff(repo: Path, output_root: Path) -> Path:
+    """Create one immutable Colab handoff directory covering every pending fold."""
+    repo = repo.resolve()
+    output_root = output_root.resolve()
+    output_root.mkdir(parents=True, exist_ok=True)
+    registry = verify_registry_consistency(repo)
+    pending = [fold["board"] for fold in registry["folds"] if fold["run"]]
+    if not pending:
+        raise LoboError("no fold is pending a Colab run")
+    template = repo / "notebooks" / NOTEBOOK_NAME
+    staging = Path(tempfile.mkdtemp(prefix=".lobo-handoff-stage-", dir=output_root))
+    content = staging / "content"
+    try:
+        metadata = {
+            **project_handoff_metadata(repo),
+            "stage": "lobo-replication",
+            "lobo_boards": pending,
+            "lobo_registry_sha256": _sha256_file(repo / REGISTRY_RELATIVE),
+        }
+        try:
+            result = create_clean_bundle(repo, content, metadata)
+        except HandoffError as exc:
+            raise LoboError(str(exc)) from exc
+        snapshot = result["snapshot_git_sha"]
+        drive_directory = f"{DRIVE_HANDOFF_ROOT}/{snapshot[:12]}"
+        notebook_sha256 = render_notebook(
+            template,
+            content / NOTEBOOK_NAME,
+            {
+                "PASTE_FINAL_BUNDLE_SHA256": result["bundle_sha256"],
+                "PASTE_FINAL_GIT_SHA": snapshot,
+                "PASTE_LOBO_HANDOFF_DIRECTORY": drive_directory,
+            },
+        )
+        manifest_path = content / "handoff_manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest.update(
+            {
+                "stage": "lobo-replication",
+                "lobo_notebook": NOTEBOOK_NAME,
+                "lobo_template_sha256": _sha256_file(template),
+                "lobo_notebook_sha256": notebook_sha256,
+                "drive_handoff_directory": drive_directory,
+                "lobo_boards": pending,
+            }
+        )
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+        )
+        _verify_lobo_handoff(content, snapshot, pending)
+        final = output_root / f"colab-handoff-lobo-{snapshot[:12]}"
+        if final.exists():
+            raise LoboError(f"refusing to overwrite handoff directory: {final}")
+        os.rename(content, final)
+        return final
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, onerror=_remove_readonly)
+
+
+def _verify_lobo_handoff(content: Path, snapshot: str, pending: list[str]) -> None:
+    if {path.name for path in content.iterdir()} != HANDOFF_FILES:
+        raise LoboError("LOBO handoff must contain exactly the bundle, notebook, and manifest")
+    manifest = _read_json(content / "handoff_manifest.json")
+    bundle = content / "pcb-defect-source.bundle"
+    notebook = content / NOTEBOOK_NAME
+    if manifest.get("bundle_sha256") != _sha256_file(bundle):
+        raise LoboError("LOBO handoff bundle hash differs from its manifest")
+    if manifest.get("lobo_notebook_sha256") != _sha256_file(notebook):
+        raise LoboError("LOBO handoff notebook hash differs from its manifest")
+    if manifest.get("snapshot_git_sha") != snapshot or manifest.get("lobo_boards") != pending:
+        raise LoboError("LOBO handoff manifest identity differs from the rendered values")
+    source = notebook.read_text(encoding="utf-8")
+    if "PASTE_" in source:
+        raise LoboError("LOBO handoff notebook contains an unresolved placeholder")
+    for index, cell in enumerate(json.loads(source)["cells"]):
+        if cell.get("outputs"):
+            raise LoboError("LOBO handoff notebook contains persisted outputs")
+        if cell.get("cell_type") == "code":
+            compile("".join(cell["source"]), f"{notebook}:cell-{index}", "exec")
+    if snapshot not in source or manifest["bundle_sha256"] not in source:
+        raise LoboError("LOBO handoff notebook does not bind the bundle and snapshot identities")
+    temporary = Path(tempfile.mkdtemp(prefix=".lobo-handoff-verify-"))
+    try:
+        clone = temporary / "clone"
+        _git(temporary, "clone", "--quiet", str(bundle), str(clone))
+        _git(clone, "checkout", "--quiet", "--detach", snapshot)
+        if _git(clone, "rev-parse", "HEAD") != snapshot:
+            raise LoboError("LOBO bundle snapshot Git SHA mismatch")
+        if _git(clone, "rev-list", "--count", "HEAD") != "1":
+            raise LoboError("LOBO bundle must contain exactly one reachable commit")
+        bundled = yaml.safe_load((clone / REGISTRY_RELATIVE).read_text(encoding="utf-8"))
+        bundled_pending = [fold["board"] for fold in bundled["folds"] if fold["run"]]
+        if bundled_pending != pending:
+            raise LoboError("LOBO bundle fold registry differs from the handoff manifest")
+    except (OSError, yaml.YAMLError, KeyError, TypeError) as exc:
+        raise LoboError("LOBO bundle verification failed") from exc
+    finally:
+        shutil.rmtree(temporary, onerror=_remove_readonly)
+
+
+def _git(repo: Path, *args: str) -> str:
+    try:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise LoboError(f"git command failed during LOBO handoff verification: {args}") from exc
+    return completed.stdout.strip()
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+# --------------------------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------------------------
 
@@ -711,6 +855,10 @@ def main(argv: list[str] | None = None) -> int:
         help="report a fold as incomplete with the given reason",
     )
 
+    handoff = subparsers.add_parser("handoff", help="create the Colab handoff for pending folds")
+    handoff.add_argument("--repo", type=Path, default=Path.cwd())
+    handoff.add_argument("--output-root", type=Path, required=True)
+
     args = parser.parse_args(argv)
     if args.command == "folds":
         return _folds_command(args.repo, args.dataset, args.write)
@@ -718,7 +866,15 @@ def main(argv: list[str] | None = None) -> int:
         return _promote_command(args.repo, args.package, args.board, args.output)
     if args.command == "aggregate":
         return _aggregate_command(args.repo, args.incomplete)
+    if args.command == "handoff":
+        return _handoff_command(args.repo, args.output_root)
     raise AssertionError(f"unknown command: {args.command}")
+
+
+def _handoff_command(repo: Path, output_root: Path) -> int:
+    handoff = create_lobo_handoff(repo, output_root)
+    print(f"lobo_handoff_dir={handoff}")
+    return 0
 
 
 def _promote_command(repo: Path, package: Path, board: str, output: Path | None) -> int:

@@ -186,3 +186,93 @@ def test_committed_fold_registry_is_consistent_with_the_parent_protocol() -> Non
     assert set(registry["excluded"]) == {"01", "04", "06", "10"}
     assert "class short has 11 images" in registry["excluded"]["06"]
     assert [fold["run"] for fold in registry["folds"]] == [True, True, False, True, True, True]
+
+
+def _git(repo: Path, *args: str) -> str:
+    import subprocess
+
+    return subprocess.run(
+        ["git", *args], cwd=repo, check=True, capture_output=True, text=True, encoding="utf-8"
+    ).stdout.strip()
+
+
+def _committed_lobo_repo(tmp_path: Path) -> Path:
+    """The synthetic fold repo plus the notebook template and base-model contract, committed."""
+    import shutil
+
+    repo, dataset = _repo(tmp_path)
+    write_folds(repo, dataset)
+    (repo / "notebooks").mkdir()
+    shutil.copyfile(
+        ROOT / "notebooks" / "lobo_experiment_a100.ipynb",
+        repo / "notebooks" / "lobo_experiment_a100.ipynb",
+    )
+    (repo / "configs" / "base_model.yaml").write_text(
+        "source: model.pt\nrevision: v1\nsha256: " + "f" * 64 + "\n", encoding="utf-8"
+    )
+    _git(repo, "init", "-b", "main")
+    _git(repo, "add", "-A")
+    _git(
+        repo,
+        "-c",
+        "user.name=Release",
+        "-c",
+        "user.email=release@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "source",
+    )
+    return repo
+
+
+def test_lobo_handoff_renders_one_bundle_notebook_and_manifest(tmp_path: Path) -> None:
+    from pcb_defect.lobo import create_lobo_handoff
+
+    repo = _committed_lobo_repo(tmp_path)
+    output_root = tmp_path / "handoffs"
+
+    handoff = create_lobo_handoff(repo, output_root)
+
+    manifest = json.loads((handoff / "handoff_manifest.json").read_text(encoding="utf-8"))
+    assert handoff.name == f"colab-handoff-lobo-{manifest['snapshot_git_sha'][:12]}"
+    assert {path.name for path in handoff.iterdir()} == {
+        "handoff_manifest.json",
+        "lobo_experiment_a100.ipynb",
+        "pcb-defect-source.bundle",
+    }
+    assert manifest["stage"] == "lobo-replication"
+    assert manifest["lobo_boards"] == ["05", "07", "09", "11", "12"]
+    assert manifest["drive_handoff_directory"] == (
+        "/content/drive/MyDrive/pcb-defect-paired/handoff-lobo/" + manifest["snapshot_git_sha"][:12]
+    )
+    rendered = (handoff / "lobo_experiment_a100.ipynb").read_text(encoding="utf-8")
+    assert "PASTE_" not in rendered
+    assert manifest["snapshot_git_sha"] in rendered
+    assert manifest["bundle_sha256"] in rendered
+    assert manifest["drive_handoff_directory"] in rendered
+    assert not any(path.name.startswith(".lobo-handoff-stage-") for path in output_root.iterdir())
+
+    with pytest.raises(LoboError, match="refusing to overwrite"):
+        create_lobo_handoff(repo, output_root)
+
+
+def test_lobo_handoff_refuses_a_dirty_repository(tmp_path: Path) -> None:
+    from pcb_defect.lobo import create_lobo_handoff
+
+    repo = _committed_lobo_repo(tmp_path)
+    (repo / "dirty.txt").write_text("dirty\n", encoding="utf-8")
+
+    with pytest.raises(LoboError, match="must be clean"):
+        create_lobo_handoff(repo, tmp_path / "handoffs")
+    assert not (tmp_path / "handoffs").exists() or not any((tmp_path / "handoffs").iterdir())
+
+
+def test_handoff_cli_prints_the_created_directory(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = _committed_lobo_repo(tmp_path)
+
+    assert main(["handoff", "--repo", str(repo), "--output-root", str(tmp_path / "out")]) == 0
+
+    assert "lobo_handoff_dir=" in capsys.readouterr().out

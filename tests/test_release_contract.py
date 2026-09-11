@@ -20,6 +20,7 @@ GPU_NOTEBOOKS = (
     "notebooks/paired_experiment_a100.ipynb",
     "notebooks/deployment_parity_probe_a100.ipynb",
     "notebooks/deployment_benchmark_l4.ipynb",
+    "notebooks/lobo_experiment_a100.ipynb",
 )
 ENVIRONMENT_CONTROLS = (
     "os.environ['YOLO_AUTOINSTALL'] = 'false'",
@@ -1382,6 +1383,7 @@ def test_notebooks_are_thin_unexecuted_and_require_immutable_handoff_values() ->
         "notebooks/paired_experiment_a100.ipynb",
         "notebooks/deployment_benchmark_l4.ipynb",
         "notebooks/deployment_parity_probe_a100.ipynb",
+        "notebooks/lobo_experiment_a100.ipynb",
     ):
         notebook = json.loads((ROOT / relative).read_text(encoding="utf-8"))
         code = "\n".join(
@@ -1450,6 +1452,48 @@ def test_a100_train_all_streams_combined_output_to_an_append_only_drive_log() ->
         "subprocess.run([str(VENV_PYTHON), '-m', 'pcb_defect.experiment', 'train-all'"
     )
     assert direct_train_all not in code
+
+
+def test_lobo_notebook_streams_train_all_per_fold_and_binds_fold_protocols() -> None:
+    """The multi-board notebook must resume per fold and pass every fold protocol explicitly."""
+    notebook = json.loads(
+        (ROOT / "notebooks" / "lobo_experiment_a100.ipynb").read_text(encoding="utf-8")
+    )
+    code = "\n".join(
+        "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"
+    )
+
+    assert "PASTE_LOBO_HANDOFF_DIRECTORY" in code
+    assert code.count("PASTE_") == 3
+    assert "from pcb_defect.notebook_runtime import run_streaming_command" in code
+    assert "train_all_command.log" in code
+    assert "run_streaming_command(" in code
+    direct_train_all = (
+        "subprocess.run([str(VENV_PYTHON), '-m', 'pcb_defect.experiment', 'train-all'"
+    )
+    assert direct_train_all not in code
+    assert "'pcb_defect.lobo', 'folds'" in code
+    assert "FOLDS = [fold for fold in REGISTRY['folds'] if fold['run']]" in code
+    fold_protocol = (
+        "'--protocol-config', str(fold_config), '--protocol-artifacts', str(fold_artifacts)"
+    )
+    assert fold_protocol in code
+    assert "'pcb_defect.final_evaluation', *common, '--protocol-config', str(fold_config)" in code
+    assert "'pcb_defect.deployment', *common, '--protocol-config', str(fold_config)" in code
+    assert "f'{EXPECTED_GIT_SHA[:12]}-board{board}'" in code
+    assert "f'paired-results-a100-{EXPECTED_GIT_SHA[:12]}-board{board}.zip'" in code
+    assert "require_clean_checkout(" in code
+    assert "package_is_verified(package)" in code
+    assert "IMPORT PROBE FAILED" in code
+    assert "DEPLOYMENT EVIDENCE" in code
+    _assert_in_order(
+        code,
+        "deployment_runtime_before = runtime_contract_state(",
+        "deployment_result = run_logged(",
+        "deployment_runtime_after = runtime_contract_state(",
+        "if deployment_runtime_after != deployment_runtime_before:",
+        "if deployment_result.returncode:",
+    )
 
 
 def test_probe_notebook_requires_exclusive_log_and_complete_report_before_pass() -> None:
