@@ -404,13 +404,21 @@ README 只提供安全的 CLI 檢查入口，不提供會誤啟動訓練的裸�
 |---|---|
 | `configs/paired_protocol.yaml` | 成對實驗資料分割與訓練超參數協定 |
 | `configs/base_model.yaml` | YOLO26n 基礎模型下載與 SHA-256 驗證組態 |
+| `configs/lobo/` · `docs/lobo-preregistration.md` · `reports/lobo/` | 多板複驗（leave-one-board-out）的 fold 註冊表、預登記分析與六板結果 |
 | `src/pcb_defect/data_prep/paired.py` | HRIPCB 成對板級防洩漏資料準備 |
 | `src/pcb_defect/experiment.py` | A100 訓練執行、斷點續跑門控與自動重試管理 |
 | `src/pcb_defect/final_evaluation.py` | 單次一擊 (One-shot) 最終測試集評測 |
+| `src/pcb_defect/benchmark.py` · `src/pcb_defect/deployment.py` | L4 多後端 benchmark、strict parity gate 與 export／deployment gate |
+| `notebooks/` | Colab 用的 A100 成對實驗、parity probe、L4 benchmark 與多板複驗 notebooks |
+| `app/` | 正體中文 PCB 人工複核工作站（Gradio），預設只讀取 committed evidence |
 | `reports/protocol/` | 凍結分割 Manifest 與配對哈希驗證紀錄 |
+| `reports/paired_a100/` · `reports/claims.yaml` | Board 08 成對實驗的公開 metadata 與 claim registry |
 | `reports/benchmark_l4.md` | Verified NVIDIA L4 latency、aggregate fidelity 與 failed strict parity 摘要 |
+| `reports/diagnostics/` · `reports/l4_rerun_2abe78fe2b54/` · `scripts/diagnostics/` | Strict parity 根因診斷、修正後 L4 重跑證據與機制驗證腳本 |
+| `docs/model-card.md` · `docs/data-card.md` · `docs/limitations.md` · `docs/license-boundary.md` | Model card、資料卡、限制與授權邊界 |
+| `docs/releases/` · `docs/release-checklist.md` · `docs/research-package.md` | 各版本 release notes、發布紀錄與 research package 說明 |
 | `tools/animations/` | README 解說動畫的 Manim 原始碼與算圖說明；不進鎖定依賴與 CI |
-| `configs/lobo/` · `docs/lobo-preregistration.md` · `reports/lobo/` | 多板複驗（leave-one-board-out）的 fold 註冊表、預登記分析與六板結果 |
+| `tests/` | CPU-only 契約測試：protocol、claims、README 數字、notebooks 與 release metadata |
 
 ---
 
