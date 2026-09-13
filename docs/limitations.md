@@ -1,6 +1,8 @@
 # Limitations and non-claims
 
-- The new final test has one board and 30 images; board-level uncertainty remains unresolved.
+- The new final test has one board and 30 images; board-level uncertainty remains unresolved for
+  the deployment candidate. The six-board replication in `reports/lobo/` estimates the exposure
+  effect across the boards the dataset allows, with an approximate board-level interval (n = 6).
 - No final-test threshold tuning, export tuning, seed selection, or architecture selection is allowed.
 - No current ONNX, TensorRT, Hugging Face model, or Space is release-approved.
 - The private L4 timings cover the 60-image calibration split on one recorded software/hardware

@@ -612,6 +612,7 @@ def test_claim_evidence_paths_exist_and_only_supported_claims_are_verified() -> 
     assert registry["schema_version"] == "1.0"
     assert {name for name, claim in claims.items() if claim["status"] == "verified"} == {
         "base_initialization",
+        "multi_board_leakage_effect",
         "paired_leakage_effect",
         "paired_protocol",
     }

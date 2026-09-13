@@ -111,3 +111,26 @@ def test_committed_summary_matches_the_pre_registered_analysis_recomputed_from_e
     assert stats["board_bootstrap"]["ci95_high"] == pytest.approx(0.1832, abs=5e-5)
 
     assert aggregate_folds(ROOT) == summary
+
+
+def test_portfolio_documents_report_the_six_board_replication_consistently() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    model_card = (ROOT / "docs" / "model-card.md").read_text(encoding="utf-8")
+    lobo_readme = (LOBO / "README.md").read_text(encoding="utf-8")
+    summary = _read_json(LOBO / "summary.json")
+    stats = summary["statistics"]["delta_map50"]
+    mean_pp = f"+{stats['mean'] * 100:.1f} pp"
+    low_pp = f"+{stats['board_bootstrap']['ci95_low'] * 100:.1f}"
+    high_pp = f"+{stats['board_bootstrap']['ci95_high'] * 100:.1f} pp"
+
+    for document in (readme, model_card):
+        assert mean_pp in document
+        assert f"{low_pp}` 到 `{high_pp}" in document or f"{low_pp}` to `{high_pp}" in document
+        assert "6/6" in document
+        assert "reports/lobo/summary.json" in document
+        assert "lobo-preregistration.md" in document
+        for row in summary["boards"]:
+            grouped = f"`{row['grouped_map50']['mean']:.4f} ± {row['grouped_map50']['std']:.4f}`"
+            assert f"| {row['board']} | {grouped} |" in document
+    assert "**all_positive**" in lobo_readme
+    assert "+12.8 pp" in lobo_readme

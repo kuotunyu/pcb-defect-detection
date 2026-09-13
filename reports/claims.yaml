@@ -93,19 +93,27 @@ claims:
       - The TensorRT FP16 sub-threshold score of the single missing detection is not recorded; the threshold-crossing explanation is an inference from its observed FP16 deviation range.
 
   multi_board_leakage_effect:
-    status: pending_colab
+    status: verified
     statement: >-
-      A leave-one-board-out replication of the paired protocol is pre-registered: six held-out
-      boards (05, 07, 08, 09, 11, 12) under one eligibility rule, the same recipe, seeds, and
-      evaluator, with the per-board leaky-minus-grouped mAP50 delta as the primary endpoint.
-      Board 08 reuses its published evidence; the other five folds have not been run yet.
+      Under the pre-registered leave-one-board-out replication of the frozen paired protocol,
+      same-board sibling exposure increased final-test mAP50 on every one of six held-out boards
+      (05, 07, 08, 09, 11, 12): mean +12.8 percentage points, range +1.8 to +21.3, sample SD 8.4,
+      board-level bootstrap 95% interval +6.5 to +18.3 (10,000 resamples).
     evidence:
       - docs/lobo-preregistration.md
       - configs/lobo/folds.yaml
+      - reports/lobo/summary.json
+      - reports/lobo/README.md
+      - reports/lobo/board05/final_metrics.json
+      - reports/lobo/board07/final_metrics.json
+      - reports/lobo/board09/final_metrics.json
+      - reports/lobo/board11/final_metrics.json
+      - reports/lobo/board12/final_metrics.json
+      - reports/paired_a100/final_metrics.json
     limitations:
-      - No multi-board result exists yet; nothing beyond the single-board finding is claimed.
-      - Boards 01, 04, 06, and 10 are never held out, so the design covers the 60-image boards only.
-      - With six boards the board-level bootstrap interval will be approximate.
+      - Boards 01, 04, 06, and 10 are never held out, so the estimate covers the 60-image boards only.
+      - With six boards the board-level bootstrap interval is approximate; each fold is one 30-image single-board test.
+      - Effect size varies with board difficulty; the boards with the lowest grouped scores gain the most.
 
   hosted_demo:
     status: out_of_scope

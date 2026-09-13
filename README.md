@@ -47,7 +47,7 @@ uv run --locked --no-editable --extra app python -m app.app
 
 | 結論 | Committed evidence |
 |---|---|
-| **防洩漏評測** | Grouped mAP50 `63.30%`；same-board sibling exposure 對應 `+21.3 pp` |
+| **防洩漏評測** | Grouped mAP50 `63.30%`；same-board sibling exposure 對應 `+21.3 pp`；六板複驗 6/6 為正，平均 `+12.8 pp` |
 | **部署速度** | NVIDIA L4 calibration 上，ONNX Runtime CUDA FP32 p50 `20.28 ms` |
 | **發布邊界** | Aggregate fidelity 通過；strict per-box parity failed，因此維持 Recorded evidence。修正後重跑：ORT 60/60 通過，TensorRT FP16 1/60 未通過 |
 
@@ -93,6 +93,7 @@ flowchart TB
 | Hash-pinned ONNX fidelity 與 standalone parity gate | [`reports/paired_a100/deployment_gate.public.json`](reports/paired_a100/deployment_gate.public.json) |
 | NVIDIA L4 latency、raw timings、fidelity 與 strict parity | [`reports/benchmark_l4.json`](reports/benchmark_l4.json) · [`reports/benchmark_l4_raw.json`](reports/benchmark_l4_raw.json) · [`reports/backend_parity_l4.json`](reports/backend_parity_l4.json) · [`reports/benchmark_l4.md`](reports/benchmark_l4.md) |
 | Strict parity 失敗的根因診斷與修正後 L4 重跑 | [`reports/diagnostics/backend_parity_root_cause_2026-09-11.md`](reports/diagnostics/backend_parity_root_cause_2026-09-11.md) · [`reports/l4_rerun_2abe78fe2b54/`](reports/l4_rerun_2abe78fe2b54/README.md) |
+| 六塊 held-out board 的預登記複驗 | [`docs/lobo-preregistration.md`](docs/lobo-preregistration.md) · [`reports/lobo/README.md`](reports/lobo/README.md) · [`reports/lobo/summary.json`](reports/lobo/summary.json) |
 
 ---
 
@@ -129,7 +130,7 @@ flowchart TB
 | Stage | 核心證據 |
 |---|---|
 | **01 · Data Contract** | Board ID 隔離 Train／Test，避免 sibling images 跨 split |
-| **02 · Paired Evaluation** | 三個 seeds 共用 Board 08 final test，差距 `+21.3 pp` mAP50 |
+| **02 · Paired Evaluation** | 三個 seeds 共用 Board 08 final test，差距 `+21.3 pp` mAP50；六板複驗平均 `+12.8 pp`，範圍 `+1.8` 到 `+21.3` |
 | **03 · Deployment Gate** | Aggregate fidelity 通過；frozen strict per-box parity failed。修正 runner 後重跑，ORT 通過、TensorRT FP16 差 1 個門檻邊緣的框 |
 | **04 · Evidence Presentation** | 依 contract 顯示 Recorded、Degraded 或 Live 狀態 |
 
@@ -297,6 +298,23 @@ flowchart TB
 
 </details>
 
+#### 多板複驗（leave-one-board-out，2026-09-13）
+
+同一套凍結 protocol、同一份 recipe 與 seeds，只把 held-out board 換成規則允許的每一塊板（每類剛好 10 張、不是 validation board 01、不是舊實驗排除的 04）。分析方法在跑之前先登記在 [`docs/lobo-preregistration.md`](docs/lobo-preregistration.md)，[`reports/lobo/summary.json`](reports/lobo/summary.json) 記錄該文件的 SHA-256。Board 08 沿用上表的已發布結果，其餘五塊板在 Colab A100 各跑 6 個 run。
+
+| Held-out board | Grouped mAP50 | Leaky control mAP50 | Δ mAP50 | Δ mAP50-95 |
+|---|---:|---:|---:|---:|
+| 05 | `0.6552 ± 0.1000` | `0.8495 ± 0.0450` | `+19.4 pp` | `+9.9 pp` |
+| 07 | `0.8509 ± 0.0608` | `0.9186 ± 0.0190` | `+6.8 pp` | `+3.6 pp` |
+| 08 | `0.6330 ± 0.1491` | `0.8456 ± 0.0375` | `+21.3 pp` | `+11.3 pp` |
+| 09 | `0.7679 ± 0.0524` | `0.8411 ± 0.0413` | `+7.3 pp` | `+5.8 pp` |
+| 11 | `0.6813 ± 0.0618` | `0.8809 ± 0.0260` | `+20.0 pp` | `+15.5 pp` |
+| 12 | `0.8892 ± 0.0799` | `0.9077 ± 0.0297` | `+1.8 pp` | `+3.2 pp` |
+
+**預登記的結論用語**：same-board sibling exposure 在六塊 held-out board 上都提高了 final-test mAP50，平均 `+12.8 pp`（範圍 `+1.8` 到 `+21.3`，跨板樣本標準差 `8.4 pp`，6/6 為正）。以板為單位重抽樣 10,000 次的 95% 區間為 `+6.5` 到 `+18.3 pp`，n = 6 時只是近似值。效果大小明顯因板而異：grouped 分數越低的板（05、08、11）被墊高越多，本來就高的板（07、12）差距小。
+
+**邊界**：01、04、06、10 四塊板從未被 held out，所以這是「資料集允許的 60 張板」之間的複驗，不是母體估計；每個 fold 仍是單一板的 30 張 final test。每塊板的完整公開 metadata 在 `reports/lobo/boardNN/`，格式與 `reports/paired_a100/` 相同。
+
 ### 2. NVIDIA L4 多後端推論延遲評測
 
 > **Calibration-only evidence**：來自單一 private NVIDIA L4 session，不是 production SLA；repository 不發佈 TensorRT engine、public model 或 public checkpoint。
@@ -392,7 +410,7 @@ README 只提供安全的 CLI 檢查入口，不提供會誤啟動訓練的裸�
 | `reports/protocol/` | 凍結分割 Manifest 與配對哈希驗證紀錄 |
 | `reports/benchmark_l4.md` | Verified NVIDIA L4 latency、aggregate fidelity 與 failed strict parity 摘要 |
 | `tools/animations/` | README 解說動畫的 Manim 原始碼與算圖說明；不進鎖定依賴與 CI |
-| `configs/lobo/` · `docs/lobo-preregistration.md` | 多板複驗（leave-one-board-out）的 fold 註冊表與預登記分析；Colab 結果尚未產生 |
+| `configs/lobo/` · `docs/lobo-preregistration.md` · `reports/lobo/` | 多板複驗（leave-one-board-out）的 fold 註冊表、預登記分析與六板結果 |
 
 ---
 

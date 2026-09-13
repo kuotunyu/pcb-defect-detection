@@ -44,6 +44,32 @@ F1 delta was `0.2546`, with 95% CI `[0.2102, 0.3005]` from 10,000 resamples. The
 results for the frozen dataset and recipe, not a universal leakage or model-performance estimate.
 Source: [`final_metrics.json`](../reports/paired_a100/final_metrics.json).
 
+## Multi-board replication
+
+A pre-registered leave-one-board-out replication
+([`lobo-preregistration.md`](lobo-preregistration.md), whose SHA-256 is recorded in the summary)
+re-runs the frozen paired protocol with every board the eligibility rule allows as the held-out
+board: 05, 07, 09, 11, and 12 on Colab A100 (runner snapshot `0a82c89b3037`), plus the published
+Board 08 result above. Recipe, seeds, base checkpoint, validation board 01, and evaluator are
+unchanged; each held-out board keeps its own 30-image final test and 30-image sibling pool.
+
+| Held-out board | Grouped mAP50 | Leaky control mAP50 | Δ mAP50 | Δ mAP50-95 |
+|---|---:|---:|---:|---:|
+| 05 | `0.6552 ± 0.1000` | `0.8495 ± 0.0450` | `+0.1942` | `+0.0990` |
+| 07 | `0.8509 ± 0.0608` | `0.9186 ± 0.0190` | `+0.0677` | `+0.0362` |
+| 08 | `0.6330 ± 0.1491` | `0.8456 ± 0.0375` | `+0.2126` | `+0.1127` |
+| 09 | `0.7679 ± 0.0524` | `0.8411 ± 0.0413` | `+0.0731` | `+0.0580` |
+| 11 | `0.6813 ± 0.0618` | `0.8809 ± 0.0260` | `+0.1996` | `+0.1548` |
+| 12 | `0.8892 ± 0.0799` | `0.9077 ± 0.0297` | `+0.0185` | `+0.0324` |
+
+Pre-registered wording outcome: same-board sibling exposure increased final-test mAP50 on every
+one of six held-out boards, mean `+12.8 pp` (range `+1.8` to `+21.3`, sample SD `8.4 pp`, 6/6
+positive); the board-level percentile bootstrap 95% interval is `+6.5` to `+18.3 pp` (10,000
+resamples, approximate for n = 6). The size of the effect varies with board difficulty: the
+boards with the lowest grouped scores (05, 08, 11) gain the most. Boards 01, 04, 06, and 10 are
+never held out. Source: [`summary.json`](../reports/lobo/summary.json) and the per-board
+evidence directories under `reports/lobo/`.
+
 ## Selected deployment candidate
 
 Grouped seed 42 was selected before final-test access by highest grouped validation mAP50-95, with
@@ -108,6 +134,8 @@ defect classes.
 
 ## Limitations and non-claims
 
+- The six-board replication covers only the 60-image boards the frozen protocol can hold out;
+  its board-level interval is approximate (n = 6) and each fold remains a single-board test.
 - The final test contains 30 images from a single PCB template board; it does not establish
   between-board, factory-line, or production generalization.
 - Image-bootstrap intervals do not estimate board-level uncertainty.
