@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import random
 import shutil
@@ -507,7 +508,11 @@ def delta_statistics(deltas: list[float], *, resamples: int, seed: int) -> dict[
         return {"n_boards": 0}
     rng = random.Random(seed)
     n = len(deltas)
-    means = sorted(sum(deltas[rng.randrange(n)] for _ in range(n)) / n for _ in range(resamples))
+    # math.fsum is correctly rounded on every Python version; the built-in sum changed its
+    # float accumulation in 3.12, which moved bootstrap percentiles by one ulp.
+    means = sorted(
+        math.fsum(deltas[rng.randrange(n)] for _ in range(n)) / n for _ in range(resamples)
+    )
     return {
         "n_boards": n,
         "mean": statistics.fmean(deltas),
