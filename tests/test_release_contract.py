@@ -193,7 +193,7 @@ def test_historical_training_recipe_resolves_augmentation_without_rewriting_evid
     assert recipe["limitations"]
 
 
-def test_current_release_metadata_is_v0_2_0_and_preserves_v0_1_0_provenance() -> None:
+def test_current_release_metadata_is_v0_3_0_and_preserves_earlier_provenance() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     citation = yaml.safe_load((ROOT / "CITATION.cff").read_text(encoding="utf-8"))
     zenodo = _read_json(ROOT / ".zenodo.json")
@@ -203,10 +203,10 @@ def test_current_release_metadata_is_v0_2_0_and_preserves_v0_1_0_provenance() ->
     assert citation["authors"] == [{"alias": "kuotunyu", "family-names": "kuotunyu"}]
     assert citation["repository-code"] == "https://github.com/kuotunyu/pcb-defect-detection"
     assert citation["license"] == "AGPL-3.0-or-later"
-    assert project["version"] == "0.2.0"
+    assert project["version"] == "0.3.0"
     assert citation["version"] == project["version"]
-    assert citation["doi"] == "10.5281/zenodo.21912370"
-    assert str(citation["date-released"]) == "2026-08-13"
+    assert "doi" not in citation
+    assert str(citation["date-released"]) == "2026-09-14"
     assert zenodo["creators"] == [{"name": "kuotunyu"}]
     assert zenodo["upload_type"] == "software"
     assert zenodo["access_right"] == "open"
@@ -221,6 +221,8 @@ def test_current_release_metadata_is_v0_2_0_and_preserves_v0_1_0_provenance() ->
     assert "https://doi.org/10.5281/zenodo.21877497" in research_package
     assert "https://doi.org/10.5281/zenodo.21877496" in research_package
     assert "https://doi.org/10.5281/zenodo.21912370" in research_package
+    assert "The current tree prepares `v0.3.0`" in research_package
+    assert "generated from the exact `v0.3.0` release" in research_package
     assert "7fc1777d306584fc1f3ffe0c05989296370fe6df" in research_package
     assert "89d82a6ab8737193f8c59614d2a04c68f07b02fca3bc7d3ee7178c56ff882f29" in (research_package)
     assert "1,699,878 bytes" in research_package

@@ -5,7 +5,7 @@
       "name": "kuotunyu"
     }
   ],
-  "description": "Source code, a responsive PCB review-workstation interface, and metadata-only evidence for a board-aware PCB defect-detection study of same-board exposure, reproducible evaluation contracts, and calibration-only deployment validation.",
+  "description": "Source code, a responsive PCB review-workstation interface, and metadata-only evidence for a board-aware PCB defect-detection study of same-board exposure, a pre-registered six-board leave-one-board-out replication, reproducible evaluation contracts, and calibration-only deployment validation.",
   "keywords": [
     "computer vision",
     "industrial AI",
@@ -15,7 +15,7 @@
     "TensorRT"
   ],
   "license": "AGPL-3.0-or-later",
-  "notes": "No dataset pixels, model weights, ONNX exports, or TensorRT engines are included. The upstream dataset license remains unverified; model and export redistribution rights are not asserted. Performance evidence is calibration-only where stated and is not a production SLA. Aggregate L4 fidelity passed, while strict per-box parity failed for both exported backends under frozen thresholds.",
+  "notes": "No dataset pixels, model weights, ONNX exports, or TensorRT engines are included. The upstream dataset license remains unverified; model and export redistribution rights are not asserted. Performance evidence is calibration-only where stated and is not a production SLA. Aggregate L4 fidelity passed, while strict per-box parity failed for both exported backends under frozen thresholds on the first L4 run; after a reference input-geometry fix in the runner, the unchanged gate still failed by one TensorRT FP16 box while ONNX Runtime CUDA matched PyTorch on 60/60 calibration images.",
   "related_identifiers": [
     {
       "identifier": "https://github.com/kuotunyu/pcb-defect-detection",
@@ -25,5 +25,5 @@
   ],
   "title": "PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence",
   "upload_type": "software",
-  "version": "0.2.0"
+  "version": "0.3.0"
 }

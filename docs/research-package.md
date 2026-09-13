@@ -2,14 +2,22 @@
 
 ## Publication status
 
+The current tree prepares `v0.3.0`, which adds the pre-registered six-board leave-one-board-out
+replication, the strict-parity root-cause diagnosis, and the corrected L4 re-run evidence. It does
+not reuse an earlier version DOI. A deterministic `v0.3.0` research package will be built from the
+exact release commit, attached to the GitHub Release, and recorded here with its new Zenodo
+version DOI only after the immutable external records exist.
+
+### Immutable v0.2.0 record
+
 The [v0.2.0 GitHub Release](https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.2.0)
 and Zenodo version record
 [`10.5281/zenodo.21912370`](https://doi.org/10.5281/zenodo.21912370) publish the same deterministic
 archive built from source commit
 `7fc1777d306584fc1f3ffe0c05989296370fe6df`: 1,699,878 bytes with SHA-256
 `89d82a6ab8737193f8c59614d2a04c68f07b02fca3bc7d3ee7178c56ff882f29`. The all-versions DOI
-remains [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496). This version adds the
-final responsive PCB review-workstation presentation without changing the scientific claims,
+remains [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496). That version added
+the final responsive PCB review-workstation presentation without changing the scientific claims,
 failed strict parity gate, or redistribution boundary.
 
 ### Immutable v0.1.0 record
@@ -46,22 +54,23 @@ From a clean clone at the exact release-candidate commit:
 uv sync --locked --no-editable
 uv run python -m pcb_defect.research_package \
   --repo . \
-  --output dist/pcb-defect-detection-v0.2.0-research-package.zip
+  --output dist/pcb-defect-detection-v0.3.0-research-package.zip
 ```
 
 The command refuses a dirty tracked worktree, refuses secret-shaped tracked paths, writes a
 deterministic ZIP plus `.sha256` sidecar, and verifies every member against the embedded manifest
-before returning success. The published archive was generated from the exact `v0.2.0` release commit.
-The historical archive generated from tagged commit
-`56c086206eab9be1a9c6a4e36410fd13ed42f5ec` remains attached to the `v0.1.0` GitHub Release and
+before returning success. The `v0.3.0` archive must be generated from the exact `v0.3.0` release
+commit. The historical archives generated from tagged commits
+`56c086206eab9be1a9c6a4e36410fd13ed42f5ec` (`v0.1.0`) and
+`7fc1777d306584fc1f3ffe0c05989296370fe6df` (`v0.2.0`) remain attached to their GitHub Releases and
 deposited on Zenodo. Running this command from any other commit produces a different archive; do
-not present that result as the `v0.1.0` asset, the `v0.2.0` asset, or commit it back into this
-repository.
+not present that result as the `v0.1.0` asset, the `v0.2.0` asset, the `v0.3.0` asset, or commit
+it back into this repository.
 
 ## Citation and deposit metadata
 
-- `CITATION.cff` defines the single software author, current software version, release date,
-  version DOI, and GitHub source URL.
+- `CITATION.cff` defines the single software author, current software version, release date, and
+  GitHub source URL. A version DOI is added only after the corresponding Zenodo record exists.
 - `.zenodo.json` defines the title, keywords, access mode, license, and redistribution note.
 - `docs/license-boundary.md` remains authoritative for third-party data and model artifacts.
 

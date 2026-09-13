@@ -69,6 +69,23 @@ hosted endpoint have been published. External source-release facts are recorded 
   preserves concept DOI [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496)
   and publishes the same 1,699,878-byte archive with the verified SHA-256 above.
 
+## v0.3.0 portfolio release preparation
+
+- [x] The pre-registered six-board leave-one-board-out replication is complete: six held-out
+  boards, 6/6 positive, mean `+12.8 pp` mAP50, with per-board evidence under `reports/lobo/` and
+  the pre-registration SHA-256 recorded in `reports/lobo/summary.json`.
+- [x] The strict per-box parity failure is root-caused to the runner's reference input geometry;
+  the runner is fixed and the corrected L4 re-run is recorded beside the preserved first-run
+  evidence. Thresholds and evaluators are unchanged, and the gate still failed.
+- [x] Software, citation, and Zenodo ingestion metadata identify version `0.3.0` and preserve the
+  immutable `v0.1.0` and `v0.2.0` DOIs as historical evidence rather than reusing them.
+- [x] The redistribution boundary is unchanged: no dataset media, weights, exports, engines, or
+  hosted inference are added.
+- [ ] The annotated `v0.3.0` tag and GitHub Release resolve to the final release commit and publish
+  the verified deterministic research package plus checksum sidecar.
+- [ ] A new Zenodo version record preserves concept DOI `10.5281/zenodo.21877496`; its version DOI,
+  archive byte count, and SHA-256 are recorded after publication.
+
 ## Intentional non-goals
 
 - Dataset, fine-tuned weights, ONNX exports, and TensorRT engines are not redistributed.
