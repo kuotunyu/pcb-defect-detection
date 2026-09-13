@@ -1,0 +1,256 @@
+{
+  "boards": [
+    {
+      "board": "05",
+      "delta_map50": 0.1942344578809173,
+      "delta_map50_95": 0.09904609678229243,
+      "evidence": "reports/lobo/board05",
+      "f1_delta_image_bootstrap": {
+        "ci95_high": 0.36985273214439884,
+        "ci95_low": 0.26565118060951387,
+        "mean_delta": 0.3165399415399415
+      },
+      "grouped_map50": {
+        "mean": 0.6552479037031219,
+        "std": 0.1000283358513895
+      },
+      "grouped_map50_95": {
+        "mean": 0.3421370658098976,
+        "std": 0.06297726692161945
+      },
+      "leaky_map50": {
+        "mean": 0.8494823615840392,
+        "std": 0.04501355896931682
+      },
+      "leaky_map50_95": {
+        "mean": 0.44118316259219004,
+        "std": 0.045288967274254945
+      },
+      "n_seeds": 3,
+      "status": "complete"
+    },
+    {
+      "board": "07",
+      "delta_map50": 0.06766983583040154,
+      "delta_map50_95": 0.036183759574533736,
+      "evidence": "reports/lobo/board07",
+      "f1_delta_image_bootstrap": {
+        "ci95_high": 0.12120259986926656,
+        "ci95_low": 0.050669372294372295,
+        "mean_delta": 0.08492673992673995
+      },
+      "grouped_map50": {
+        "mean": 0.8508832802194936,
+        "std": 0.06083305907307978
+      },
+      "grouped_map50_95": {
+        "mean": 0.457193641021298,
+        "std": 0.03296383804249899
+      },
+      "leaky_map50": {
+        "mean": 0.9185531160498951,
+        "std": 0.019043525226239207
+      },
+      "leaky_map50_95": {
+        "mean": 0.49337740059583174,
+        "std": 0.036253396624521345
+      },
+      "n_seeds": 3,
+      "status": "complete"
+    },
+    {
+      "board": "08",
+      "delta_map50": 0.21256984213946117,
+      "delta_map50_95": 0.11266990761330564,
+      "evidence": "reports/paired_a100",
+      "f1_delta_image_bootstrap": {
+        "ci95_high": 0.3005499623832958,
+        "ci95_low": 0.2101614203697537,
+        "mean_delta": 0.2545904095904096
+      },
+      "grouped_map50": {
+        "mean": 0.6330074066602414,
+        "std": 0.14914951898858905
+      },
+      "grouped_map50_95": {
+        "mean": 0.2881752374835738,
+        "std": 0.06539551971325533
+      },
+      "leaky_map50": {
+        "mean": 0.8455772487997025,
+        "std": 0.037528675571419035
+      },
+      "leaky_map50_95": {
+        "mean": 0.40084514509687946,
+        "std": 0.025176913477693397
+      },
+      "n_seeds": 3,
+      "status": "complete"
+    },
+    {
+      "board": "09",
+      "delta_map50": 0.0731334241714513,
+      "delta_map50_95": 0.05801994869597782,
+      "evidence": "reports/lobo/board09",
+      "f1_delta_image_bootstrap": {
+        "ci95_high": 0.1316199572032906,
+        "ci95_low": 0.05180544455544461,
+        "mean_delta": 0.09478206978206982
+      },
+      "grouped_map50": {
+        "mean": 0.7679289158406091,
+        "std": 0.052391834493366526
+      },
+      "grouped_map50_95": {
+        "mean": 0.3878822613654718,
+        "std": 0.022009853578651803
+      },
+      "leaky_map50": {
+        "mean": 0.8410623400120604,
+        "std": 0.04130645623898518
+      },
+      "leaky_map50_95": {
+        "mean": 0.44590221006144964,
+        "std": 0.023635111307773394
+      },
+      "n_seeds": 3,
+      "status": "complete"
+    },
+    {
+      "board": "11",
+      "delta_map50": 0.19962004709778602,
+      "delta_map50_95": 0.1548051164208582,
+      "evidence": "reports/lobo/board11",
+      "f1_delta_image_bootstrap": {
+        "ci95_high": 0.2979578045411378,
+        "ci95_low": 0.2015055993389326,
+        "mean_delta": 0.24855909522576186
+      },
+      "grouped_map50": {
+        "mean": 0.6813286661090349,
+        "std": 0.06178860807999579
+      },
+      "grouped_map50_95": {
+        "mean": 0.2845226974089423,
+        "std": 0.027102604995696732
+      },
+      "leaky_map50": {
+        "mean": 0.8809487132068209,
+        "std": 0.026000649761245876
+      },
+      "leaky_map50_95": {
+        "mean": 0.4393278138298005,
+        "std": 0.023424523186813154
+      },
+      "n_seeds": 3,
+      "status": "complete"
+    },
+    {
+      "board": "12",
+      "delta_map50": 0.01849385257032987,
+      "delta_map50_95": 0.032432138204795236,
+      "evidence": "reports/lobo/board12",
+      "f1_delta_image_bootstrap": {
+        "ci95_high": 0.11604530500363826,
+        "ci95_low": 0.004500064750064716,
+        "mean_delta": 0.061098592765259405
+      },
+      "grouped_map50": {
+        "mean": 0.8892063397243088,
+        "std": 0.07987514336576913
+      },
+      "grouped_map50_95": {
+        "mean": 0.4468203304600699,
+        "std": 0.056610718582122556
+      },
+      "leaky_map50": {
+        "mean": 0.9077001922946387,
+        "std": 0.029709973977314258
+      },
+      "leaky_map50_95": {
+        "mean": 0.47925246866486515,
+        "std": 0.028447529702264687
+      },
+      "n_seeds": 3,
+      "status": "complete"
+    }
+  ],
+  "endpoints": {
+    "primary": "per held-out board, the three-seed mean final-test mAP50 of the leaky-control arm minus that of the grouped arm; reported per board, as mean and sample standard deviation across boards, and with a percentile bootstrap over boards",
+    "secondary": [
+      "the same delta on mAP50-95",
+      "per-board grouped mAP50 (board difficulty spread)",
+      "the number of boards with a positive mAP50 delta",
+      "per-board paired image-bootstrap F1 deltas from final_evaluation"
+    ]
+  },
+  "limitations": [
+    "Boards 01, 04, 06, and 10 are never held out; the estimate covers the 60-image boards only.",
+    "With six boards the board-level bootstrap interval is approximate.",
+    "Each fold is one frozen 30-image final test on one board; seeds capture training noise only."
+  ],
+  "n_boards_complete": 6,
+  "n_boards_total": 6,
+  "parent_board": "08",
+  "preregistration": {
+    "path": "docs/lobo-preregistration.md",
+    "sha256": "86f026d5fdec94dce26d3808b39444b552cc06314d3216b33cce9f1ae523f73e"
+  },
+  "registry": "configs/lobo/folds.yaml",
+  "schema_version": "1.0",
+  "statistics": {
+    "delta_map50": {
+      "board_bootstrap": {
+        "ci95_high": 0.1832186443919449,
+        "ci95_low": 0.0650865459322933,
+        "n_resamples": 10000,
+        "seed": 20260803,
+        "unit": "held-out board"
+      },
+      "max": 0.21256984213946117,
+      "mean": 0.12762024328172453,
+      "min": 0.01849385257032987,
+      "n_boards": 6,
+      "n_positive": 6,
+      "sample_std": 0.08403486614773688
+    },
+    "delta_map50_95": {
+      "board_bootstrap": {
+        "ci95_high": 0.11890402899232407,
+        "ci95_low": 0.048424369944531614,
+        "n_resamples": 10000,
+        "seed": 20260803,
+        "unit": "held-out board"
+      },
+      "max": 0.1548051164208582,
+      "mean": 0.08219282788196051,
+      "min": 0.032432138204795236,
+      "n_boards": 6,
+      "n_positive": 6,
+      "sample_std": 0.048296414360154145
+    },
+    "grouped_map50": {
+      "board_bootstrap": {
+        "ci95_high": 0.8279599802236772,
+        "ci95_low": 0.6709613671127284,
+        "n_resamples": 10000,
+        "seed": 20260803,
+        "unit": "held-out board"
+      },
+      "max": 0.8892063397243088,
+      "mean": 0.746267085376135,
+      "min": 0.6330074066602414,
+      "n_boards": 6,
+      "n_positive": 6,
+      "sample_std": 0.10693423970679289
+    }
+  },
+  "status": "complete",
+  "unit": "held-out board",
+  "wording": "all_positive",
+  "wording_rule": {
+    "all_positive": "same-board sibling exposure increased final-test mAP50 on every held-out board",
+    "direction_varies": "the direction of the exposure effect varies across held-out boards",
+    "incomplete": "the multi-board replication is incomplete; no cross-board claim is made"
+  }
+}

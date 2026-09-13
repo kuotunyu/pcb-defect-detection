@@ -1,0 +1,22 @@
+{
+  "held_out_board": "09",
+  "manifest_sha256": "a498503bf75d80a678373e5c4809318a8ce214773c51ea3afc0ce9ad1c7c94ad",
+  "package": {
+    "bytes": 75770833,
+    "name": "paired-results-a100-0a82c89b3037-board09.zip",
+    "sha256": "f0b51b27b66a721b59273ff693e1ef759b878f752072bd61527ebe0758bfc853",
+    "sidecar": "paired-results-a100-0a82c89b3037-board09.zip.sha256"
+  },
+  "package_manifest": {
+    "failed_entries": 0,
+    "path": "package_manifest.json",
+    "sha256": "a55f9e5931c0e4be3d7463d390c01bf9a84ddaee7d0304092dfa501be70b7597",
+    "verified_entries": 52
+  },
+  "schema_version": "1.0",
+  "source_git_sha": "0a82c89b3037c935d1aa6f2da9658c97fbdcd252",
+  "verification": {
+    "internal_manifest_passed": true,
+    "sidecar_match": true
+  }
+}

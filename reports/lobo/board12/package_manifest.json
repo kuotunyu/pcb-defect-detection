@@ -1,0 +1,265 @@
+{
+  "files": [
+    {
+      "bytes": 9809257,
+      "path": "deployment/best.onnx",
+      "sha256": "19a4c5248410f1859f40a62c89c788aeacc897e92c9de8338b314c8a06335e9d"
+    },
+    {
+      "bytes": 449,
+      "path": "deployment/calibration.yaml",
+      "sha256": "9e6fe922fbcb1f0ee3a3bed362599313210e481634abb18ffef89ec252758e73"
+    },
+    {
+      "bytes": 18723,
+      "path": "deployment/deployment_gate.json",
+      "sha256": "9d37a945f1fdd0cb6ad33fbb53d1a9e9ae73a6fd5f298d677f7dc263fb1ad426"
+    },
+    {
+      "bytes": 421,
+      "path": "deployment/model_contract.candidate.json",
+      "sha256": "076c8611fb0cf7ff6eab2e6585f779e7a9ed1edda98bc7215a88d0c6bb40cafc"
+    },
+    {
+      "bytes": 1346,
+      "path": "final/FINAL_TEST_STARTED.json",
+      "sha256": "5fdec1073b779e4526df6b8d304c5b77c95c5117126877b43d4be58d39e6215b"
+    },
+    {
+      "bytes": 273,
+      "path": "final/deployment_selection.json",
+      "sha256": "bb2edcf9289bbc1395d6d1ec2a60949cdcf4168d829b731ae881fa9c523f61d2"
+    },
+    {
+      "bytes": 52264,
+      "path": "final/final_metrics.json",
+      "sha256": "c2717abe4efd257866f2c7a86f3eccc4a6f8e54f0428a6beae6834b92605de0e"
+    },
+    {
+      "bytes": 229,
+      "path": "final/finalization_record.json",
+      "sha256": "8a0b298d6142b7145480ae4cfdc62b6a0b11db7503e69e834e3cfea58457b669"
+    },
+    {
+      "bytes": 1101,
+      "path": "gates/gate_report.json",
+      "sha256": "5b69b154008b7d129afcc58d5d578ec458c5dec393bb240341510e33863337c1"
+    },
+    {
+      "bytes": 515,
+      "path": "inputs/input_lock.json",
+      "sha256": "d8a8a98da211b4b208e8b3fc78ad98a37a0cd52d949c0a8eab6fcd026b6f6914"
+    },
+    {
+      "bytes": 208,
+      "path": "runs/grouped/seed42/inputs/base_model.yaml",
+      "sha256": "6e30b56b7f994723917beb1c76918b2294a620ad81a50b9313eb251323174c8d"
+    },
+    {
+      "bytes": 240496,
+      "path": "runs/grouped/seed42/inputs/paired_split_manifest.json",
+      "sha256": "d8ca763c5ef36cdaba1854ddfc86bd752341bb3c7182350108e430fcd17fa8f5"
+    },
+    {
+      "bytes": 236,
+      "path": "runs/grouped/seed42/inputs/train_paired.yaml",
+      "sha256": "6ba44a0024884c11de37a29b294543c9736cb30b6e96b4a6d27dcb93ebcf185b"
+    },
+    {
+      "bytes": 1105,
+      "path": "runs/grouped/seed42/metrics/validation.json",
+      "sha256": "8cf4ae4144edcdf2ca5a0e7196bc11fca6588e8217cefd6c8e2e75e0eec44f32"
+    },
+    {
+      "bytes": 3620,
+      "path": "runs/grouped/seed42/run_record.json",
+      "sha256": "4877931ba68c64090fcec5e27ba01b3d81bdcd8cfada2260eb9729d58718a393"
+    },
+    {
+      "bytes": 5366341,
+      "path": "runs/grouped/seed42/weights/best.pt",
+      "sha256": "f052d4d44dd5b615bbc43a0f582269aff544ba21153c75d5f22e24b01235aaa9"
+    },
+    {
+      "bytes": 5366341,
+      "path": "runs/grouped/seed42/weights/last.pt",
+      "sha256": "b33a6d4de53273b24f0ddf815d4eff4b76ef0bb9a3a9dbf8e6a70a2c4a9c9c17"
+    },
+    {
+      "bytes": 208,
+      "path": "runs/grouped/seed43/inputs/base_model.yaml",
+      "sha256": "6e30b56b7f994723917beb1c76918b2294a620ad81a50b9313eb251323174c8d"
+    },
+    {
+      "bytes": 240496,
+      "path": "runs/grouped/seed43/inputs/paired_split_manifest.json",
+      "sha256": "d8ca763c5ef36cdaba1854ddfc86bd752341bb3c7182350108e430fcd17fa8f5"
+    },
+    {
+      "bytes": 236,
+      "path": "runs/grouped/seed43/inputs/train_paired.yaml",
+      "sha256": "6ba44a0024884c11de37a29b294543c9736cb30b6e96b4a6d27dcb93ebcf185b"
+    },
+    {
+      "bytes": 1099,
+      "path": "runs/grouped/seed43/metrics/validation.json",
+      "sha256": "b37837de967825ec8cc86b21a23ceabdcb465f4543213cb8d8c04fde1afa1e78"
+    },
+    {
+      "bytes": 3620,
+      "path": "runs/grouped/seed43/run_record.json",
+      "sha256": "9064384c6b042f805057b8cf7d3be9fb38f517c714d3780148914f539f84b6ef"
+    },
+    {
+      "bytes": 5363397,
+      "path": "runs/grouped/seed43/weights/best.pt",
+      "sha256": "72e346cb025d817becdd59752e714abd6dbd94754c39b211ba137c90a8e245c7"
+    },
+    {
+      "bytes": 5363397,
+      "path": "runs/grouped/seed43/weights/last.pt",
+      "sha256": "eaea85102f3d2fef38fa4607c4d42728cf8d8338ea6dab99b5fc6e9f96c7383e"
+    },
+    {
+      "bytes": 208,
+      "path": "runs/grouped/seed44/inputs/base_model.yaml",
+      "sha256": "6e30b56b7f994723917beb1c76918b2294a620ad81a50b9313eb251323174c8d"
+    },
+    {
+      "bytes": 240496,
+      "path": "runs/grouped/seed44/inputs/paired_split_manifest.json",
+      "sha256": "d8ca763c5ef36cdaba1854ddfc86bd752341bb3c7182350108e430fcd17fa8f5"
+    },
+    {
+      "bytes": 236,
+      "path": "runs/grouped/seed44/inputs/train_paired.yaml",
+      "sha256": "6ba44a0024884c11de37a29b294543c9736cb30b6e96b4a6d27dcb93ebcf185b"
+    },
+    {
+      "bytes": 1080,
+      "path": "runs/grouped/seed44/metrics/validation.json",
+      "sha256": "8728dc46909d3f3b8c9fcc93a59cf7420e5572dc934fb39aad8ba2bc56ccc8a4"
+    },
+    {
+      "bytes": 3620,
+      "path": "runs/grouped/seed44/run_record.json",
+      "sha256": "04d18a0659e63df8a6fbac9ee93671341a6316e91306be2d0807c9753cf76b66"
+    },
+    {
+      "bytes": 5365957,
+      "path": "runs/grouped/seed44/weights/best.pt",
+      "sha256": "da12459ff8b9a91176c0c3807e183eb30a8d80fd9575eac0203f838d7bc87380"
+    },
+    {
+      "bytes": 5365957,
+      "path": "runs/grouped/seed44/weights/last.pt",
+      "sha256": "64564cd39feabaa87ad32eeac610fea02973796a0f4890ffa8cf9f480b176d42"
+    },
+    {
+      "bytes": 208,
+      "path": "runs/leaky_control/seed42/inputs/base_model.yaml",
+      "sha256": "6e30b56b7f994723917beb1c76918b2294a620ad81a50b9313eb251323174c8d"
+    },
+    {
+      "bytes": 240496,
+      "path": "runs/leaky_control/seed42/inputs/paired_split_manifest.json",
+      "sha256": "d8ca763c5ef36cdaba1854ddfc86bd752341bb3c7182350108e430fcd17fa8f5"
+    },
+    {
+      "bytes": 236,
+      "path": "runs/leaky_control/seed42/inputs/train_paired.yaml",
+      "sha256": "6ba44a0024884c11de37a29b294543c9736cb30b6e96b4a6d27dcb93ebcf185b"
+    },
+    {
+      "bytes": 1107,
+      "path": "runs/leaky_control/seed42/metrics/validation.json",
+      "sha256": "7ad0ed0f67afa6d399894e6c37d170d67a0b34df13e789be44fd786407e40e03"
+    },
+    {
+      "bytes": 3638,
+      "path": "runs/leaky_control/seed42/run_record.json",
+      "sha256": "86c3428634c30c32130b15b260d70fefbccdc69c1d3ff19d6423aa804941e67d"
+    },
+    {
+      "bytes": 5365445,
+      "path": "runs/leaky_control/seed42/weights/best.pt",
+      "sha256": "7e2a04a722be3ea968fd3b8fed5508ffe320dd6783e9966653d1b04d38bd2282"
+    },
+    {
+      "bytes": 5365445,
+      "path": "runs/leaky_control/seed42/weights/last.pt",
+      "sha256": "71999e7f290c5c04ac39cf1c7aa7b968521574c5ba32ea4e3714d16d28ea75fe"
+    },
+    {
+      "bytes": 208,
+      "path": "runs/leaky_control/seed43/inputs/base_model.yaml",
+      "sha256": "6e30b56b7f994723917beb1c76918b2294a620ad81a50b9313eb251323174c8d"
+    },
+    {
+      "bytes": 240496,
+      "path": "runs/leaky_control/seed43/inputs/paired_split_manifest.json",
+      "sha256": "d8ca763c5ef36cdaba1854ddfc86bd752341bb3c7182350108e430fcd17fa8f5"
+    },
+    {
+      "bytes": 236,
+      "path": "runs/leaky_control/seed43/inputs/train_paired.yaml",
+      "sha256": "6ba44a0024884c11de37a29b294543c9736cb30b6e96b4a6d27dcb93ebcf185b"
+    },
+    {
+      "bytes": 1088,
+      "path": "runs/leaky_control/seed43/metrics/validation.json",
+      "sha256": "0e0fc7b413ca954213398610442e765df9f5681215b438ab766017d27bd87fcd"
+    },
+    {
+      "bytes": 3638,
+      "path": "runs/leaky_control/seed43/run_record.json",
+      "sha256": "7b3569cfcb6e1ac209a402afc63cee368e2e191642ced4c4f7f17c68c090984e"
+    },
+    {
+      "bytes": 5364549,
+      "path": "runs/leaky_control/seed43/weights/best.pt",
+      "sha256": "aa5afa22c033388f8bdad67447fcb456198aafcbd0f10c1a2aef53f68c97f5e6"
+    },
+    {
+      "bytes": 5364549,
+      "path": "runs/leaky_control/seed43/weights/last.pt",
+      "sha256": "7bc5bd9e6f685fe40dca7c5c3db3b0ad8f135bf9367a3ef6ced28582138cb1e7"
+    },
+    {
+      "bytes": 208,
+      "path": "runs/leaky_control/seed44/inputs/base_model.yaml",
+      "sha256": "6e30b56b7f994723917beb1c76918b2294a620ad81a50b9313eb251323174c8d"
+    },
+    {
+      "bytes": 240496,
+      "path": "runs/leaky_control/seed44/inputs/paired_split_manifest.json",
+      "sha256": "d8ca763c5ef36cdaba1854ddfc86bd752341bb3c7182350108e430fcd17fa8f5"
+    },
+    {
+      "bytes": 236,
+      "path": "runs/leaky_control/seed44/inputs/train_paired.yaml",
+      "sha256": "6ba44a0024884c11de37a29b294543c9736cb30b6e96b4a6d27dcb93ebcf185b"
+    },
+    {
+      "bytes": 1120,
+      "path": "runs/leaky_control/seed44/metrics/validation.json",
+      "sha256": "4817eedaecca3c59ddb0d95bbdd0f95b55b89bda7b1f67c7fcc708ecaf7c398e"
+    },
+    {
+      "bytes": 3638,
+      "path": "runs/leaky_control/seed44/run_record.json",
+      "sha256": "f50ccdaf7825ece75ff9e520ccd5bd4dbc698b3d428512a8d9bd579242dab839"
+    },
+    {
+      "bytes": 5364549,
+      "path": "runs/leaky_control/seed44/weights/best.pt",
+      "sha256": "c33a04e34cc0b011527ee008a00ab046563ef57b0fc90abc81535090c3091225"
+    },
+    {
+      "bytes": 5364549,
+      "path": "runs/leaky_control/seed44/weights/last.pt",
+      "sha256": "93df9fb5e3cb0c2d94da6c0adbbf7cee22c75b455176cde8f67102a15e832fa0"
+    }
+  ],
+  "schema_version": "1.0"
+}

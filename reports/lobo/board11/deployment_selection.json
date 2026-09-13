@@ -1,0 +1,11 @@
+{
+  "arm": "grouped",
+  "criterion": "highest grouped validation map50_95; lower seed tie-break",
+  "seed": 44,
+  "selected_before_final_test": true,
+  "validation_by_seed": {
+    "42": 0.1100901722569502,
+    "43": 0.10142845278538037,
+    "44": 0.11165279842540293
+  }
+}
