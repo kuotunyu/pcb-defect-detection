@@ -69,7 +69,7 @@ hosted endpoint have been published. External source-release facts are recorded 
   preserves concept DOI [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496)
   and publishes the same 1,699,878-byte archive with the verified SHA-256 above.
 
-## v0.3.0 portfolio release preparation
+## v0.3.0 publication record
 
 - [x] The pre-registered six-board leave-one-board-out replication is complete: six held-out
   boards, 6/6 positive, mean `+12.8 pp` mAP50, with per-board evidence under `reports/lobo/` and
@@ -81,10 +81,14 @@ hosted endpoint have been published. External source-release facts are recorded 
   immutable `v0.1.0` and `v0.2.0` DOIs as historical evidence rather than reusing them.
 - [x] The redistribution boundary is unchanged: no dataset media, weights, exports, engines, or
   hosted inference are added.
-- [ ] The annotated `v0.3.0` tag and GitHub Release resolve to the final release commit and publish
-  the verified deterministic research package plus checksum sidecar.
-- [ ] A new Zenodo version record preserves concept DOI `10.5281/zenodo.21877496`; its version DOI,
-  archive byte count, and SHA-256 are recorded after publication.
+- [x] The annotated `v0.3.0` tag resolves to
+  `a1141ed43fd655a19f773a869cb2b5a1f1f23ffc`; the corresponding
+  [GitHub Release](https://github.com/kuotunyu/pcb-defect-detection/releases/tag/v0.3.0)
+  publishes the deterministic research package and checksum sidecar (3,790,613 bytes; SHA-256
+  `0f94417beea333550aa97592f100463de3f99879ec4869e9965caff4783462c4`).
+- [x] Zenodo version DOI [`10.5281/zenodo.22736483`](https://doi.org/10.5281/zenodo.22736483)
+  preserves concept DOI [`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496)
+  and publishes the same 3,790,613-byte archive with the verified SHA-256 above.
 
 ## Intentional non-goals
 

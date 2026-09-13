@@ -416,14 +416,19 @@ README 只提供安全的 CLI 檢查入口，不提供會誤啟動訓練的裸�
 
 ## 引用
 
-目前軟體版本為 **v0.3.0**。Zenodo 的全版本 DOI 會永遠指向最新典藏版本：
+目前軟體版本為 **v0.3.0**，已由 Zenodo 永久典藏：
 
+- 版本 DOI：[`10.5281/zenodo.22736483`](https://doi.org/10.5281/zenodo.22736483)
 - 全版本 DOI：[`10.5281/zenodo.21877496`](https://doi.org/10.5281/zenodo.21877496)
 
-`v0.3.0` 的版本 DOI 只會在新 Zenodo record 完成後回填；不以舊版 DOI 代稱新版本。既有版本仍以不可變版本 DOI 保存：
+既有版本仍以不可變版本 DOI 保存：
 
 - **v0.2.0** 版本 DOI：[`10.5281/zenodo.21912370`](https://doi.org/10.5281/zenodo.21912370)
 - **v0.1.0** 版本 DOI：[`10.5281/zenodo.21877497`](https://doi.org/10.5281/zenodo.21877497)
+
+引用目前版本時請使用：
+
+> kuotunyu. (2026). *PCB Defect Detection: Leakage-Aware Evaluation and Deployment Evidence* (Version 0.3.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22736483
 
 引用歷史 `v0.2.0` 時請使用：
 

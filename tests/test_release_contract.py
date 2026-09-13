@@ -205,7 +205,7 @@ def test_current_release_metadata_is_v0_3_0_and_preserves_earlier_provenance() -
     assert citation["license"] == "AGPL-3.0-or-later"
     assert project["version"] == "0.3.0"
     assert citation["version"] == project["version"]
-    assert "doi" not in citation
+    assert citation["doi"] == "10.5281/zenodo.22736483"
     assert str(citation["date-released"]) == "2026-09-14"
     assert zenodo["creators"] == [{"name": "kuotunyu"}]
     assert zenodo["upload_type"] == "software"
@@ -221,8 +221,11 @@ def test_current_release_metadata_is_v0_3_0_and_preserves_earlier_provenance() -
     assert "https://doi.org/10.5281/zenodo.21877497" in research_package
     assert "https://doi.org/10.5281/zenodo.21877496" in research_package
     assert "https://doi.org/10.5281/zenodo.21912370" in research_package
-    assert "The current tree prepares `v0.3.0`" in research_package
-    assert "generated from the exact `v0.3.0` release" in research_package
+    assert "https://doi.org/10.5281/zenodo.22736483" in research_package
+    assert "a1141ed43fd655a19f773a869cb2b5a1f1f23ffc" in research_package
+    assert "0f94417beea333550aa97592f100463de3f99879ec4869e9965caff4783462c4" in research_package
+    assert "3,790,613 bytes" in research_package
+    assert "generated from the exact `v0.3.0`" in research_package
     assert "7fc1777d306584fc1f3ffe0c05989296370fe6df" in research_package
     assert "89d82a6ab8737193f8c59614d2a04c68f07b02fca3bc7d3ee7178c56ff882f29" in (research_package)
     assert "1,699,878 bytes" in research_package
