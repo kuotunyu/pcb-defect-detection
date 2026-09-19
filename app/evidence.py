@@ -82,13 +82,13 @@ def load_evidence(repo_root: Path) -> EvidenceSummary:
         leakage_effect=Metric(
             label="Leakage Effect",
             display_value=f"+{(leaky - grouped) * 100:.1f} pp",
-            context="frozen same-board sibling exposure effect",
+            context="held-out Board 08 · frozen sibling exposure effect",
             evidence_path="reports/paired_a100/final_metrics.json",
         ),
         ort_cuda_p50=Metric(
             label="ORT CUDA p50",
             display_value=f"{ort_p50:.2f} ms",
-            context="ONNX Runtime CUDA FP32 · NVIDIA L4 · calibration-only",
+            context="首次 L4 session · ORT CUDA FP32 · calibration-only",
             evidence_path="reports/benchmark_l4.json",
         ),
         strict_parity_passed=strict_parity_passed,

@@ -316,7 +316,7 @@ flowchart TB
 
 ### 2. NVIDIA L4 多後端推論延遲評測
 
-> **Calibration-only evidence**：來自單一 private NVIDIA L4 session，不是 production SLA；repository 不發佈 TensorRT engine、public model 或 public checkpoint。
+> **首次 L4 session · Calibration-only evidence**：下表來自首次 private NVIDIA L4 session，不是 production SLA；repository 不發佈 TensorRT engine、public model 或 public checkpoint。修正 reference 幾何後的 parity 與 timing 另見[修正後 L4 重跑報告](reports/l4_rerun_2abe78fe2b54/README.md)，overall gate 仍為 failed。
 
 測試條件：60 張 calibration images、batch 1、30 次 warmup、4 cycles、interleaved backend order。
 
